@@ -1,7 +1,8 @@
 from django.contrib import admin
 from django.http import HttpResponseRedirect
+from django.utils.html import format_html
 from django.shortcuts import render
-from django.urls import path
+from django.urls import path, reverse
 import pandas as pd
 
 from .forms import ExcelUploadForm
@@ -9,6 +10,13 @@ from .forms import ExcelUploadForm
 from .models import Item
 
 class ItemAdmin(admin.ModelAdmin):
+    def changelist_view(self, request, extra_context=None):
+        """Pass import URL to template"""
+        if extra_context is None:
+            extra_context = {}
+        extra_context["import_url"] = reverse("admin:import_excel")
+        return super().changelist_view(request, extra_context=extra_context)
+
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
