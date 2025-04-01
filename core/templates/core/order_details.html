@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Details</title>
+</head>
+<body>
+    <h2>Order Details</h2>
+    {% if orders %}
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>PO_NO</th>
+                    <th>PO_DATE</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                    <tr>
+                        <td>{{ order.item }}</td>
+                        <td>{{ order.po_no }}</td>
+                        <td>{{ order.po_date }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No orders found in the given range.</p>
+    {% endif %}
+</body>
+</html>
