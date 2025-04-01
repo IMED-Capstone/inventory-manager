@@ -1,0 +1,19 @@
+{% extends 'core/bootstrap.html' %}
+
+{% load django_bootstrap5 %}
+
+{% block bootstrap5_content %}
+    <div class="container">
+        <h1>{% block title %}(no title){% endblock %}</h1>
+
+        <ul class="nav nav-tabs">
+            <li class="nav-item"><a class="nav-link" href="{% url 'home' %}">Home</a></li>
+            <li class="nav-item"><a class="nav-link" href="{% url 'order_details' start_date='2022-02-01' end_date='2022-08-01' %}">Order Details</a></li>
+        </ul>
+
+        {% autoescape off %}{% bootstrap_messages %}{% endautoescape %}
+
+        {% block content %}(no content){% endblock %}
+    </div>
+
+{% endblock %}
