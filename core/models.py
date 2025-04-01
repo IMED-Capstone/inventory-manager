@@ -3,6 +3,8 @@ from djmoney.models.fields import MoneyField
 
 # Create your models here.
 class Item(models.Model):
+    """Defines an Item model representing an inventory item.
+    """
     item=models.CharField(max_length=200)
     mfr=models.CharField(max_length=200)
     mfr_cat=models.CharField(max_length=200)
@@ -21,4 +23,4 @@ class Item(models.Model):
     dbo_vend_name=models.CharField(max_length=200)
     expr1016=models.CharField(max_length=200)
     expr1017=models.IntegerField()
-    par_level=models.PositiveIntegerField(blank=True, default=1)
+    par_level=models.PositiveIntegerField(blank=True, default=1)    # maybe remove -> inherit and extend in the part of the app that manages the par levels?

@@ -11,7 +11,7 @@ from .models import Item
 
 class ItemAdmin(admin.ModelAdmin):
     def changelist_view(self, request, extra_context=None):
-        """Pass import URL to template"""
+        """Pass import from Excel URL to template"""
         if extra_context is None:
             extra_context = {}
         extra_context["import_url"] = reverse("admin:import_excel")
@@ -25,6 +25,7 @@ class ItemAdmin(admin.ModelAdmin):
         return custom_urls + urls
     
     def import_excel(self, request):
+        """Defines form for uploading an Excel document containing transaction ledger data."""
         if request.method == "POST":
             form = ExcelUploadForm(request.POST, request.FILES)
             if form.is_valid():
