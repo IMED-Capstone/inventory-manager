@@ -54,12 +54,17 @@ def order_details(request, start_date=((datetime.datetime.today()-relativedelta(
 def order_details_advanced(request, start_date=((datetime.datetime.today()-relativedelta(years=1)).strftime('%Y-%m-%d')), end_date=datetime.datetime.today().strftime('%Y-%m-%d')):
     orders_by_month_keys = []
     orders_by_month_values = []
-    for i in range(12):
-        start_month = datetime.datetime.now(ZoneInfo("America/Chicago"))-relativedelta(months=(5))
-        upper_month = start_month-relativedelta(months=(i-1))
-        lower_month = start_month-relativedelta(months=(i))
-        monthly_amount = Item.objects.filter(po_date__range=(lower_month, upper_month)).count()
-        orders_by_month_keys.append(lower_month.strftime("%B %Y"))
+
+    # Get passed parameters as Python datetime objects, and get number of months elapsed between the two dates
+    start_date_as_datetime = datetime.datetime.strptime(start_date, '%Y-%m-%d').date()
+    end_date_as_datetime = datetime.datetime.strptime(end_date, '%Y-%m-%d').date()
+    num_months = relativedelta(end_date_as_datetime, start_date_as_datetime).months + (relativedelta(end_date_as_datetime, start_date_as_datetime).years) * 12  # make sure to include years in delta
+
+    for i in range(num_months):
+        start_month = datetime.datetime.now(ZoneInfo("America/Chicago"))-relativedelta(months=(5))  # remove month offset for final version, just for testing since test data ends in December 2024
+        search_month = start_month-relativedelta(months=(i-1))
+        monthly_amount = Item.objects.filter(po_date__month=(search_month.month)).count()
+        orders_by_month_keys.append(search_month.strftime("%B %Y"))
         orders_by_month_values.append(monthly_amount)
     template = loader.get_template("core/order_details_advanced.html")
     orders_by_month_keys.reverse()
