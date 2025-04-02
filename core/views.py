@@ -5,6 +5,7 @@ from django.shortcuts import render
 from django.template import loader
 from django.views.generic.base import TemplateView
 from .models import Item
+import json
 
 import datetime
 from dateutil.relativedelta import relativedelta
@@ -44,5 +45,24 @@ def order_details(request, start_date=((datetime.datetime.today()-relativedelta(
     template = loader.get_template("core/order_details.html")
     context = {
         "orders": orders,
+    }
+    return HttpResponse(template.render(context, request))
+
+def order_details_advanced(request, start_date=((datetime.datetime.today()-relativedelta(years=1)).strftime('%Y-%m-%d')), end_date=datetime.datetime.today().strftime('%Y-%m-%d')):
+    orders_by_month_keys = []
+    orders_by_month_values = []
+    for i in range(12):
+        start_month = datetime.datetime.today()-relativedelta(months=(5))
+        upper_month = start_month-relativedelta(months=(i-1))
+        lower_month = start_month-relativedelta(months=(i))
+        monthly_amount = Item.objects.filter(po_date__range=(lower_month, upper_month)).count()
+        orders_by_month_keys.append(lower_month.strftime("%B %Y"))
+        orders_by_month_values.append(monthly_amount)
+    template = loader.get_template("core/order_details_advanced.html")
+    orders_by_month_keys.reverse()
+    orders_by_month_values.reverse()
+    context = {
+        "orders_by_month_keys": json.dumps(orders_by_month_keys, ensure_ascii=False),
+        "orders_by_month_values": json.dumps(orders_by_month_values, ensure_ascii=False),
     }
     return HttpResponse(template.render(context, request))

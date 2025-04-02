@@ -1,0 +1,47 @@
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+{% extends 'core/base.html' %}
+
+{% load django_bootstrap5 %}
+
+{% block title %}
+    Order Details
+{% endblock %}
+
+{% block content %}
+
+<div id="OrdersByMonth">
+    <div class="chart-container-rt2">
+        <canvas id="orders-by-month"></canvas>
+    </div>
+</div>
+
+<script>
+    var ordersByMonthCtx = document.getElementById('orders-by-month')
+    var ordersByMonthChart = new Chart(ordersByMonthCtx, {
+        type: 'bar',
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        },
+        data: {
+            labels: JSON.parse('{{ orders_by_month_keys|safe }}'),
+            datasets: [
+                {
+                    label: "Orders By Month",
+                    data: JSON.parse('{{ orders_by_month_values|safe }}'),
+                    backgroundColor: 'rgba(54, 162, 235, 0.5)', // Optional styling
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }
+            ]
+        }
+    });
+</script>
+
+{% endblock %}
+
