@@ -12,17 +12,17 @@
         <table class="table">
             <thead>
                 <tr>
-                    <th>Item</th>
-                    <th>PO_NO</th>
-                    <th>PO_DATE</th>
+                    {% for column in column_names %}
+                        <th>{{ column }}</th>
+                    {% endfor %}
                 </tr>
             </thead>
             <tbody>
                 {% for order in orders %}
                     <tr>
-                        <td>{{ order.item }}</td>
-                        <td>{{ order.po_no }}</td>
-                        <td>{{ order.po_date }}</td>
+                        {% for field, value in order.items %}
+                            <td>{{ value }}</td>
+                        {% endfor %}
                     </tr>
                 {% endfor %}
             </tbody>
