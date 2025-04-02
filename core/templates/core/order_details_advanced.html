@@ -10,6 +10,13 @@
 
 {% block content %}
 
+<div id="DateHeader">
+    <br />
+    <h4>
+        Current range: {{ start_month }} - {{ end_month }}.
+    </h4>
+</div>
+
 <div id="OrdersByMonth">
     <div class="chart-container-rt2">
         <canvas id="orders-by-month"></canvas>

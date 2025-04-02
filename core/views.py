@@ -65,6 +65,8 @@ def order_details_advanced(request, start_date=((datetime.datetime.today()-relat
     orders_by_month_keys.reverse()
     orders_by_month_values.reverse()
     context = {
+        "start_month": orders_by_month_keys[0],
+        "end_month": orders_by_month_keys[-1],
         "orders_by_month_keys": json.dumps(orders_by_month_keys, ensure_ascii=False),
         "orders_by_month_values": json.dumps(orders_by_month_values, ensure_ascii=False),
     }
