@@ -1,11 +1,13 @@
 from django.contrib import messages
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
+from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.template import loader
 from django.views.generic.base import TemplateView
 from .models import Item
 import json
+import simplejson
 
 import datetime
 from zoneinfo import ZoneInfo
@@ -54,6 +56,7 @@ def order_details(request, start_date=((datetime.datetime.today()-relativedelta(
 def order_details_advanced(request, start_date=((datetime.datetime.today()-relativedelta(years=1)).strftime('%Y-%m-%d')), end_date=datetime.datetime.today().strftime('%Y-%m-%d')):
     orders_by_month_keys = []
     orders_by_month_values = []
+    cost_by_month_values = []
 
     # Get passed parameters as Python datetime objects, and get number of months elapsed between the two dates
     start_date_as_datetime = datetime.datetime.strptime(start_date, '%Y-%m-%d').date()
@@ -63,10 +66,11 @@ def order_details_advanced(request, start_date=((datetime.datetime.today()-relat
     for i in range(num_months):
         start_month = datetime.datetime.now(ZoneInfo("America/Chicago"))-relativedelta(months=(5))  # remove month offset for final version, just for testing since test data ends in December 2024
         search_month = start_month-relativedelta(months=(i-1))
-        monthly_amount = Item.objects.filter(po_date__month=(search_month.month)).count()
         monthly_amount = Item.objects.filter(po_date__year=(search_month.year), po_date__month=(search_month.month)).count()
+        monthly_cost = Item.objects.filter(po_date__year=(search_month.year), po_date__month=(search_month.month)).aggregate(Sum('total_cost'))['total_cost__sum']
         orders_by_month_keys.append(search_month.strftime("%B %Y"))
         orders_by_month_values.append(monthly_amount)
+        cost_by_month_values.append(monthly_cost)
     template = loader.get_template("core/order_details_advanced.html")
     orders_by_month_keys.reverse()
     orders_by_month_values.reverse()
@@ -75,5 +79,6 @@ def order_details_advanced(request, start_date=((datetime.datetime.today()-relat
         "end_month": orders_by_month_keys[-1],
         "orders_by_month_keys": json.dumps(orders_by_month_keys, ensure_ascii=False),
         "orders_by_month_values": json.dumps(orders_by_month_values, ensure_ascii=False),
+        "cost_by_month_values": simplejson.dumps(cost_by_month_values, ensure_ascii=False, use_decimal=True),
     }
     return HttpResponse(template.render(context, request))
