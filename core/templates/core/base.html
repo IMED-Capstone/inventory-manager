@@ -10,6 +10,7 @@
             <li class="nav-item"><a class="nav-link" href="{% url 'home' %}">Home</a></li>
             <!-- <li class="nav-item"><a class="nav-link" href="{% url 'order_details' start_date='2022-02-01' end_date='2022-08-01' %}">Order Details</a></li> -->
             <li class="nav-item"><a class="nav-link" href="{% url 'order_details' %}">Order Details</a></li>
+            <li class="nav-item"><a class="nav-link" href="{% url 'order_details_advanced' %}">Order Details Advanced</a></li>
         </ul>
 
         {% autoescape off %}{% bootstrap_messages %}{% endautoescape %}
