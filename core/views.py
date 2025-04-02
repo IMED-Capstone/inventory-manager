@@ -1,10 +1,11 @@
 from django.contrib import messages
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.db.models import Sum
+from django.db.models import Sum, Count
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.template import loader
 from django.views.generic.base import TemplateView
+from django.utils.timezone import make_aware
 from .models import Item
 import json
 import simplejson
@@ -63,6 +64,7 @@ def order_details_advanced(request, start_date=((datetime.datetime.today()-relat
     end_date_as_datetime = datetime.datetime.strptime(end_date, '%Y-%m-%d').date()
     num_months = relativedelta(end_date_as_datetime, start_date_as_datetime).months + (relativedelta(end_date_as_datetime, start_date_as_datetime).years) * 12  # make sure to include years in delta
 
+    # Get monthly stats
     for i in range(num_months):
         start_month = datetime.datetime.now(ZoneInfo("America/Chicago"))-relativedelta(months=(5))  # remove month offset for final version, just for testing since test data ends in December 2024
         search_month = start_month-relativedelta(months=(i-1))
@@ -71,14 +73,23 @@ def order_details_advanced(request, start_date=((datetime.datetime.today()-relat
         orders_by_month_keys.append(search_month.strftime("%B %Y"))
         orders_by_month_values.append(monthly_amount)
         cost_by_month_values.append(monthly_cost)
-    template = loader.get_template("core/order_details_advanced.html")
     orders_by_month_keys.reverse()
     orders_by_month_values.reverse()
+
+    # Get vendor stats
+    vendors = Item.objects.filter(po_date__range=(start_date_as_datetime, end_date_as_datetime)).values('vendor').annotate(count=Count('vendor')).order_by("-count")
+    vendors_dict = {vendor['vendor']: vendor['count'] for vendor in vendors}
+    vendors_keys = list(dict(vendors_dict).keys())
+    vendors_values = list(dict(vendors_dict).values())
+
+    template = loader.get_template("core/order_details_advanced.html")
     context = {
         "start_month": orders_by_month_keys[0],
         "end_month": orders_by_month_keys[-1],
         "orders_by_month_keys": json.dumps(orders_by_month_keys, ensure_ascii=False),
         "orders_by_month_values": json.dumps(orders_by_month_values, ensure_ascii=False),
         "cost_by_month_values": simplejson.dumps(cost_by_month_values, ensure_ascii=False, use_decimal=True),
+        "vendors_keys": json.dumps(vendors_keys, ensure_ascii=False).replace("'", "\\'"),
+        "vendors_values": json.dumps(vendors_values, ensure_ascii=False),
     }
     return HttpResponse(template.render(context, request))
