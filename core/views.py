@@ -64,6 +64,7 @@ def order_details_advanced(request, start_date=((datetime.datetime.today()-relat
         start_month = datetime.datetime.now(ZoneInfo("America/Chicago"))-relativedelta(months=(5))  # remove month offset for final version, just for testing since test data ends in December 2024
         search_month = start_month-relativedelta(months=(i-1))
         monthly_amount = Item.objects.filter(po_date__month=(search_month.month)).count()
+        monthly_amount = Item.objects.filter(po_date__year=(search_month.year), po_date__month=(search_month.month)).count()
         orders_by_month_keys.append(search_month.strftime("%B %Y"))
         orders_by_month_values.append(monthly_amount)
     template = loader.get_template("core/order_details_advanced.html")
