@@ -7,6 +7,7 @@ from django.template import loader
 from django.views.generic.base import TemplateView
 from django.utils.timezone import make_aware
 from .models import Item
+from .forms import DateRangeForm
 import json
 import simplejson
 
@@ -62,19 +63,36 @@ def order_details_advanced(request, start_date=((datetime.datetime.today()-relat
     # Get passed parameters as Python datetime objects, and get number of months elapsed between the two dates
     start_date_as_datetime = datetime.datetime.strptime(start_date, '%Y-%m-%d').date()
     end_date_as_datetime = datetime.datetime.strptime(end_date, '%Y-%m-%d').date()
+    lower_date_bound = Item.objects.order_by('po_date').first().po_date.strftime("%Y-%m-%d")
+    upper_date_bound = Item.objects.order_by('-po_date').first().po_date.strftime("%Y-%m-%d")
+
+    initial_data = {}
+    initial_data['start_date'] = start_date_as_datetime
+    initial_data['end_date'] = end_date_as_datetime
+
+    form = DateRangeForm(initial=initial_data)
+
+    if request.method == "POST":
+        form = DateRangeForm(request.POST)
+        if form.is_valid():
+            start_date_as_datetime = form.cleaned_data['start_date']
+            end_date_as_datetime = form.cleaned_data['end_date']
+            start_date = start_date_as_datetime.strftime("%Y-%m-%d")
+            end_date = end_date_as_datetime.strftime("%Y-%m-%d")
+    
     num_months = relativedelta(end_date_as_datetime, start_date_as_datetime).months + (relativedelta(end_date_as_datetime, start_date_as_datetime).years) * 12  # make sure to include years in delta
+
 
     # Get monthly stats
     for i in range(num_months):
-        start_month = datetime.datetime.now(ZoneInfo("America/Chicago"))-relativedelta(months=(5))  # remove month offset for final version, just for testing since test data ends in December 2024
-        search_month = start_month-relativedelta(months=(i-1))
+        # start_month = datetime.datetime.now(ZoneInfo("America/Chicago"))-relativedelta(months=(5))  # remove month offset for final version, just for testing since test data ends in December 2024
+        # search_month = start_month-relativedelta(months=(i-1))
+        search_month = start_date_as_datetime+relativedelta(months=i)
         monthly_amount = Item.objects.filter(po_date__year=(search_month.year), po_date__month=(search_month.month)).count()
         monthly_cost = Item.objects.filter(po_date__year=(search_month.year), po_date__month=(search_month.month)).aggregate(Sum('total_cost'))['total_cost__sum']
         orders_by_month_keys.append(search_month.strftime("%B %Y"))
         orders_by_month_values.append(monthly_amount)
         cost_by_month_values.append(monthly_cost)
-    orders_by_month_keys.reverse()
-    orders_by_month_values.reverse()
 
     # Get vendor stats
     vendors = Item.objects.filter(po_date__range=(start_date_as_datetime, end_date_as_datetime)).values('vendor').annotate(count=Count('vendor')).order_by("-count")
@@ -84,8 +102,11 @@ def order_details_advanced(request, start_date=((datetime.datetime.today()-relat
 
     template = loader.get_template("core/order_details_advanced.html")
     context = {
-        "start_month": orders_by_month_keys[0],
-        "end_month": orders_by_month_keys[-1],
+        "form": form,
+        "start_date": start_date,
+        "end_date": end_date,
+        "lower_date_bound": lower_date_bound,
+        "upper_date_bound": upper_date_bound,
         "orders_by_month_keys": json.dumps(orders_by_month_keys, ensure_ascii=False),
         "orders_by_month_values": json.dumps(orders_by_month_values, ensure_ascii=False),
         "cost_by_month_values": simplejson.dumps(cost_by_month_values, ensure_ascii=False, use_decimal=True),
