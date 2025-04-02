@@ -8,6 +8,7 @@ from .models import Item
 import json
 
 import datetime
+from zoneinfo import ZoneInfo
 from dateutil.relativedelta import relativedelta
 
 # Create your views here.
@@ -54,7 +55,7 @@ def order_details_advanced(request, start_date=((datetime.datetime.today()-relat
     orders_by_month_keys = []
     orders_by_month_values = []
     for i in range(12):
-        start_month = datetime.datetime.today()-relativedelta(months=(5))
+        start_month = datetime.datetime.now(ZoneInfo("America/Chicago"))-relativedelta(months=(5))
         upper_month = start_month-relativedelta(months=(i-1))
         lower_month = start_month-relativedelta(months=(i))
         monthly_amount = Item.objects.filter(po_date__range=(lower_month, upper_month)).count()

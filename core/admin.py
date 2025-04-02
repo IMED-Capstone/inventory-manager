@@ -45,7 +45,7 @@ class ItemAdmin(admin.ModelAdmin):
                         total_cost=row["TOTAL COST"],
                         expr1010=row["Expr1010"],
                         po_no=row["PO_NO"],
-                        po_date=row["PO_DATE"],
+                        po_date=row["PO_DATE"].tz_localize(tz="America/Chicago"),
                         vend_code=row["VEND_CODE"],
                         item_no=row["ITEM_NO"],
                         dbo_vend_name=row["dbo_VEND.NAME"],
