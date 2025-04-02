@@ -32,7 +32,6 @@ class ItemAdmin(admin.ModelAdmin):
                 file = request.FILES["excel_file"]
                 df = pd.read_excel(file, engine="openpyxl")
                 for _, row in df.iterrows():
-                    print(row)
                     Item.objects.create(
                         item=row["ITEM"],
                         mfr=row["MFR"],
