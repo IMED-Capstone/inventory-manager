@@ -46,12 +46,26 @@ class PaginationView(TemplateView):
         return context
     
 def order_details(request, start_date=((datetime.datetime.today()-relativedelta(years=1)).strftime('%Y-%m-%d')), end_date=datetime.datetime.today().strftime('%Y-%m-%d')):
+    initial_data = {}
+    initial_data['start_date'] = datetime.datetime.strptime(start_date, '%Y-%m-%d').date()
+    initial_data['end_date'] = datetime.datetime.strptime(end_date, '%Y-%m-%d').date()
+
+    form = DateRangeForm(initial=initial_data)
+
+    if request.method == "POST":
+        form = DateRangeForm(request.POST)
+        if form.is_valid():
+            start_date = form.cleaned_data['start_date'].strftime("%Y-%m-%d")
+            end_date = form.cleaned_data['end_date'].strftime("%Y-%m-%d")
+
     orders = Item.objects.filter(po_date__range=(start_date, end_date)).values()
     template = loader.get_template("core/order_details.html")
     column_names = [f.name for f in Item._meta.get_fields()]
     context = {
+        "form": form,
         "column_names": column_names,
         "orders": orders,
+        "orders_count": orders.count()
     }
     return HttpResponse(template.render(context, request))
 
