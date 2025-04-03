@@ -48,6 +48,15 @@
         type: 'bar',
         options: {
             responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top'
+                },
+                title: {
+                    display: true,
+                    text: 'Orders and Cost by Month'
+                }
+            },
             stacked: false,
             scales: {
                 'Orders By Month': {
@@ -62,6 +71,11 @@
                     grid: {
                         drawOnChartArea: false,
                     },
+                    ticks: {
+                        callback: function(value, index, ticks) {
+                            return '$' + Chart.Ticks.formatters.numeric.apply(this, [value, index, ticks]);
+                        }
+                    }
                 },
             }
         },
