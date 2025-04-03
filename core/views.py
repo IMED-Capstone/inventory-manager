@@ -50,7 +50,13 @@ def order_details(request, start_date=((datetime.datetime.today()-relativedelta(
     initial_data['start_date'] = datetime.datetime.strptime(start_date, '%Y-%m-%d').date()
     initial_data['end_date'] = datetime.datetime.strptime(end_date, '%Y-%m-%d').date()
 
-    form = DateRangeForm(initial=initial_data)
+    lower_date_bound = Item.objects.order_by('po_date').first().po_date.strftime("%Y-%m-%d")
+
+    initial_data = {}
+    initial_data['start_date'] = start_date
+    initial_data['end_date'] = end_date
+
+    form = DateRangeForm(initial=initial_data, lower_bound=lower_date_bound, upper_bound=end_date)
 
     if request.method == "POST":
         form = DateRangeForm(request.POST)
@@ -78,13 +84,14 @@ def order_details_advanced(request, start_date=((datetime.datetime.today()-relat
     start_date_as_datetime = datetime.datetime.strptime(start_date, '%Y-%m-%d').date()
     end_date_as_datetime = datetime.datetime.strptime(end_date, '%Y-%m-%d').date()
     lower_date_bound = Item.objects.order_by('po_date').first().po_date.strftime("%Y-%m-%d")
-    upper_date_bound = Item.objects.order_by('-po_date').first().po_date.strftime("%Y-%m-%d")
+    # upper_date_bound = Item.objects.order_by('-po_date').first().po_date.strftime("%Y-%m-%d")
+    upper_date_bound = end_date
 
     initial_data = {}
-    initial_data['start_date'] = start_date_as_datetime
-    initial_data['end_date'] = end_date_as_datetime
+    initial_data['start_date'] = start_date
+    initial_data['end_date'] = end_date
 
-    form = DateRangeForm(initial=initial_data)
+    form = DateRangeForm(initial=initial_data, lower_bound=lower_date_bound, upper_bound=upper_date_bound)
 
     if request.method == "POST":
         form = DateRangeForm(request.POST)
@@ -136,6 +143,7 @@ def order_details_advanced(request, start_date=((datetime.datetime.today()-relat
         "upper_date_bound": upper_date_bound,
         "orders_by_month_keys": json.dumps(orders_by_month_keys, ensure_ascii=False),
         "orders_by_month_values": json.dumps(orders_by_month_values, ensure_ascii=False),
+        "total_orders_across_range": sum(orders_by_month_values),   # if 0, no values in range, so report on client
         "cost_by_month_values": simplejson.dumps(cost_by_month_values, ensure_ascii=False, use_decimal=True),
         "vendors_keys": json.dumps(vendors_keys, ensure_ascii=False).replace("'", "\\'"),
         "vendors_values": json.dumps(vendors_values, ensure_ascii=False),

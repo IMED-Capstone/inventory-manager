@@ -11,30 +11,17 @@
 <div id="DateHeader">
     <br />
     <h4>Current range:</h4>
-    <!-- <input
-            type="date"
-            id="start"
-            name="search-start"
-            value="{{ start_date }}"
-            min="{{ lower_date_bound }}"
-            max="{{ upper_date_bound }}" 
-            required/>
-    -
-    <input
-            type="date"
-            id="end"
-            name="search-end"
-            value="{{ end_date }}"
-            min="{{ lower_date_bound }}"
-            max="{{ upper_date_bound }}" 
-            required/> -->
     <form method="post">
         {% csrf_token %}
         <div>
-            {{ form.start_date.label_tag }} {{ form.start_date }}
+            {{ form.start_date.label_tag }}
+            <input type="date" id="start_date" name="start_date" value="{{ form.start_date.value|default:'' }}"
+               min="{{ lower_date_bound }}" max="{{ upper_date_bound }}">
         </div>
         <div>
-            {{ form.end_date.label_tag }} {{ form.end_date }}
+            {{ form.end_date.label_tag }} 
+            <input type="date" id="end_date" name="end_date" value="{{ form.end_date.value|default:'' }}"
+               min="{{ lower_date_bound }}" max="{{ upper_date_bound }}">
         </div>
         <button type="submit">Submit</button>
     </form>

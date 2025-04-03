@@ -23,3 +23,15 @@ class DateRangeForm(forms.Form):
             raise forms.ValidationError("End date must be after start date.")
         
         return cleaned_data
+
+    def __init__(self, *args, **kwargs):
+        lower_bound = kwargs.pop('lower_bound', None)
+        upper_bound = kwargs.pop('upper_bound', None)
+        super().__init__(*args, **kwargs)
+
+        if lower_bound:
+            self.fields['start_date'].widget.attrs['min'] = lower_bound
+            self.fields['end_date'].widget.attrs['min'] = lower_bound
+        if upper_bound:
+            self.fields['start_date'].widget.attrs['max'] = upper_bound
+            self.fields['end_date'].widget.attrs['max'] = upper_bound
