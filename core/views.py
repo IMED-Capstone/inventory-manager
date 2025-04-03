@@ -80,16 +80,29 @@ def order_details_advanced(request, start_date=((datetime.datetime.today()-relat
             start_date = start_date_as_datetime.strftime("%Y-%m-%d")
             end_date = end_date_as_datetime.strftime("%Y-%m-%d")
     
-    num_months = relativedelta(end_date_as_datetime, start_date_as_datetime).months + (relativedelta(end_date_as_datetime, start_date_as_datetime).years) * 12  # make sure to include years in delta
-
+    num_months = (relativedelta(end_date_as_datetime, start_date_as_datetime).months + (relativedelta(end_date_as_datetime, start_date_as_datetime).years) * 12) + 1  # make sure to include years in delta
 
     # Get monthly stats
     for i in range(num_months):
-        # start_month = datetime.datetime.now(ZoneInfo("America/Chicago"))-relativedelta(months=(5))  # remove month offset for final version, just for testing since test data ends in December 2024
-        # search_month = start_month-relativedelta(months=(i-1))
         search_month = start_date_as_datetime+relativedelta(months=i)
-        monthly_amount = Item.objects.filter(po_date__year=(search_month.year), po_date__month=(search_month.month)).count()
-        monthly_cost = Item.objects.filter(po_date__year=(search_month.year), po_date__month=(search_month.month)).aggregate(Sum('total_cost'))['total_cost__sum']
+        monthly_amount = 0
+        monthly_cost = 0
+
+        if i == 0:  # if first month, only include values from that day of the month through the end of the month (e.g. if April 5th, don't include values from 4/1 - 4/4)
+            next_month = search_month + relativedelta(months=1)
+            last_day_of_month = (next_month.replace(day=1) - relativedelta(days=1)).day
+            start_date = search_month
+            end_date = search_month.replace(day=last_day_of_month)
+            monthly_amount = Item.objects.filter(po_date__range=(start_date, end_date)).count()
+            monthly_cost = Item.objects.filter(po_date__range=(start_date, end_date)).aggregate(Sum('total_cost'))['total_cost__sum']
+        elif i == num_months - 1:
+            start_date = search_month.replace(day=1)
+            end_date = search_month
+            monthly_amount = Item.objects.filter(po_date__range=(start_date, end_date)).count()
+            monthly_cost = Item.objects.filter(po_date__range=(start_date, end_date)).aggregate(Sum('total_cost'))['total_cost__sum']
+        else:
+            monthly_amount = Item.objects.filter(po_date__year=(search_month.year), po_date__month=(search_month.month)).count()
+            monthly_cost = Item.objects.filter(po_date__year=(search_month.year), po_date__month=(search_month.month)).aggregate(Sum('total_cost'))['total_cost__sum']
         orders_by_month_keys.append(search_month.strftime("%B %Y"))
         orders_by_month_values.append(monthly_amount)
         cost_by_month_values.append(monthly_cost)
