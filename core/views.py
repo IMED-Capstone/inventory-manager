@@ -13,6 +13,7 @@ import simplejson
 
 import datetime
 from zoneinfo import ZoneInfo
+import pandas as pd
 from dateutil.relativedelta import relativedelta
 
 # Create your views here.
@@ -64,7 +65,25 @@ def order_details(request, start_date=((datetime.datetime.today()-relativedelta(
             start_date = form.cleaned_data['start_date'].strftime("%Y-%m-%d")
             end_date = form.cleaned_data['end_date'].strftime("%Y-%m-%d")
 
+    if request.method == "POST":
+        if "download_date_ranges" in request.POST:
+            orders = Item.objects.filter(po_date__range=(start_date, end_date)).values()
+            orders_list = list(orders)
+            response = HttpResponse(content_type='application/vnd.ms-excel')
+            output_name = f"{start_date}..{end_date}"
+            response['Content-Disposition'] = f'attachment; filename={output_name}.xlsx'
+            for order in orders_list:
+                order["po_date"] = order["po_date"].strftime("%d/%m/%Y %H:%M:%S %p")
+                order.pop("id")
+                order.pop("par_level")
+            df = pd.DataFrame(orders_list)
+            writer = pd.ExcelWriter(response, engine="xlsxwriter")
+            df.to_excel(writer, index=False)
+            writer.close()
+            return response
+    
     orders = Item.objects.filter(po_date__range=(start_date, end_date)).values()
+
     template = loader.get_template("core/order_details.html")
     column_names = [f.name for f in Item._meta.get_fields()]
     context = {
