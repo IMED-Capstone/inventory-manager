@@ -1,13 +1,12 @@
+import pandas as pd
 from django.contrib import admin
 from django.http import HttpResponseRedirect
-from django.utils.html import format_html
 from django.shortcuts import render
 from django.urls import path, reverse
-import pandas as pd
 
 from .forms import ExcelUploadForm
-
 from .models import Item
+
 
 class ItemAdmin(admin.ModelAdmin):
     def changelist_view(self, request, extra_context=None):

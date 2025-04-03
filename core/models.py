@@ -1,6 +1,7 @@
 from django.db import models
 from djmoney.models.fields import MoneyField
 
+
 # Create your models here.
 class Item(models.Model):
     """Defines an Item model representing an inventory item.

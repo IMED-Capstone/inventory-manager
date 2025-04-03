@@ -1,20 +1,19 @@
+import datetime
+import json
+
+import pandas as pd
+import simplejson
+from dateutil.relativedelta import relativedelta
 from django.contrib import messages
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.db.models import Sum, Count
+from django.db.models import Count, Sum
 from django.http import HttpResponse
-from django.shortcuts import render
 from django.template import loader
 from django.views.generic.base import TemplateView
-from django.utils.timezone import make_aware
-from .models import Item
-from .forms import DateRangeForm
-import json
-import simplejson
 
-import datetime
-from zoneinfo import ZoneInfo
-import pandas as pd
-from dateutil.relativedelta import relativedelta
+from .forms import DateRangeForm
+from .models import Item
+
 
 # Create your views here.
 class HomePageView(TemplateView):
@@ -47,6 +46,7 @@ class PaginationView(TemplateView):
         return context
     
 def order_details(request, start_date=((datetime.datetime.today()-relativedelta(years=1)).strftime('%Y-%m-%d')), end_date=datetime.datetime.today().strftime('%Y-%m-%d')):
+    # maybe consider paginated view for performance as well
     initial_data = {}
     initial_data['start_date'] = datetime.datetime.strptime(start_date, '%Y-%m-%d').date()
     initial_data['end_date'] = datetime.datetime.strptime(end_date, '%Y-%m-%d').date()
@@ -103,7 +103,6 @@ def order_details_advanced(request, start_date=((datetime.datetime.today()-relat
     start_date_as_datetime = datetime.datetime.strptime(start_date, '%Y-%m-%d').date()
     end_date_as_datetime = datetime.datetime.strptime(end_date, '%Y-%m-%d').date()
     lower_date_bound = Item.objects.order_by('po_date').first().po_date.strftime("%Y-%m-%d")
-    # upper_date_bound = Item.objects.order_by('-po_date').first().po_date.strftime("%Y-%m-%d")
     upper_date_bound = end_date
 
     initial_data = {}
