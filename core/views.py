@@ -146,11 +146,11 @@ def order_details_advanced(request, start_date=((datetime.datetime.today()-relat
         orders_by_month_values.append(monthly_amount)
         cost_by_month_values.append(monthly_cost)
 
-    # Get vendor stats
-    vendors = Item.objects.filter(po_date__range=(start_date_as_datetime, end_date_as_datetime)).values('vendor').annotate(count=Count('vendor')).order_by("-count")
-    vendors_dict = {vendor['vendor']: vendor['count'] for vendor in vendors}
-    vendors_keys = list(dict(vendors_dict).keys())
-    vendors_values = list(dict(vendors_dict).values())
+    # Get mfr stats
+    mfrs = Item.objects.filter(po_date__range=(start_date_as_datetime, end_date_as_datetime)).values('mfr').annotate(count=Count('mfr')).order_by("-count")
+    mfrs_dict = {mfr['mfr']: mfr['count'] for mfr in mfrs}
+    mfrs_keys = list(dict(mfrs_dict).keys())
+    mfrs_values = list(dict(mfrs_dict).values())
 
     template = loader.get_template("core/order_details_advanced.html")
     context = {
@@ -163,7 +163,7 @@ def order_details_advanced(request, start_date=((datetime.datetime.today()-relat
         "orders_by_month_values": json.dumps(orders_by_month_values, ensure_ascii=False),
         "total_orders_across_range": sum(orders_by_month_values),   # if 0, no values in range, so report on client
         "cost_by_month_values": simplejson.dumps(cost_by_month_values, ensure_ascii=False, use_decimal=True),
-        "vendors_keys": json.dumps(vendors_keys, ensure_ascii=False).replace("'", "\\'"),
-        "vendors_values": json.dumps(vendors_values, ensure_ascii=False),
+        "mfrs_keys": json.dumps(mfrs_keys, ensure_ascii=False).replace("'", "\\'"),
+        "mfrs_values": json.dumps(mfrs_values, ensure_ascii=False),
     }
     return HttpResponse(template.render(context, request))

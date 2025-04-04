@@ -35,7 +35,7 @@
         <canvas id="orders-by-month"></canvas>
     </div>
     <div class="chart-container">
-        <canvas id="orders-by-vendor"></canvas>
+        <canvas id="orders-by-mfr"></canvas>
     </div>
 </div>
 {% else %}
@@ -102,8 +102,8 @@
         }
     });
 
-    var ordersByVendorCtx = document.getElementById('orders-by-vendor')
-    var ordersByVendorChart = new Chart(ordersByVendorCtx, {
+    var ordersByMfrCtx = document.getElementById('orders-by-mfr')
+    var ordersByMfrChart = new Chart(ordersByMfrCtx, {
         type: 'doughnut',
         options: {
             responsive: true,
@@ -113,16 +113,16 @@
                 },
                 title: {
                     display: true,
-                    text: 'Orders by Vendor'
+                    text: 'Orders by Manufacturer'
                 }
             }
         },
         data: {
-            labels: JSON.parse('{{ vendors_keys|safe }}'),
+            labels: JSON.parse('{{ mfrs_keys|safe }}'),
             datasets: [
                 {
-                    label: 'Orders by Vendor',
-                    data: JSON.parse('{{ vendors_values|safe }}'),
+                    label: 'Orders by Manufacturer',
+                    data: JSON.parse('{{ mfrs_values|safe }}'),
                 }
             ]
         }
