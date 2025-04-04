@@ -25,3 +25,7 @@ class Item(models.Model):
     expr1016=models.CharField('Expr1016', max_length=200)
     expr1017=models.IntegerField('Expr1017')
     par_level=models.PositiveIntegerField(blank=True, default=1)    # maybe remove -> inherit and extend in the part of the app that manages the par levels?
+
+    # show model description when using string representation (e.g. for display on admin panel)
+    def __str__(self):
+        return self.descr

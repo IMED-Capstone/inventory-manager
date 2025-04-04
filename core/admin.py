@@ -57,6 +57,9 @@ class ItemAdmin(admin.ModelAdmin):
         
 
         return render(request, "admin/import_excel.html", {"form": form, "title": "Import Excel"})
+    
+    # Select fields to display on the admin panel
+    list_display = ['descr', 'po_date']
 
 # Register your models here.
 admin.site.register(Item, ItemAdmin)
