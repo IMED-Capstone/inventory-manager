@@ -1,7 +1,9 @@
 import datetime
 import json
+import zoneinfo
 
-import pandas as pd
+import openpyxl
+import openpyxl.utils
 import simplejson
 from dateutil.relativedelta import relativedelta
 from django.contrib import messages
@@ -9,7 +11,12 @@ from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Count, Sum
 from django.http import HttpResponse
 from django.template import loader
+from django.utils.dateparse import parse_date
+from django.views.generic import ListView
 from django.views.generic.base import TemplateView
+from djmoney.models.fields import MoneyFieldProxy
+from djmoney.money import Money
+from openpyxl.styles import NamedStyle
 
 from .forms import DateRangeForm
 from .models import Item
@@ -45,54 +52,112 @@ class PaginationView(TemplateView):
         context["lines"] = show_lines
         return context
     
-def order_details(request, start_date=((datetime.datetime.today()-relativedelta(years=1)).strftime('%Y-%m-%d')), end_date=datetime.datetime.today().strftime('%Y-%m-%d')):
-    # maybe consider paginated view for performance as well
-    initial_data = {}
-    initial_data['start_date'] = datetime.datetime.strptime(start_date, '%Y-%m-%d').date()
-    initial_data['end_date'] = datetime.datetime.strptime(end_date, '%Y-%m-%d').date()
+class OrderDetailsView(ListView):
+    model = Item
+    template_name = "core/order_details.html"
+    context_object_name = "orders"
+    paginate_by = 10
 
-    lower_date_bound = Item.objects.order_by('po_date').first().po_date.strftime("%Y-%m-%d")
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        start_date = self.request.GET.get("start_date")
+        end_date = self.request.GET.get("end_date")
 
-    initial_data = {}
-    initial_data['start_date'] = start_date
-    initial_data['end_date'] = end_date
+        if not start_date:
+            start_date = (datetime.datetime.today()-relativedelta(years=1)).strftime('%Y-%m-%d')
+        if not end_date:
+            end_date = datetime.datetime.today().strftime('%Y-%m-%d')
+        
+        # if start_date:
+        #     queryset = queryset.filter(po_date__gte=parse_date(start_date)).order_by("id")
+        # if end_date:
+        #     queryset = queryset.filter(po_date__lte=parse_date(end_date)).order_by("id")
 
-    form = DateRangeForm(initial=initial_data, lower_bound=lower_date_bound, upper_bound=end_date)
-
-    if request.method == "POST":
-        form = DateRangeForm(request.POST)
-        if form.is_valid():
-            start_date = form.cleaned_data['start_date'].strftime("%Y-%m-%d")
-            end_date = form.cleaned_data['end_date'].strftime("%Y-%m-%d")
-
-    if request.method == "POST":
-        if "download_date_ranges" in request.POST:
-            orders = Item.objects.filter(po_date__range=(start_date, end_date)).values()
-            orders_list = list(orders)
-            response = HttpResponse(content_type='application/vnd.ms-excel')
-            output_name = f"{start_date}..{end_date}"
-            response['Content-Disposition'] = f'attachment; filename={output_name}.xlsx'
-            for order in orders_list:
-                order["po_date"] = order["po_date"].strftime("%d/%m/%Y %H:%M:%S %p")
-                order.pop("id")
-                order.pop("par_level")
-            df = pd.DataFrame(orders_list)
-            writer = pd.ExcelWriter(response, engine="xlsxwriter")
-            df.to_excel(writer, index=False)
-            writer.close()
-            return response
+        self.start_date = start_date
+        self.end_date = end_date
+        
+        return queryset.filter(po_date__range=[start_date, end_date])
     
-    orders = Item.objects.filter(po_date__range=(start_date, end_date)).values()
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        lower_date_bound = Item.objects.order_by('po_date').first().po_date.strftime("%Y-%m-%d")
+        upper_date_bound = datetime.datetime.today().strftime('%Y-%m-%d')
+        context['start_date'] = self.start_date
+        context['end_date'] = self.end_date
+        context['lower_date_bound'] = lower_date_bound
+        context['upper_date_bound'] = upper_date_bound
+        context["fields"] = [field.name for field in Item._meta.fields]
+        context['per_page'] = self.request.GET.get('per_page', self.paginate_by)
+        context['per_page_options'] = [5, 10, 25, 50, 100, "All"]
+        context['orders_count'] = self.get_queryset().count()
+        return context
+    
+    def get_paginate_by(self, queryset):
+        per_page = self.request.GET.get('per_page', 10)
+        try:
+            return int(per_page)
+        except ValueError:
+            if per_page == "All":
+                return Item.objects.count()
+            else:
+                return 10
 
-    template = loader.get_template("core/order_details.html")
-    column_names = [f.name for f in Item._meta.get_fields()]
-    context = {
-        "form": form,
-        "column_names": column_names,
-        "orders": orders,
-        "orders_count": orders.count()
-    }
-    return HttpResponse(template.render(context, request))
+def export_to_excel(request):
+    workbook = openpyxl.Workbook()
+    sheet = workbook.active
+
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    queryset = Item.objects.all()
+
+    sheet.title = f"Orders range{start_date} - {end_date}"
+
+    if start_date:
+        queryset = queryset.filter(po_date__gte=parse_date(start_date)).order_by("id")
+    if end_date:
+        queryset = queryset.filter(po_date__lte=parse_date(end_date)).order_by("id")
+    
+    excluded_fields = ["ID", "price_currency",  "total_cost_currency", "par_level"]
+    column_names = [field.verbose_name for field in Item._meta.fields if (field.verbose_name not in excluded_fields and field.name not in excluded_fields)]
+    sheet.append(column_names)
+    columns = [field.name for field in Item._meta.fields if (field.verbose_name not in excluded_fields and field.name not in excluded_fields)]
+
+    currency_style = NamedStyle(name="currency_style", number_format='"$"#,##0.00')
+
+    for item in queryset:
+        row = []
+        for field in columns:
+            value = getattr(item, field)
+            if isinstance(value, Money):
+                row.append(value.amount)
+            elif isinstance(value, datetime.datetime):
+                row.append(value.astimezone(zoneinfo.ZoneInfo("America/Chicago")).strftime("%d/%m/%Y %H:%M:%S %p"))
+            else:
+                row.append(value)
+
+        sheet.append(row)
+    
+        i = 0
+    for field in Item._meta.fields:
+        if (field.verbose_name not in excluded_fields and field.name not in excluded_fields):
+            i += 1
+            col_letter = openpyxl.utils.get_column_letter(i)
+            if isinstance(getattr(Item, field.name), MoneyFieldProxy):
+                for row in range(2, sheet.max_row + 1):  # Start from the second row (skip header)
+                    sheet[f'{col_letter}{row}'].style = currency_style  # Apply the style to the entire column
+            max_length = 0
+            for cell in list(sheet.columns)[i-1]:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            
+            sheet.column_dimensions[col_letter].width = (max_length + 2)
+    
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename={sheet.title}.xlsx'
+    workbook.save(response)
+    return response
+
+
 
 def order_details_advanced(request, start_date=((datetime.datetime.today()-relativedelta(years=1)).strftime('%Y-%m-%d')), end_date=datetime.datetime.today().strftime('%Y-%m-%d')):
     orders_by_month_keys = []
