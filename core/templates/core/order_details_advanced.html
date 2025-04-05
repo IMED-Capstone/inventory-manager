@@ -108,7 +108,7 @@
 
     var ordersByMfrCtx = document.getElementById('orders-by-mfr')
     var ordersByMfrChart = new Chart(ordersByMfrCtx, {
-        type: 'doughnut',
+        type: 'bar',
         options: {
             responsive: true,
             plugins: {
@@ -118,6 +118,12 @@
                 title: {
                     display: true,
                     text: 'Orders by Manufacturer'
+                }
+            },
+            stacked: false,
+            scales: {
+                y: {
+                    beginAtZero: true
                 }
             }
         },
