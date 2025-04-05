@@ -16,7 +16,7 @@ from django.views.generic import ListView
 from django.views.generic.base import TemplateView
 from djmoney.models.fields import MoneyFieldProxy
 from djmoney.money import Money
-from openpyxl.styles import NamedStyle
+from openpyxl.styles import NamedStyle, PatternFill, Font, Alignment, Border, Side
 
 from .models import Item
 
@@ -82,7 +82,7 @@ class OrderDetailsView(ListView):
         self.start_date = start_date
         self.end_date = end_date
         
-        return queryset.filter(po_date__range=[start_date, end_date]).order_by("po_date")
+        return queryset.filter(po_date__range=[start_date, end_date]).order_by("-po_date")
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -115,14 +115,14 @@ def export_to_excel(request):
 
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
-    queryset = Item.objects.all()
+    queryset = Item.objects.all().order_by("-po_date")
 
     sheet.title = f"{start_date}_{end_date}"    # can't be longer than 31 characters
 
-    if start_date:
-        queryset = queryset.filter(po_date__gte=parse_date(start_date)).order_by("id")
-    if end_date:
-        queryset = queryset.filter(po_date__lte=parse_date(end_date)).order_by("id")
+    if start_date and end_date:
+        start_date_as_datetime = timezone.make_aware(datetime.datetime.combine(parse_date(start_date), datetime.time(0,0,0,0)))
+        end_date_as_datetime = timezone.make_aware(datetime.datetime.combine(parse_date(end_date), datetime.time(23,59,59,999999)))
+        queryset = queryset.filter(po_date__range=[start_date_as_datetime, end_date_as_datetime])
     
     excluded_fields = ["ID", "price_currency",  "total_cost_currency", "par_level"]
     column_names = [field.verbose_name for field in Item._meta.fields if (field.verbose_name not in excluded_fields and field.name not in excluded_fields)]
@@ -154,6 +154,21 @@ def export_to_excel(request):
             if isinstance(getattr(Item, field.name), MoneyFieldProxy):
                 for row in range(2, sheet.max_row + 1):  # Start from the second row (skip header)
                     sheet[f'{col_letter}{row}'].style = currency_style  # Apply the style to the entire column
+            
+            # apply header formatting
+            cell_to_format = sheet.cell(row=1, column=i)
+            cell_to_format.fill = PatternFill(start_color="C0C0C0", end_color="C0C0C0", fill_type="solid")
+            cell_to_format.font = Font(bold=True, color="000000")
+            cell_to_format.alignment = Alignment(horizontal="center", vertical="center")
+            thin_border = Border(
+                left=Side(style="thin", color="000000"),
+                right=Side(style="thin", color="000000"),
+                top=Side(style="thin", color="000000"),
+                bottom=Side(style="thin", color="000000")
+            )
+            cell_to_format.border = thin_border
+
+
             max_length = 0
             for cell in list(sheet.columns)[i-1]:
                 if len(str(cell.value)) > max_length:
