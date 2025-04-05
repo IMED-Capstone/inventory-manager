@@ -105,7 +105,7 @@ def export_to_excel(request):
     end_date = request.GET.get('end_date')
     queryset = Item.objects.all()
 
-    sheet.title = f"Orders range{start_date} - {end_date}"
+    sheet.title = f"{start_date}_{end_date}"    # can't be longer than 31 characters
 
     if start_date:
         queryset = queryset.filter(po_date__gte=parse_date(start_date)).order_by("id")
@@ -148,7 +148,7 @@ def export_to_excel(request):
             sheet.column_dimensions[col_letter].width = (max_length + 2)
     
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = f'attachment; filename={sheet.title}.xlsx'
+    response['Content-Disposition'] = f'attachment; filename=Orders_{sheet.title}.xlsx'
     workbook.save(response)
     return response
 
