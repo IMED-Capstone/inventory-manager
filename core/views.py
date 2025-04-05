@@ -67,11 +67,6 @@ class OrderDetailsView(ListView):
             start_date = (datetime.datetime.today()-relativedelta(years=1)).strftime('%Y-%m-%d')
         if not end_date:
             end_date = datetime.datetime.today().strftime('%Y-%m-%d')
-        
-        # if start_date:
-        #     queryset = queryset.filter(po_date__gte=parse_date(start_date)).order_by("id")
-        # if end_date:
-        #     queryset = queryset.filter(po_date__lte=parse_date(end_date)).order_by("id")
 
         self.start_date = start_date
         self.end_date = end_date
@@ -137,7 +132,7 @@ def export_to_excel(request):
 
         sheet.append(row)
     
-        i = 0
+    i = 0
     for field in Item._meta.fields:
         if (field.verbose_name not in excluded_fields and field.name not in excluded_fields):
             i += 1
@@ -158,77 +153,79 @@ def export_to_excel(request):
     return response
 
 
+class OrderDetailsAdvancedView(TemplateView):
+    template_name = "core/order_details_advanced.html"
 
-def order_details_advanced(request, start_date=((datetime.datetime.today()-relativedelta(years=1)).strftime('%Y-%m-%d')), end_date=datetime.datetime.today().strftime('%Y-%m-%d')):
-    orders_by_month_keys = []
-    orders_by_month_values = []
-    cost_by_month_values = []
+    def get_default_dates(self):
+        end_date = datetime.datetime.today().date()
+        start_date = end_date - relativedelta(years=1)
+        return start_date, end_date
 
-    # Get passed parameters as Python datetime objects, and get number of months elapsed between the two dates
-    start_date_as_datetime = datetime.datetime.strptime(start_date, '%Y-%m-%d').date()
-    end_date_as_datetime = datetime.datetime.strptime(end_date, '%Y-%m-%d').date()
-    lower_date_bound = Item.objects.order_by('po_date').first().po_date.strftime("%Y-%m-%d")
-    upper_date_bound = end_date
+    def get_dates_from_request(self):
+        start_date_str = self.request.GET.get("start_date")
+        end_date_str = self.request.GET.get("end_date")
 
-    initial_data = {}
-    initial_data['start_date'] = start_date
-    initial_data['end_date'] = end_date
+        start_date = parse_date(start_date_str) if start_date_str else None
+        end_date = parse_date(end_date_str) if end_date_str else None
 
-    form = DateRangeForm(initial=initial_data, lower_bound=lower_date_bound, upper_bound=upper_date_bound)
-
-    if request.method == "POST":
-        form = DateRangeForm(request.POST)
-        if form.is_valid():
-            start_date_as_datetime = form.cleaned_data['start_date']
-            end_date_as_datetime = form.cleaned_data['end_date']
-            start_date = start_date_as_datetime.strftime("%Y-%m-%d")
-            end_date = end_date_as_datetime.strftime("%Y-%m-%d")
+        if not start_date or not end_date:
+            start_date, end_date = self.get_default_dates()
+        
+        return start_date, end_date
     
-    num_months = (relativedelta(end_date_as_datetime, start_date_as_datetime).months + (relativedelta(end_date_as_datetime, start_date_as_datetime).years) * 12) + 1  # make sure to include years in delta
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+    
+        start_date, end_date = self.get_dates_from_request()
+        lower_date_bound = Item.objects.order_by("po_date").first().po_date.strftime("%Y-%m-%d")
+        upper_date_bound = datetime.datetime.today().strftime("%Y-%m-%d")
 
-    # Get monthly stats
-    for i in range(num_months):
-        search_month = start_date_as_datetime+relativedelta(months=i)
-        monthly_amount = 0
-        monthly_cost = 0
+        start_date_str = start_date.strftime("%Y-%m-%d")
+        end_date_str = end_date.strftime("%Y-%m-%d")
 
-        if i == 0:  # if first month, only include values from that day of the month through the end of the month (e.g. if April 5th, don't include values from 4/1 - 4/4)
-            next_month = search_month + relativedelta(months=1)
-            last_day_of_month = (next_month.replace(day=1) - relativedelta(days=1)).day
-            start_date = search_month
-            end_date = search_month.replace(day=last_day_of_month)
-            monthly_amount = Item.objects.filter(po_date__range=(start_date, end_date)).count()
-            monthly_cost = Item.objects.filter(po_date__range=(start_date, end_date)).aggregate(Sum('total_cost'))['total_cost__sum']
-        elif i == num_months - 1:
-            start_date = search_month.replace(day=1)
-            end_date = search_month
-            monthly_amount = Item.objects.filter(po_date__range=(start_date, end_date)).count()
-            monthly_cost = Item.objects.filter(po_date__range=(start_date, end_date)).aggregate(Sum('total_cost'))['total_cost__sum']
-        else:
-            monthly_amount = Item.objects.filter(po_date__year=(search_month.year), po_date__month=(search_month.month)).count()
-            monthly_cost = Item.objects.filter(po_date__year=(search_month.year), po_date__month=(search_month.month)).aggregate(Sum('total_cost'))['total_cost__sum']
-        orders_by_month_keys.append(search_month.strftime("%B %Y"))
-        orders_by_month_values.append(monthly_amount)
-        cost_by_month_values.append(monthly_cost)
+        delta = relativedelta(end_date, start_date)
+        num_months = (delta.years * 12 + delta.months) + 1  # covers cases > 1yr (e.g. 12-month delta is 1 year and zero months)
 
-    # Get mfr stats
-    mfrs = Item.objects.filter(po_date__range=(start_date_as_datetime, end_date_as_datetime)).values('mfr').annotate(count=Count('mfr')).order_by("-count")
-    mfrs_dict = {mfr['mfr']: mfr['count'] for mfr in mfrs}
-    mfrs_keys = list(dict(mfrs_dict).keys())
-    mfrs_values = list(dict(mfrs_dict).values())
+        orders_by_month_keys = []
+        orders_by_month_values = []
+        cost_by_month_values = []
 
-    template = loader.get_template("core/order_details_advanced.html")
-    context = {
-        "form": form,
-        "start_date": start_date,
-        "end_date": end_date,
-        "lower_date_bound": lower_date_bound,
-        "upper_date_bound": upper_date_bound,
-        "orders_by_month_keys": json.dumps(orders_by_month_keys, ensure_ascii=False),
-        "orders_by_month_values": json.dumps(orders_by_month_values, ensure_ascii=False),
-        "total_orders_across_range": sum(orders_by_month_values),   # if 0, no values in range, so report on client
-        "cost_by_month_values": simplejson.dumps(cost_by_month_values, ensure_ascii=False, use_decimal=True),
-        "mfrs_keys": json.dumps(mfrs_keys, ensure_ascii=False).replace("'", "\\'"),
-        "mfrs_values": json.dumps(mfrs_values, ensure_ascii=False),
-    }
-    return HttpResponse(template.render(context, request))
+        for i in range(num_months):
+            search_month = start_date + relativedelta(months=i)
+            if i == 0:
+                next_month = search_month + relativedelta(months=1)
+                last_day = (next_month.replace(day=1) - relativedelta(days=1)).day
+                range_start = search_month
+                range_end = search_month.replace(day=last_day)
+            elif i == num_months - 1:
+                range_start = search_month.replace(day=1)
+                range_end = end_date
+            else:
+                range_start = search_month.replace(day=1)
+                next_month = search_month + relativedelta(months=1)
+                range_end = next_month.replace(day=1) - relativedelta(days=1)
+
+            queryset = Item.objects.filter(po_date__range=(range_start, range_end))
+            monthly_amount = queryset.count()
+            monthly_cost = queryset.aggregate(Sum('total_cost'))['total_cost__sum'] or 0
+
+            orders_by_month_keys.append(search_month.strftime("%B %Y"))
+            orders_by_month_values.append(monthly_amount)
+            cost_by_month_values.append(monthly_cost)
+
+        mfrs = Item.objects.filter(po_date__range=(start_date, end_date)).values('mfr').annotate(count=Count('mfr')).order_by("-count")
+        mfrs_dict = {m['mfr']: m['count'] for m in mfrs}
+
+        context.update({
+            "start_date": start_date_str,
+            "end_date": end_date_str,
+            "lower_date_bound": lower_date_bound,
+            "upper_date_bound": upper_date_bound,
+            "orders_by_month_keys": json.dumps(orders_by_month_keys, ensure_ascii=False),
+            "orders_by_month_values": json.dumps(orders_by_month_values, ensure_ascii=False),
+            "total_orders_across_range": sum(orders_by_month_values),
+            "cost_by_month_values": simplejson.dumps(cost_by_month_values, ensure_ascii=False, use_decimal=True),
+            "mfrs_keys": json.dumps(list(mfrs_dict.keys()), ensure_ascii=False).replace("'", "\\'"),
+            "mfrs_values": json.dumps(list(mfrs_dict.values()), ensure_ascii=False),
+        })
+        return context
