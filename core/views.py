@@ -10,7 +10,6 @@ from django.contrib import messages
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Count, Sum
 from django.http import HttpResponse
-from django.template import loader
 from django.utils.dateparse import parse_date
 from django.views.generic import ListView
 from django.views.generic.base import TemplateView
@@ -18,11 +17,9 @@ from djmoney.models.fields import MoneyFieldProxy
 from djmoney.money import Money
 from openpyxl.styles import NamedStyle
 
-from .forms import DateRangeForm
 from .models import Item
 
 
-# Create your views here.
 class HomePageView(TemplateView):
     template_name = "core/home.html"
 
@@ -53,6 +50,7 @@ class PaginationView(TemplateView):
         return context
     
 class OrderDetailsView(ListView):
+    """Provides basic table view of orders, selectable by date range."""
     model = Item
     template_name = "core/order_details.html"
     context_object_name = "orders"
@@ -98,6 +96,7 @@ class OrderDetailsView(ListView):
                 return 10
 
 def export_to_excel(request):
+    """Export selected date range transaction data to an Excel file."""
     workbook = openpyxl.Workbook()
     sheet = workbook.active
 
@@ -119,6 +118,7 @@ def export_to_excel(request):
 
     currency_style = NamedStyle(name="currency_style", number_format='"$"#,##0.00')
 
+    # Set appropriate timestamp
     for item in queryset:
         row = []
         for field in columns:
@@ -132,6 +132,7 @@ def export_to_excel(request):
 
         sheet.append(row)
     
+    # Apply dollar styling to money fields to match inputted Excel file.
     i = 0
     for field in Item._meta.fields:
         if (field.verbose_name not in excluded_fields and field.name not in excluded_fields):
@@ -154,6 +155,7 @@ def export_to_excel(request):
 
 
 class OrderDetailsAdvancedView(TemplateView):
+    """Provides graphs/visualizations of orders, selectable by date range."""
     template_name = "core/order_details_advanced.html"
 
     def get_default_dates(self):
@@ -176,6 +178,7 @@ class OrderDetailsAdvancedView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
     
+        # Get the start and end dates to use for querying
         start_date, end_date = self.get_dates_from_request()
         lower_date_bound = Item.objects.order_by("po_date").first().po_date.strftime("%Y-%m-%d")
         upper_date_bound = datetime.datetime.today().strftime("%Y-%m-%d")
@@ -190,6 +193,7 @@ class OrderDetailsAdvancedView(TemplateView):
         orders_by_month_values = []
         cost_by_month_values = []
 
+        # populate the corresponding lists with data corresponding to the date range
         for i in range(num_months):
             search_month = start_date + relativedelta(months=i)
             if i == 0:
