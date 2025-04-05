@@ -11,6 +11,7 @@ from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Count, Sum
 from django.http import HttpResponse
 from django.utils.dateparse import parse_date
+from django.utils import timezone
 from django.views.generic import ListView
 from django.views.generic.base import TemplateView
 from djmoney.models.fields import MoneyFieldProxy
@@ -58,25 +59,37 @@ class OrderDetailsView(ListView):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        start_date = self.request.GET.get("start_date")
-        end_date = self.request.GET.get("end_date")
+        start_date_str = self.request.GET.get("start_date")
+        end_date_str = self.request.GET.get("end_date")
 
-        if not start_date:
-            start_date = (datetime.datetime.today()-relativedelta(years=1)).strftime('%Y-%m-%d')
-        if not end_date:
-            end_date = datetime.datetime.today().strftime('%Y-%m-%d')
+        current_time = timezone.localtime(timezone.now())
+
+        if not start_date_str:
+            start_date = (current_time - relativedelta(years=1))
+            start_date_str = start_date.strftime("%Y-%m-%d")
+        else:
+            start_date = timezone.make_aware(datetime.datetime.combine(parse_date(start_date_str), datetime.time(0,0,0,0)))
+        if not end_date_str:
+            end_date = current_time
+            end_date_str = end_date.strftime("%Y-%m-%d")
+        else:
+            end_date = timezone.make_aware(datetime.datetime.combine(parse_date(end_date_str), datetime.time(23,59,59,999999)))
+        
+        # To include all orders based on the date, start date should start at 12 AM and end date should end at 11:59 PM
+        start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_date = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
 
         self.start_date = start_date
         self.end_date = end_date
         
-        return queryset.filter(po_date__range=[start_date, end_date])
+        return queryset.filter(po_date__range=[start_date, end_date]).order_by("po_date")
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         lower_date_bound = Item.objects.order_by('po_date').first().po_date.strftime("%Y-%m-%d")
-        upper_date_bound = datetime.datetime.today().strftime('%Y-%m-%d')
-        context['start_date'] = self.start_date
-        context['end_date'] = self.end_date
+        upper_date_bound = (timezone.localtime(timezone.now())).strftime('%Y-%m-%d')
+        context['start_date'] = self.start_date.strftime("%Y-%m-%d")
+        context['end_date'] = self.end_date.strftime("%Y-%m-%d")
         context['lower_date_bound'] = lower_date_bound
         context['upper_date_bound'] = upper_date_bound
         context["fields"] = [field.name for field in Item._meta.fields]
@@ -91,7 +104,7 @@ class OrderDetailsView(ListView):
             return int(per_page)
         except ValueError:
             if per_page == "All":
-                return Item.objects.count()
+                return Item.objects.order_by("po_date").count()
             else:
                 return 10
 
@@ -159,7 +172,7 @@ class OrderDetailsAdvancedView(TemplateView):
     template_name = "core/order_details_advanced.html"
 
     def get_default_dates(self):
-        end_date = datetime.datetime.today().date()
+        end_date = timezone.localtime(timezone.now())
         start_date = end_date - relativedelta(years=1)
         return start_date, end_date
 
@@ -167,12 +180,15 @@ class OrderDetailsAdvancedView(TemplateView):
         start_date_str = self.request.GET.get("start_date")
         end_date_str = self.request.GET.get("end_date")
 
-        start_date = parse_date(start_date_str) if start_date_str else None
-        end_date = parse_date(end_date_str) if end_date_str else None
+        # To include all orders based on the date, start date should start at 12 AM and end date should end at 11:59 PM
+        start_date = timezone.make_aware(datetime.datetime.combine(parse_date(start_date_str), datetime.time(0,0,0,0))) if start_date_str else None
+        end_date = timezone.make_aware(datetime.datetime.combine(parse_date(end_date_str), datetime.time(23,59,59,999999))) if end_date_str else None
 
         if not start_date or not end_date:
             start_date, end_date = self.get_default_dates()
         
+        start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_date = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
         return start_date, end_date
     
     def get_context_data(self, **kwargs):
@@ -181,7 +197,7 @@ class OrderDetailsAdvancedView(TemplateView):
         # Get the start and end dates to use for querying
         start_date, end_date = self.get_dates_from_request()
         lower_date_bound = Item.objects.order_by("po_date").first().po_date.strftime("%Y-%m-%d")
-        upper_date_bound = datetime.datetime.today().strftime("%Y-%m-%d")
+        upper_date_bound = datetime.datetime.now(zoneinfo.ZoneInfo("UTC")).strftime("%Y-%m-%d")
 
         start_date_str = start_date.strftime("%Y-%m-%d")
         end_date_str = end_date.strftime("%Y-%m-%d")
