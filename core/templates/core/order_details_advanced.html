@@ -67,6 +67,10 @@
                     type: 'linear',
                     position: 'left',
                     display: true,
+                    title: {
+                        text: "Order by Month",
+                        display: true
+                    }
                 },
                 'Cost By Month': {
                     type: 'linear',
@@ -79,6 +83,10 @@
                         callback: function(value, index, ticks) {
                             return '$' + Chart.Ticks.formatters.numeric.apply(this, [value, index, ticks]);
                         }
+                    },
+                    title: {
+                        text: "Cost by Month ($)",
+                        display: true
                     }
                 },
             }
@@ -123,7 +131,11 @@
             stacked: false,
             scales: {
                 y: {
-                    beginAtZero: true
+                    beginAtZero: true,
+                    title: {
+                        text: "Orders by Manufacturer",
+                        display: true
+                    },
                 }
             }
         },
