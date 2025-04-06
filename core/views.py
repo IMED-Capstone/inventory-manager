@@ -10,13 +10,13 @@ from django.contrib import messages
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Count, Sum
 from django.http import HttpResponse
-from django.utils.dateparse import parse_date
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 from django.views.generic import ListView
 from django.views.generic.base import TemplateView
 from djmoney.models.fields import MoneyFieldProxy
 from djmoney.money import Money
-from openpyxl.styles import NamedStyle, PatternFill, Font, Alignment, Border, Side
+from openpyxl.styles import Alignment, Border, Font, NamedStyle, PatternFill, Side
 
 from .models import Item
 
