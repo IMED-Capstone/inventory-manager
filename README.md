@@ -7,19 +7,47 @@ Django application for managing inventory in the UIC IR department.
     ```
     git clone https://github.com/IMED-Capstone/inventory-manager.git
     ```
-* Create virtual environment and install requirements
+* Create and activate virtual environment
 
     ```
     cd inventory-manager
-    python3 -m venv ./venv
-    python3 -m pip install -r requirements.txt
+    python -m venv ./venv
     ```
+
+    * Windows (PowerShell)
+        ```
+        .\venv\Scripts\Activate.ps1
+        ```
+    * MacOS/Linux
+        ```
+        source ./venv/bin/activate
+        ```
+    
+* Install requirements
+    ```
+    python -m pip install -r requirements.txt
+    ```
+
+* Create Django superuser
+    ```
+    python manage.py createsuperuser
+    ```
+    * follow the prompts to set admin user username and password
+
 * Run project
     * if using VSCode, just hit debug
     * otherwise:
         ```
         python3 manage.py runserver
         ```
+    
+* Navigate in browser to `127.0.0.1:8000`
+
+### Adding Data from Excel File
+* Navigate to the admin panel at ```127.0.0.1:8000/admin```
+* Log in with admin credentials set at the ```createsuperuser``` step
+* Click on `Core/Items`, then click the `Import Data` button in the top right
+* Follow the prompt to upload the file, then navigating to the `Core/Items` page should show populated data
 
 
 ## Current structure
