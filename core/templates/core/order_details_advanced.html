@@ -41,6 +41,9 @@
     <div class="chart-container">
         <canvas id="orders-by-mfr"></canvas>
     </div>
+    <div class="chart-container">
+        <canvas id="commonly-ordered-items"></canvas>
+    </div>
 </div>
 {% else %}
     <p> No orders found in the given range. </p>
@@ -145,6 +148,61 @@
                 {
                     label: 'Orders by Manufacturer',
                     data: JSON.parse('{{ mfrs_values|safe }}'),
+                }
+            ]
+        }
+    });
+
+
+
+    var commonlyOrderedItemsCtx = document.getElementById('commonly-ordered-items')
+    var commonlyOrderedItemsChart = new Chart(commonlyOrderedItemsCtx, {
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top'
+                },
+                title: {
+                    display: true,
+                    text: 'Commonly Ordered Items'
+                }
+            },
+            stacked: false,
+            scales: {
+                "Commonly Ordered Items": {
+                    beginAtZero: true,
+                    title: {
+                        text: "Commonly Ordered Items",
+                        display: true
+                    },
+                },
+                "Pareto": {
+                    position: "right",
+                    title: {
+                        text: "Cumulative Percentage",
+                        display: true
+                    },
+                    grid: {
+                        drawOnChartArea: false,
+                    },
+                },
+            }
+        },
+        data: {
+            labels: JSON.parse('{{ commonly_ordered_keys|safe }}'),
+            datasets: [
+                {
+                    type: 'bar',
+                    label: "Commonly Ordered Items",
+                    yAxisID: "Commonly Ordered Items",
+                    data: JSON.parse('{{ commonly_ordered_values|safe }}'),
+                },
+                {
+                    type: 'line',
+                    label: 'Cumulative Percentage',
+                    yAxisID: "Pareto",
+                    data: JSON.parse('{{ commonly_ordered_values_pareto|safe }}'),
                 }
             ]
         }
