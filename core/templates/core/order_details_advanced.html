@@ -41,6 +41,9 @@
     <div class="chart-container">
         <canvas id="orders-by-mfr"></canvas>
     </div>
+    <div class="chart-container">
+        <canvas id="commonly-ordered-items"></canvas>
+    </div>
 </div>
 {% else %}
     <p> No orders found in the given range. </p>
@@ -116,7 +119,6 @@
 
     var ordersByMfrCtx = document.getElementById('orders-by-mfr')
     var ordersByMfrChart = new Chart(ordersByMfrCtx, {
-        type: 'bar',
         options: {
             responsive: true,
             plugins: {
@@ -125,26 +127,103 @@
                 },
                 title: {
                     display: true,
-                    text: 'Orders by Manufacturer'
+                    text: 'Orders by Manufacturer (Top 50)'
                 }
             },
             stacked: false,
             scales: {
-                y: {
+                "Orders by Manufacturer": {
                     beginAtZero: true,
                     title: {
                         text: "Orders by Manufacturer",
                         display: true
                     },
-                }
+                },
+                "Pareto": {
+                    position: "right",
+                    title: {
+                        text: "Cumulative Percentage",
+                        display: true
+                    },
+                    grid: {
+                        drawOnChartArea: false,
+                    },
+                },
             }
         },
         data: {
             labels: JSON.parse('{{ mfrs_keys|safe }}'),
             datasets: [
                 {
+                    type: "bar",
                     label: 'Orders by Manufacturer',
+                    yAxisID: "Orders by Manufacturer",
+                    backgroundColor: 'rgba(75, 192, 192, 0.5)',
                     data: JSON.parse('{{ mfrs_values|safe }}'),
+                },
+                {
+                    type: 'line',
+                    label: 'Cumulative Percentage',
+                    yAxisID: "Pareto",
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    data: JSON.parse('{{ mfrs_pareto|safe }}'),
+                }
+            ]
+        }
+    });
+
+
+
+    var commonlyOrderedItemsCtx = document.getElementById('commonly-ordered-items')
+    var commonlyOrderedItemsChart = new Chart(commonlyOrderedItemsCtx, {
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top'
+                },
+                title: {
+                    display: true,
+                    text: 'Commonly Ordered Items (Top 50)'
+                }
+            },
+            stacked: false,
+            scales: {
+                "Commonly Ordered Items": {
+                    beginAtZero: true,
+                    title: {
+                        text: "Commonly Ordered Items",
+                        display: true
+                    },
+                },
+                "Pareto": {
+                    position: "right",
+                    title: {
+                        text: "Cumulative Percentage",
+                        display: true
+                    },
+                    grid: {
+                        drawOnChartArea: false,
+                    },
+                },
+            }
+        },
+        data: {
+            labels: JSON.parse('{{ commonly_ordered_keys|safe }}'),
+            datasets: [
+                {
+                    type: 'bar',
+                    label: "Commonly Ordered Items",
+                    yAxisID: "Commonly Ordered Items",
+                    backgroundColor: 'rgba(153, 102, 255, 0.5)',
+                    data: JSON.parse('{{ commonly_ordered_values|safe }}'),
+                },
+                {
+                    type: 'line',
+                    label: 'Cumulative Percentage',
+                    yAxisID: "Pareto",
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    data: JSON.parse('{{ commonly_ordered_values_pareto|safe }}'),
                 }
             ]
         }
