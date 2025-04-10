@@ -28,6 +28,11 @@ Django application for managing inventory in the UIC IR department.
     python -m pip install -r requirements.txt
     ```
 
+* Run DB migrations
+    ```
+    python manage.py migrate
+    ```
+
 * Create Django superuser
     ```
     python manage.py createsuperuser
@@ -38,7 +43,7 @@ Django application for managing inventory in the UIC IR department.
     * if using VSCode, just hit debug
     * otherwise:
         ```
-        python3 manage.py runserver
+        python manage.py runserver
         ```
     
 * Navigate in browser to `127.0.0.1:8000`
