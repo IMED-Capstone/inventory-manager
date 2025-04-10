@@ -248,8 +248,17 @@ class OrderDetailsAdvancedView(TemplateView):
             orders_by_month_values.append(monthly_amount)
             cost_by_month_values.append(monthly_cost)
 
-        mfrs = Item.objects.filter(po_date__range=(start_date, end_date)).values('mfr').annotate(count=Count('mfr')).order_by("-count")
-        mfrs_dict = {m['mfr']: m['count'] for m in mfrs}
+        mfrs = Item.objects.filter(po_date__range=(start_date, end_date)).values('mfr').annotate(count=Count('mfr')).order_by("-count")[:50]
+        mfrs_dict = {}
+        mfrs_pareto_dict = {}
+        total_sum = 0
+        cumulative_sum = 0
+        for m in mfrs:
+            total_sum += m["count"]
+            mfrs_dict[m["mfr"]] = m["count"]
+        for m in mfrs:
+            cumulative_sum += m["count"]
+            mfrs_pareto_dict[m["mfr"]] = (cumulative_sum/total_sum) * 100
 
         commonly_ordered_items = Item.objects.filter(po_date__range=(start_date, end_date)).values('item').annotate(count=Count('item')).order_by("-count")[:50]
         commonly_ordered_items_dict = {}
@@ -274,6 +283,7 @@ class OrderDetailsAdvancedView(TemplateView):
             "cost_by_month_values": simplejson.dumps(cost_by_month_values, ensure_ascii=False, use_decimal=True),
             "mfrs_keys": json.dumps(list(mfrs_dict.keys()), ensure_ascii=False).replace("'", "\\'"),
             "mfrs_values": json.dumps(list(mfrs_dict.values()), ensure_ascii=False),
+            "mfrs_pareto": json.dumps(list(mfrs_pareto_dict.values()), ensure_ascii=False),
             "commonly_ordered_keys": json.dumps(list(commonly_ordered_items_dict.keys()), ensure_ascii=False),
             "commonly_ordered_values": json.dumps(list(commonly_ordered_items_dict.values()), ensure_ascii=False),
             "commonly_ordered_values_pareto": json.dumps(list(commonly_ordered_items_pareto_dict.values()), ensure_ascii=False),
