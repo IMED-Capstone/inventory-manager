@@ -24,10 +24,10 @@
             </div>
             <div class="col-md-4">
                 <label for="category" class="form-label">Item:</label>
-                <select name="category" id="category" class="form-select">
+                <select name="category[]" id="category" class="form-select" multiple>
                     <option value="">All</option>
                     {% for item_no, item_descr in all_items.items %}
-                    <option value="{{ item_no }}" {% if item_no == selected_item_no %}selected{% endif %}>
+                    <option value="{{ item_no }}" {% if item_no in selected_item_no %}selected{% endif %}>
                         {{ item_descr }}
                     </option>
                     {% endfor %}
