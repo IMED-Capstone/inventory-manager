@@ -214,6 +214,17 @@ class OrderDetailsAdvancedView(TemplateView):
         lower_date_bound = Item.objects.order_by("po_date").first().po_date.strftime("%Y-%m-%d")
         upper_date_bound = datetime.datetime.now(zoneinfo.ZoneInfo("UTC")).strftime("%Y-%m-%d")
 
+        item_no = self.request.GET.get("category")
+        selected_item_no = ""
+        selected_item = None
+
+        qset = Item.objects.all().order_by("descr")
+        all_items = {item: descr for item, descr in qset.values_list("item", "descr")}
+        
+        if item_no:
+            selected_item_no = item_no
+            selected_item = Item.objects.filter(item=selected_item_no).first().item
+
         start_date_str = start_date.strftime("%Y-%m-%d")
         end_date_str = end_date.strftime("%Y-%m-%d")
 
@@ -240,7 +251,11 @@ class OrderDetailsAdvancedView(TemplateView):
                 next_month = search_month + relativedelta(months=1)
                 range_end = next_month.replace(day=1) - relativedelta(days=1)
 
-            queryset = Item.objects.filter(po_date__range=(range_start, range_end))
+            if not selected_item:
+                queryset = Item.objects.filter(po_date__range=(range_start, range_end))
+            else:
+                queryset = Item.objects.filter(po_date__range=(range_start, range_end), item=selected_item)
+
             monthly_amount = queryset.count()
             monthly_cost = queryset.aggregate(Sum('total_cost'))['total_cost__sum'] or 0
 
@@ -248,7 +263,10 @@ class OrderDetailsAdvancedView(TemplateView):
             orders_by_month_values.append(monthly_amount)
             cost_by_month_values.append(monthly_cost)
 
-        mfrs = Item.objects.filter(po_date__range=(start_date, end_date)).values('mfr').annotate(count=Count('mfr')).order_by("-count")[:50]
+        if not selected_item:
+            mfrs = Item.objects.filter(po_date__range=(start_date, end_date)).values('mfr').annotate(count=Count('mfr')).order_by("-count")[:50]
+        else:
+            mfrs = Item.objects.filter(po_date__range=(start_date, end_date), item=selected_item).values('mfr').annotate(count=Count('mfr')).order_by("-count")[:50]
         mfrs_dict = {}
         mfrs_pareto_dict = {}
         total_sum = 0
@@ -287,5 +305,7 @@ class OrderDetailsAdvancedView(TemplateView):
             "commonly_ordered_keys": json.dumps(list(commonly_ordered_items_dict.keys()), ensure_ascii=False),
             "commonly_ordered_values": json.dumps(list(commonly_ordered_items_dict.values()), ensure_ascii=False),
             "commonly_ordered_values_pareto": json.dumps(list(commonly_ordered_items_pareto_dict.values()), ensure_ascii=False),
+            "selected_item_no": selected_item,
+            "all_items": all_items,
         })
         return context
