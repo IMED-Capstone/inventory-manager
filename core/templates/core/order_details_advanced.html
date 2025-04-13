@@ -22,11 +22,21 @@
                        min="{{ lower_date_bound }}" max="{{ upper_date_bound }}"
                        class="form-control">
             </div>
-        </div>
+            <div class="col-md-4">
+                <label for="category" class="form-label">Item:</label>
+                <select name="category[]" id="category" class="form-select" multiple>
+                    <option value="">All</option>
+                    {% for item_no, item_descr in all_items.items %}
+                    <option value="{{ item_no }}" {% if item_no in selected_item_no %}selected{% endif %}>
+                        {{ item_descr }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
 
         <div class="row mb-3">
             <div class="col-md-6 d-flex gap-2">
-                <button type="submit" class="btn btn-primary w-50">Filter</button>
+                <button type="submit" class="btn btn-primary w-50" id="filter-button">Filter</button>
             </div>
         </div>
     </form>
@@ -41,9 +51,11 @@
     <div class="chart-container">
         <canvas id="orders-by-mfr"></canvas>
     </div>
+    {% if not selected_item_no %}
     <div class="chart-container">
         <canvas id="commonly-ordered-items"></canvas>
     </div>
+    {% endif %}
 </div>
 {% else %}
     <p> No orders found in the given range. </p>
@@ -148,6 +160,8 @@
                     grid: {
                         drawOnChartArea: false,
                     },
+                    min: 0,
+                    max: 100,
                 },
             }
         },
@@ -205,6 +219,8 @@
                     grid: {
                         drawOnChartArea: false,
                     },
+                    min: 0,
+                    max: 100,
                 },
             }
         },
