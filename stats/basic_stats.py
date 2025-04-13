@@ -1,12 +1,11 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-from xgboost import XGBRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 import numpy as np
-
+from sklearn.ensemble import RandomForestRegressor
 #there are receving quantityes as - and their associated sum is in () so does that mean that they are returns?
 #there are a few items from the year 2022-2023, since we are getting this based on the PO_DATE, should we remove those?
-
+#TODO ##NEED TO ADD TO REQUIRMENTS scikit-learn, pandas, matplotlib, numpy
 
 
 # Read the Excel file
@@ -62,7 +61,7 @@ def item_monthly_stats(df,item_column, cost_column, date_column):
 
 monthly_orders = monthly_orders(df)
 monthly_stats = item_monthly_stats(df,'DESCR', 'TOTAL COST', 'PO_DATE')
-print(monthly_stats)
+# print(monthly_stats)
 
 def clean_data(df):
     """
@@ -157,10 +156,10 @@ def order_forecasting(df,date):
     monthly_orders['Month_num'] = monthly_orders['Month'].dt.month
     monthly_orders['Year'] = monthly_orders['Month'].dt.year
     # Lag features
-    monthly_orders['Lag_1'] = monthly_orders.groupby('MFR CAT')['QTY_RECEIVED'].shift(1)
-    monthly_orders['Lag_2'] = monthly_orders.groupby('MFR CAT')['QTY_RECEIVED'].shift(2)
+    monthly_orders['Lag_1'] = monthly_orders.groupby('MFR CAT')['RECV QTY'].shift(1)
+    monthly_orders['Lag_2'] = monthly_orders.groupby('MFR CAT')['RECV QTY'].shift(2)
     # Rolling average
-    monthly_orders['Rolling_mean_3'] = monthly_orders.groupby('MFR CAT')['QTY_RECEIVED'].shift(1).rolling(window=3).mean()
+    monthly_orders['Rolling_mean_3'] = monthly_orders.groupby('MFR CAT')['RECV QTY'].shift(1).rolling(window=3).mean()
     # Drop NaNs due to lagging
     monthly_orders.dropna(inplace=True)
     train = monthly_orders[monthly_orders['Month'] < date]
@@ -168,7 +167,7 @@ def order_forecasting(df,date):
     return train,test
 
 
-train,test = (order_forecasting(df), '05-01-2024',)
+train,test = (order_forecasting (df, '09-01-2024')) #split 80/20 for train and test. do not split randomly so i split 80/20 by the first 9 months (train) and the last 3 months to train
 
 features = ['Month_num', 'Year', 'Lag_1', 'Lag_2', 'Rolling_mean_3']
 X_train = train[features]
@@ -178,15 +177,19 @@ X_test = test[features]
 y_test = test['RECV QTY']
 
 
-model = XGBRegressor(n_estimators=200, learning_rate=0.1)
+
+model = RandomForestRegressor(n_estimators=100, random_state=42)
 model.fit(X_train, y_train)
 
-# Predictions
 predictions = model.predict(X_test)
 
-# Evaluate model
 mae = mean_absolute_error(y_test, predictions)
 rmse = np.sqrt(mean_squared_error(y_test, predictions))
-print(f'Mean Absolute Error: {mae}')
-print(f'Root Mean Squared Error: {rmse}')
+print(f'MAE: {mae:.2f}, RMSE: {rmse:.2f}')
 
+
+
+#Mean Absolute Error #This tells you the average absolute difference between your model’s prediction and the actual quantity received.
+#Root Mean Squared Error This penalizes larger errors more heavily (because it squares the differences before averaging).
+
+#In your case: The typical prediction error is around 7.37 units, but this metric gives more weight to larger errors than MAE.
