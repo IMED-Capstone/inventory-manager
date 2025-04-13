@@ -1,13 +1,12 @@
+import pandas as pd
 from django.contrib import admin
 from django.http import HttpResponseRedirect
-from django.utils.html import format_html
 from django.shortcuts import render
 from django.urls import path, reverse
-import pandas as pd
 
 from .forms import ExcelUploadForm
-
 from .models import Item
+
 
 class ItemAdmin(admin.ModelAdmin):
     def changelist_view(self, request, extra_context=None):
@@ -32,7 +31,6 @@ class ItemAdmin(admin.ModelAdmin):
                 file = request.FILES["excel_file"]
                 df = pd.read_excel(file, engine="openpyxl")
                 for _, row in df.iterrows():
-                    print(row)
                     Item.objects.create(
                         item=row["ITEM"],
                         mfr=row["MFR"],
@@ -46,7 +44,7 @@ class ItemAdmin(admin.ModelAdmin):
                         total_cost=row["TOTAL COST"],
                         expr1010=row["Expr1010"],
                         po_no=row["PO_NO"],
-                        po_date=row["PO_DATE"],
+                        po_date=row["PO_DATE"].tz_localize(tz="America/Chicago").tz_convert("UTC"),
                         vend_code=row["VEND_CODE"],
                         item_no=row["ITEM_NO"],
                         dbo_vend_name=row["dbo_VEND.NAME"],
@@ -59,6 +57,9 @@ class ItemAdmin(admin.ModelAdmin):
         
 
         return render(request, "admin/import_excel.html", {"form": form, "title": "Import Excel"})
+    
+    # Select fields to display on the admin panel
+    list_display = ['descr', 'po_date']
 
 # Register your models here.
 admin.site.register(Item, ItemAdmin)

@@ -1,0 +1,242 @@
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+{% extends 'core/base.html' %}
+{% load django_bootstrap5 %}
+
+{% block content %}
+
+<div id="DateHeader">
+    <br />
+    <h4>Current range:</h4>
+    <form method="get" class="container">
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <label for="start" class="form-label">Start Date:</label>
+                <input type="date" name="start_date" id="start" value="{{ start_date }}"
+                       min="{{ lower_date_bound }}" max="{{ upper_date_bound }}"
+                       class="form-control">
+            </div>
+            <div class="col-md-4">
+                <label for="end" class="form-label">End Date:</label>
+                <input type="date" name="end_date" id="end" value="{{ end_date }}"
+                       min="{{ lower_date_bound }}" max="{{ upper_date_bound }}"
+                       class="form-control">
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-6 d-flex gap-2">
+                <button type="submit" class="btn btn-primary w-50">Filter</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+
+{%if total_orders_across_range > 0 %}
+<div id="ChartContainer">
+    <div class="chart-container">
+        <canvas id="orders-by-month"></canvas>
+    </div>
+    <div class="chart-container">
+        <canvas id="orders-by-mfr"></canvas>
+    </div>
+    <div class="chart-container">
+        <canvas id="commonly-ordered-items"></canvas>
+    </div>
+</div>
+{% else %}
+    <p> No orders found in the given range. </p>
+{% endif %}
+
+<script>
+    var ordersByMonthCtx = document.getElementById('orders-by-month')
+    var ordersByMonthChart = new Chart(ordersByMonthCtx, {
+        type: 'bar',
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top'
+                },
+                title: {
+                    display: true,
+                    text: 'Orders and Cost by Month'
+                }
+            },
+            stacked: false,
+            scales: {
+                'Orders By Month': {
+                    type: 'linear',
+                    position: 'left',
+                    display: true,
+                    title: {
+                        text: "Order by Month",
+                        display: true
+                    }
+                },
+                'Cost By Month': {
+                    type: 'linear',
+                    position: 'right',
+                    display: true,
+                    grid: {
+                        drawOnChartArea: false,
+                    },
+                    ticks: {
+                        callback: function(value, index, ticks) {
+                            return '$' + Chart.Ticks.formatters.numeric.apply(this, [value, index, ticks]);
+                        }
+                    },
+                    title: {
+                        text: "Cost by Month ($)",
+                        display: true
+                    }
+                },
+            }
+        },
+        data: {
+            labels: JSON.parse('{{ orders_by_month_keys|safe }}'),
+            datasets: [
+                {
+                    label: 'Orders By Month',
+                    yAxisID: 'Orders By Month',
+                    data: JSON.parse('{{ orders_by_month_values|safe }}'),
+                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Cost By Month',
+                    yAxisID: 'Cost By Month',
+                    data: JSON.parse('{{ cost_by_month_values|safe }}'),
+                    backgroundColor: 'rgba(255, 104, 0, 0.5)',
+                    borderColor: 'rgba(255, 104, 0, 0.5)',
+                    borderWidth: 1
+                }
+            ]
+        }
+    });
+
+    var ordersByMfrCtx = document.getElementById('orders-by-mfr')
+    var ordersByMfrChart = new Chart(ordersByMfrCtx, {
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top'
+                },
+                title: {
+                    display: true,
+                    text: 'Orders by Manufacturer (Top 50)'
+                }
+            },
+            stacked: false,
+            scales: {
+                "Orders by Manufacturer": {
+                    beginAtZero: true,
+                    title: {
+                        text: "Orders by Manufacturer",
+                        display: true
+                    },
+                },
+                "Pareto": {
+                    position: "right",
+                    title: {
+                        text: "Cumulative Percentage",
+                        display: true
+                    },
+                    grid: {
+                        drawOnChartArea: false,
+                    },
+                },
+            }
+        },
+        data: {
+            labels: JSON.parse('{{ mfrs_keys|safe }}'),
+            datasets: [
+                {
+                    type: "bar",
+                    label: 'Orders by Manufacturer',
+                    yAxisID: "Orders by Manufacturer",
+                    backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                    data: JSON.parse('{{ mfrs_values|safe }}'),
+                },
+                {
+                    type: 'line',
+                    label: 'Cumulative Percentage',
+                    yAxisID: "Pareto",
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    data: JSON.parse('{{ mfrs_pareto|safe }}'),
+                }
+            ]
+        }
+    });
+
+
+
+    var commonlyOrderedItemsCtx = document.getElementById('commonly-ordered-items')
+    var commonlyOrderedItemsChart = new Chart(commonlyOrderedItemsCtx, {
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top'
+                },
+                title: {
+                    display: true,
+                    text: 'Commonly Ordered Items (Top 50)'
+                }
+            },
+            stacked: false,
+            scales: {
+                "Commonly Ordered Items": {
+                    beginAtZero: true,
+                    title: {
+                        text: "Commonly Ordered Items",
+                        display: true
+                    },
+                },
+                "Pareto": {
+                    position: "right",
+                    title: {
+                        text: "Cumulative Percentage",
+                        display: true
+                    },
+                    grid: {
+                        drawOnChartArea: false,
+                    },
+                },
+            }
+        },
+        data: {
+            labels: JSON.parse('{{ commonly_ordered_keys|safe }}'),
+            datasets: [
+                {
+                    type: 'bar',
+                    label: "Commonly Ordered Items",
+                    yAxisID: "Commonly Ordered Items",
+                    backgroundColor: 'rgba(153, 102, 255, 0.5)',
+                    data: JSON.parse('{{ commonly_ordered_values|safe }}'),
+                },
+                {
+                    type: 'line',
+                    label: 'Cumulative Percentage',
+                    yAxisID: "Pareto",
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    data: JSON.parse('{{ commonly_ordered_values_pareto|safe }}'),
+                }
+            ]
+        }
+    });
+</script>
+
+<style>
+    input,
+    label {
+    margin: 0.4rem 0;
+    }
+
+</style>
+
+{% endblock %}
+
