@@ -28,6 +28,8 @@ Django application for managing inventory in the UIC IR department.
     python -m pip install -r requirements.txt
     ```
 
+* Create `data` folder in project root if it does not exist. This is where the DB will be stored and the volume used by the Docker container
+
 * Run DB migrations
     ```
     python manage.py migrate
