@@ -28,6 +28,8 @@ Django application for managing inventory in the UIC IR department.
     python -m pip install -r requirements.txt
     ```
 
+* Create `data` folder in project root if it does not exist. This is where the DB will be stored and the volume used by the Docker container
+
 * Run DB migrations
     ```
     python manage.py migrate
@@ -40,11 +42,20 @@ Django application for managing inventory in the UIC IR department.
     * follow the prompts to set admin user username and password
 
 * Run project
-    * if using VSCode, just hit debug
-    * otherwise:
-        ```
-        python manage.py runserver
-        ```
+    * Bare-metal (directly on PC)
+        * if using VSCode, just hit debug
+        * otherwise:
+            ```
+            python manage.py runserver
+            ```
+    * Docker
+        * Ensure Docker and docker compose are installed (note: Windows requires installation of Docker Desktop, which includes Docker engine and docker compose)
+        * Build and run the docker container. Navigate to the root level directory of the project and enter the following commands:
+            ```
+            docker build
+            docker compose up -d
+            ```
+            * The `-d` flag runs in detached mode in the background. To see output on the terminal, simply remove `-d` from the `up` command.
     
 * Navigate in browser to `127.0.0.1:8000`
 
