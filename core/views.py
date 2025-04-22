@@ -57,7 +57,7 @@ class OrderDetailsView(ListView):
     context_object_name = "orders"
     paginate_by = 10
 
-    def get_queryset(self):
+    def get_queryset(self, included_fields=None):
         queryset = super().get_queryset()
         start_date_str = self.request.GET.get("start_date")
         end_date_str = self.request.GET.get("end_date")
@@ -82,20 +82,26 @@ class OrderDetailsView(ListView):
         self.start_date = start_date
         self.end_date = end_date
         
-        return queryset.filter(po_date__range=[start_date, end_date]).order_by("-po_date")
+        if not included_fields:
+            return queryset.filter(po_date__range=[start_date, end_date]).order_by("-po_date")
+        else:
+            return queryset.filter(po_date__range=[start_date, end_date]).only(*included_fields).order_by("-po_date")
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         lower_date_bound = Item.objects.order_by('po_date').first().po_date.strftime("%Y-%m-%d")
         upper_date_bound = (timezone.localtime(timezone.now())).strftime('%Y-%m-%d')
+        all_fields = [field.name for field in Item._meta.fields]
+        excluded_fields = ["id", "price_currency", "total_cost_currency", "item_no", "dbo_vend_name", "expr1010"]
+        included_fields = [field for field in all_fields if field not in excluded_fields]
         context['start_date'] = self.start_date.strftime("%Y-%m-%d")
         context['end_date'] = self.end_date.strftime("%Y-%m-%d")
         context['lower_date_bound'] = lower_date_bound
         context['upper_date_bound'] = upper_date_bound
-        context["fields"] = [field.name for field in Item._meta.fields]
+        context["fields"] = included_fields
         context['per_page'] = self.request.GET.get('per_page', self.paginate_by)
         context['per_page_options'] = [5, 10, 25, 50, 100, "All"]
-        context['orders_count'] = self.get_queryset().count()
+        context['orders_count'] = self.get_queryset(included_fields).count()
         return context
     
     def get_paginate_by(self, queryset):
