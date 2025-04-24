@@ -10,11 +10,20 @@
     <h4>Current range:</h4>
     <form method="get" class="container">
         <div class="row mb-3">
-            <div class="col-md-4">
-                <label for="start" class="form-label">Start Date:</label>
-                <input type="date" name="start_date" id="start" value="{{ start_date }}"
-                       min="{{ lower_date_bound }}" max="{{ upper_date_bound }}"
-                       class="form-control">
+            <div class="col">
+                <div class="col">
+                    <label for="start" class="form-label">Start Date:</label>
+                    <input type="date" name="start_date" id="start" value="{{ start_date }}"
+                        min="{{ lower_date_bound }}" max="{{ upper_date_bound }}"
+                        class="form-control">
+                </div>
+                <div class="col">
+                    <label for="quarter" class="form-label">Quarter:</label>
+                    <select name="quarter" id="quarter" class="form-select">
+                        <option value="Placeholder 1">Placeholder 1</option>
+                        <option value="Placeholder 2">Placeholder 2</option>
+                    </select>
+                </div>
             </div>
             <div class="col-md-4">
                 <label for="end" class="form-label">End Date:</label>
@@ -34,7 +43,7 @@
                 </select>
             </div>
 
-        <div class="row mb-3">
+        <div class="row mb-3 mt-3">
             <div class="col-md-6 d-flex gap-2">
                 <button type="submit" class="btn btn-primary w-50" id="filter-button">Filter</button>
             </div>
