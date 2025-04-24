@@ -20,8 +20,12 @@
                 <div class="col">
                     <label for="quarter" class="form-label">Quarter:</label>
                     <select name="quarter" id="quarter" class="form-select">
-                        <option value="Placeholder 1">Placeholder 1</option>
-                        <option value="Placeholder 2">Placeholder 2</option>
+                        <option value="">---</option>
+                        {% for quarter in quarters_list %}
+                            <option value="{{ quarter }}">
+                                {{ quarter }}
+                            </option>
+                        {% endfor %}
                     </select>
                 </div>
             </div>

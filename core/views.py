@@ -192,6 +192,15 @@ class OrderDetailsAdvancedView(TemplateView):
     """Provides graphs/visualizations of orders, selectable by date range."""
     template_name = "core/order_details_advanced.html"
 
+    def get_quarters_list(self) -> list:
+        newest_item_date = Item.objects.all().order_by("-po_date").first().po_date
+        oldest_item_date = Item.objects.all().order_by("po_date").first().po_date
+
+        delta = relativedelta(newest_item_date, oldest_item_date)
+        result =  [(oldest_item_date + relativedelta(months=i)).strftime( '%B %Y')\
+                                    for i in range(0, delta.years * 12 + delta.months + 1, 3)]
+        return result
+
     def get_default_dates(self):
         end_date = timezone.localtime(timezone.now())
         start_date = end_date - relativedelta(years=1)
@@ -200,6 +209,7 @@ class OrderDetailsAdvancedView(TemplateView):
     def get_dates_from_request(self):
         start_date_str = self.request.GET.get("start_date")
         end_date_str = self.request.GET.get("end_date")
+        # quarter_str = self.request.GET.get("quarter")
 
         # To include all orders based on the date, start date should start at 12 AM and end date should end at 11:59 PM
         start_date = timezone.make_aware(datetime.datetime.combine(parse_date(start_date_str), datetime.time(0,0,0,0))) if start_date_str else None
@@ -321,5 +331,6 @@ class OrderDetailsAdvancedView(TemplateView):
             "commonly_ordered_values_pareto": json.dumps(list(commonly_ordered_items_pareto_dict.values()), ensure_ascii=False),
             "selected_item_no": selected_item,
             "all_items": all_items,
+            "quarters_list": self.get_quarters_list(),
         })
         return context
