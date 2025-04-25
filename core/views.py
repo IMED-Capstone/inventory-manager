@@ -319,6 +319,12 @@ class OrderDetailsAdvancedView(TemplateView):
         except TypeError:
             if not selected_item:
                 selected_item = ""
+        
+        quarters_dict = {}
+        for quarter in self.get_quarters_list():
+            quarter_date_obj = datetime.datetime.strptime(quarter, "%B %Y")
+            quarter_date = (quarter_date_obj.month - 1) // 3 + 1
+            quarters_dict[quarter] = f"Q{quarter_date} {quarter_date_obj.year}"
 
         context.update({
             "start_date": start_date_str,
@@ -337,7 +343,7 @@ class OrderDetailsAdvancedView(TemplateView):
             "commonly_ordered_values_pareto": json.dumps(list(commonly_ordered_items_pareto_dict.values()), ensure_ascii=False),
             "selected_item_no": selected_item,
             "all_items": all_items,
-            "quarters_list": self.get_quarters_list(),
+            "all_quarters": quarters_dict,
             "selected_quarter": self.quarter_str,
         })
         return context

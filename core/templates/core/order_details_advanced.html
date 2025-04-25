@@ -21,9 +21,9 @@
                     <label for="quarter" class="form-label">Quarter:</label>
                     <select name="quarter" id="quarter" class="form-select">
                         <option value="">---</option>
-                        {% for quarter in quarters_list %}
+                        {% for quarter, quarter_display in all_quarters.items %}
                             <option value="{{ quarter }}" {% if quarter in selected_quarter %}selected{% endif %}>
-                                {{ quarter }}
+                                {{ quarter_display }}
                             </option>
                         {% endfor %}
                     </select>
