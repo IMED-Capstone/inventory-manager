@@ -207,13 +207,19 @@ class OrderDetailsAdvancedView(TemplateView):
         return start_date, end_date
 
     def get_dates_from_request(self):
-        start_date_str = self.request.GET.get("start_date")
-        end_date_str = self.request.GET.get("end_date")
-        # quarter_str = self.request.GET.get("quarter")
+        quarter_str = self.request.GET.get("quarter")
+        if quarter_str:
+            start_date = timezone.make_aware(datetime.datetime.combine(datetime.datetime.strptime(quarter_str, "%B %Y"), datetime.time(0,0,0,0)))
+            end_date = timezone.make_aware(datetime.datetime.combine(start_date + relativedelta(months=3), datetime.time(23,59,59,999999)))
+        else:
+            start_date_str = self.request.GET.get("start_date")
+            end_date_str = self.request.GET.get("end_date")
 
-        # To include all orders based on the date, start date should start at 12 AM and end date should end at 11:59 PM
-        start_date = timezone.make_aware(datetime.datetime.combine(parse_date(start_date_str), datetime.time(0,0,0,0))) if start_date_str else None
-        end_date = timezone.make_aware(datetime.datetime.combine(parse_date(end_date_str), datetime.time(23,59,59,999999))) if end_date_str else None
+            # To include all orders based on the date, start date should start at 12 AM and end date should end at 11:59 PM
+            start_date = timezone.make_aware(datetime.datetime.combine(parse_date(start_date_str), datetime.time(0,0,0,0))) if start_date_str else None
+            end_date = timezone.make_aware(datetime.datetime.combine(parse_date(end_date_str), datetime.time(23,59,59,999999))) if end_date_str else None
+
+        self.quarter_str = self.request.GET.get("quarter")
 
         if not start_date or not end_date:
             start_date, end_date = self.get_default_dates()
@@ -332,5 +338,6 @@ class OrderDetailsAdvancedView(TemplateView):
             "selected_item_no": selected_item,
             "all_items": all_items,
             "quarters_list": self.get_quarters_list(),
+            "selected_quarter": self.quarter_str,
         })
         return context

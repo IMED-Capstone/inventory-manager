@@ -22,7 +22,7 @@
                     <select name="quarter" id="quarter" class="form-select">
                         <option value="">---</option>
                         {% for quarter in quarters_list %}
-                            <option value="{{ quarter }}">
+                            <option value="{{ quarter }}" {% if quarter in selected_quarter %}selected{% endif %}>
                                 {{ quarter }}
                             </option>
                         {% endfor %}
@@ -257,6 +257,10 @@
             ]
         }
     });
+
+var quarterSelect = document.getElementById("quarter");
+document.getElementById("start").addEventListener("input", (event) => quarterSelect.selectedIndex = 0)
+document.getElementById("end").addEventListener("input", (event) => quarterSelect.selectedIndex = 0)
 </script>
 
 <style>
