@@ -9,6 +9,7 @@ from dateutil.relativedelta import relativedelta
 from django.contrib import messages
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Count, Sum
+from django.db.models.functions import TruncMonth, TruncQuarter
 from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.dateparse import parse_date
@@ -192,24 +193,43 @@ class OrderDetailsAdvancedView(TemplateView):
     """Provides graphs/visualizations of orders, selectable by date range."""
     template_name = "core/order_details_advanced.html"
 
+    def get_quarters_list(self) -> list:
+        newest_item_date = Item.objects.all().order_by("-po_date").first().po_date
+        oldest_item_date = Item.objects.all().order_by("po_date").first().po_date
+
+        delta = relativedelta(newest_item_date, oldest_item_date)
+        result =  [(oldest_item_date + relativedelta(months=i)).strftime( '%B %Y')\
+                                    for i in range(0, delta.years * 12 + delta.months + 1, 3)]
+        return result
+
     def get_default_dates(self):
         end_date = timezone.localtime(timezone.now())
         start_date = end_date - relativedelta(years=1)
         return start_date, end_date
 
     def get_dates_from_request(self):
-        start_date_str = self.request.GET.get("start_date")
-        end_date_str = self.request.GET.get("end_date")
+        quarter_str = self.request.GET.get("quarter")
+        if quarter_str:
+            start_date = timezone.make_aware(datetime.datetime.combine(datetime.datetime.strptime(quarter_str, "%B %Y"), datetime.time(0,0,0,0)))
+            
+            end_date = start_date + relativedelta(months=3)
+            end_date = end_date.replace(day=1) - datetime.timedelta(days=1)
+            end_date = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+        else:
+            start_date_str = self.request.GET.get("start_date")
+            end_date_str = self.request.GET.get("end_date")
 
-        # To include all orders based on the date, start date should start at 12 AM and end date should end at 11:59 PM
-        start_date = timezone.make_aware(datetime.datetime.combine(parse_date(start_date_str), datetime.time(0,0,0,0))) if start_date_str else None
-        end_date = timezone.make_aware(datetime.datetime.combine(parse_date(end_date_str), datetime.time(23,59,59,999999))) if end_date_str else None
+            start_date = timezone.make_aware(datetime.datetime.combine(parse_date(start_date_str), datetime.time(0,0,0,0))) if start_date_str else None
+            end_date = timezone.make_aware(datetime.datetime.combine(parse_date(end_date_str), datetime.time(23,59,59,999999))) if end_date_str else None
+
+        self.quarter_str = self.request.GET.get("quarter")
 
         if not start_date or not end_date:
             start_date, end_date = self.get_default_dates()
-        
+
         start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
         end_date = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+        
         return start_date, end_date
     
     def get_context_data(self, **kwargs):
@@ -238,61 +258,78 @@ class OrderDetailsAdvancedView(TemplateView):
         orders_by_month_keys = []
         orders_by_month_values = []
         cost_by_month_values = []
-
-        # populate the corresponding lists with data corresponding to the date range
-        for i in range(num_months):
-            search_month = start_date + relativedelta(months=i)
-            if i == 0:
-                next_month = search_month + relativedelta(months=1)
-                last_day = (next_month.replace(day=1) - relativedelta(days=1)).day
-                range_start = search_month
-                range_end = search_month.replace(day=last_day)
-            elif i == num_months - 1:
-                range_start = search_month.replace(day=1)
-                range_end = end_date
-            else:
-                range_start = search_month.replace(day=1)
-                next_month = search_month + relativedelta(months=1)
-                range_end = next_month.replace(day=1) - relativedelta(days=1)
-
-            if not selected_item:
-                queryset = Item.objects.filter(po_date__range=(range_start, range_end))
-            else:
-                queryset = Item.objects.filter(po_date__range=(range_start, range_end), item__in=item_no)
-
-            monthly_amount = queryset.count()
-            monthly_cost = queryset.aggregate(Sum('total_cost'))['total_cost__sum'] or 0
-
-            orders_by_month_keys.append(search_month.strftime("%B %Y"))
-            orders_by_month_values.append(monthly_amount)
-            cost_by_month_values.append(monthly_cost)
+        orders_by_quarter_keys = []
+        orders_by_quarter_values = []
+        cost_by_quarter_values = []
+        quarters_dict = {}
 
         if not selected_item:
-            mfrs = Item.objects.filter(po_date__range=(start_date, end_date)).values('mfr').annotate(count=Count('mfr')).order_by("-count")[:50]
+            base_queryset = Item.objects.filter(po_date__range=(start_date, end_date))
         else:
-            mfrs = Item.objects.filter(po_date__range=(start_date, end_date), item__in=item_no).values('mfr').annotate(count=Count('mfr')).order_by("-count")[:50]
+            base_queryset = Item.objects.filter(po_date__range=(start_date, end_date), item__in=item_no)
+        
+        monthly_data = base_queryset.annotate(
+            month=TruncMonth('po_date')
+        ).values(
+            "month"
+        ).annotate(
+            total_orders=Count("id"),
+            total_cost=Sum("total_cost")
+        ).order_by("month")
+
+        quarterly_data = base_queryset.annotate(
+            quarter=TruncQuarter("po_date")
+        ).values(
+            "quarter"
+        ).annotate(
+            total_orders=Count("id"),
+            total_cost=Sum("total_cost")
+        ).order_by("quarter")
+
+        for entry in monthly_data:
+            orders_by_month_keys.append(entry["month"].strftime("%B %Y"))
+            orders_by_month_values.append(entry["total_orders"])
+            cost_by_month_values.append(entry["total_cost"] or 0)
+        
+        for entry in quarterly_data:
+            quarter_number = (entry['quarter'].month - 1) // 3 + 1
+            quarter_label = f"Q{quarter_number} {entry['quarter'].year}"
+
+            orders_by_quarter_keys.append(quarter_label)
+            orders_by_quarter_values.append(entry['total_orders'])
+            cost_by_quarter_values.append(entry['total_cost'] or 0)
+
+        # Fetch top manufacturers (top 50 by count)
+        top_mfrs = base_queryset.values('mfr').annotate(
+            count=Count('mfr')
+        ).order_by('-count')[:50]
+
+        # Fetch top items (top 50 by count)
+        top_items = base_queryset.values('item').annotate(
+            count=Count('item')
+        ).order_by('-count')[:50]
+
+        # Process mfrs
         mfrs_dict = {}
         mfrs_pareto_dict = {}
-        total_sum = 0
-        cumulative_sum = 0
-        for m in mfrs:
-            total_sum += m["count"]
-            mfrs_dict[m["mfr"]] = m["count"]
-        for m in mfrs:
-            cumulative_sum += m["count"]
-            mfrs_pareto_dict[m["mfr"]] = (cumulative_sum/total_sum) * 100
+        total_mfr_count = sum(m['count'] for m in top_mfrs)
+        cumulative_mfr_count = 0
 
-        commonly_ordered_items = Item.objects.filter(po_date__range=(start_date, end_date)).values('item').annotate(count=Count('item')).order_by("-count")[:50]
+        for m in top_mfrs:
+            mfrs_dict[m['mfr']] = m['count']
+            cumulative_mfr_count += m['count']
+            mfrs_pareto_dict[m['mfr']] = (cumulative_mfr_count / total_mfr_count) * 100
+
+        # Process items
         commonly_ordered_items_dict = {}
         commonly_ordered_items_pareto_dict = {}
-        total_sum = 0
-        cumulative_sum = 0
-        for item in commonly_ordered_items:
-            total_sum += item["count"]
-            commonly_ordered_items_dict[item["item"]] = item["count"]
-        for item in commonly_ordered_items:
-            cumulative_sum += item["count"]
-            commonly_ordered_items_pareto_dict[item["item"]] = (cumulative_sum/total_sum) * 100
+        total_item_count = sum(i['count'] for i in top_items)
+        cumulative_item_count = 0
+
+        for i in top_items:
+            commonly_ordered_items_dict[i['item']] = i['count']
+            cumulative_item_count += i['count']
+            commonly_ordered_items_pareto_dict[i['item']] = (cumulative_item_count / total_item_count) * 100
         
         try:
             selected_item = list(selected_item)
@@ -303,6 +340,11 @@ class OrderDetailsAdvancedView(TemplateView):
         except TypeError:
             if not selected_item:
                 selected_item = ""
+        
+        for quarter in self.get_quarters_list():
+            quarter_date_obj = datetime.datetime.strptime(quarter, "%B %Y")
+            quarter_date = (quarter_date_obj.month - 1) // 3 + 1
+            quarters_dict[quarter] = f"Q{quarter_date} {quarter_date_obj.year}"
 
         context.update({
             "start_date": start_date_str,
@@ -311,8 +353,11 @@ class OrderDetailsAdvancedView(TemplateView):
             "upper_date_bound": upper_date_bound,
             "orders_by_month_keys": json.dumps(orders_by_month_keys, ensure_ascii=False),
             "orders_by_month_values": json.dumps(orders_by_month_values, ensure_ascii=False),
+            "orders_by_quarter_keys": json.dumps(orders_by_quarter_keys, ensure_ascii=False),
+            "orders_by_quarter_values": json.dumps(orders_by_quarter_values, ensure_ascii=False),
             "total_orders_across_range": sum(orders_by_month_values),
             "cost_by_month_values": simplejson.dumps(cost_by_month_values, ensure_ascii=False, use_decimal=True),
+            "cost_by_quarter_values": simplejson.dumps(cost_by_quarter_values, ensure_ascii=False, use_decimal=True),
             "mfrs_keys": json.dumps(list(mfrs_dict.keys()), ensure_ascii=False).replace("'", "\\'"),
             "mfrs_values": json.dumps(list(mfrs_dict.values()), ensure_ascii=False),
             "mfrs_pareto": json.dumps(list(mfrs_pareto_dict.values()), ensure_ascii=False),
@@ -321,5 +366,7 @@ class OrderDetailsAdvancedView(TemplateView):
             "commonly_ordered_values_pareto": json.dumps(list(commonly_ordered_items_pareto_dict.values()), ensure_ascii=False),
             "selected_item_no": selected_item,
             "all_items": all_items,
+            "all_quarters": quarters_dict,
+            "selected_quarter": self.quarter_str,
         })
         return context
