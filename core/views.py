@@ -2,6 +2,8 @@ import datetime
 import json
 import zoneinfo
 
+from .utils import trunc_datetime
+
 import openpyxl
 import openpyxl.utils
 import simplejson
@@ -11,6 +13,7 @@ from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Count, Sum
 from django.db.models.functions import TruncMonth, TruncQuarter
 from django.http import HttpResponse
+from django.shortcuts import redirect
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 from django.views.generic import ListView
@@ -20,6 +23,7 @@ from djmoney.money import Money
 from openpyxl.styles import Alignment, Border, Font, NamedStyle, PatternFill, Side
 
 from .models import Item
+from urllib.parse import urlencode
 
 
 class HomePageView(TemplateView):
@@ -206,15 +210,18 @@ class OrderDetailsAdvancedView(TemplateView):
         end_date = timezone.localtime(timezone.now())
         start_date = end_date - relativedelta(years=1)
         return start_date, end_date
+    
+    def get_end_date_for_quarter(self, start_date:datetime.datetime):
+        end_date = start_date + relativedelta(months=3)
+        end_date = end_date.replace(day=1) - datetime.timedelta(days=1)
+        end_date = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+        return end_date
 
     def get_dates_from_request(self):
         quarter_str = self.request.GET.get("quarter")
         if quarter_str:
             start_date = timezone.make_aware(datetime.datetime.combine(datetime.datetime.strptime(quarter_str, "%B %Y"), datetime.time(0,0,0,0)))
-            
-            end_date = start_date + relativedelta(months=3)
-            end_date = end_date.replace(day=1) - datetime.timedelta(days=1)
-            end_date = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+            end_date = self.get_end_date_for_quarter(start_date)
         else:
             start_date_str = self.request.GET.get("start_date")
             end_date_str = self.request.GET.get("end_date")
@@ -370,3 +377,29 @@ class OrderDetailsAdvancedView(TemplateView):
             "selected_quarter": self.quarter_str,
         })
         return context
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.method == "GET":
+            quarter_str = self.request.GET.get("quarter")
+            if quarter_str:
+                start_date = timezone.make_aware(datetime.datetime.combine(datetime.datetime.strptime(quarter_str, "%B %Y"), datetime.time(0,0,0,0)))
+                end_date = self.get_end_date_for_quarter(start_date)
+
+                start_date_str = self.request.GET.get("start_date")
+                end_date_str = self.request.GET.get("end_date")
+
+                start_date_from_request = timezone.make_aware(datetime.datetime.combine(parse_date(start_date_str), datetime.time(0,0,0,0))) if start_date_str else None
+                end_date_from_request = timezone.make_aware(datetime.datetime.combine(parse_date(end_date_str), datetime.time(23,59,59,999999))) if end_date_str else None
+
+                if (trunc_datetime(start_date) != trunc_datetime(start_date_from_request)) and (trunc_datetime(end_date) != trunc_datetime(end_date_from_request)):
+                    new_params = {
+                        "start_date": start_date.strftime("%Y-%m-%d"),
+                        "end_date": end_date.strftime("%Y-%m-%d"),
+                        "quarter": quarter_str,
+                        "group_by_quarter": self.request.GET.get("group_by_quarter"),
+                    }
+
+                    new_url = f"{request.path}?{urlencode(new_params)}"
+                    return redirect(new_url)
+
+        return super().dispatch(request, *args, **kwargs)
