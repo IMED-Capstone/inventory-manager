@@ -91,7 +91,15 @@
         {% for item in orders %}
             <tr>
                 {% for field in fields %}
-                    <td>{{ item|get_field_value:field }}</td>
+                  {% with value=item|get_field_value:field %}
+                    {% if field == "external_url" %}
+                        {% if value %}
+                            <td><a href="{{ value }}" target="_blank">{{ value }}</a></td>
+                        {% endif %}
+                    {% else %}
+                        <td>{{ value }}</td>
+                    {% endif %}
+                  {% endwith %}
                 {% endfor %}
             </tr>
         {% empty %}

@@ -25,6 +25,7 @@ class Item(models.Model):
     expr1016=models.CharField('Expr1016', max_length=200)
     expr1017=models.IntegerField('Expr1017')
     par_level=models.PositiveIntegerField(blank=True, default=1)    # maybe remove -> inherit and extend in the part of the app that manages the par levels?
+    external_url=models.URLField(max_length=200, default="https://accessgudid.nlm.nih.gov/resources/developers/v3/device_lookup_api")
 
     # show model description when using string representation (e.g. for display on admin panel)
     def __str__(self):
