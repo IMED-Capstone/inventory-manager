@@ -1,6 +1,7 @@
 {% extends 'core/base.html' %}
 
 {% load django_bootstrap5 %}
+{% load bootstrap_icons %}
 {% load order_details_extras %}
 
 {% block content %}
@@ -94,7 +95,10 @@
                   {% with value=item|get_field_value:field %}
                     {% if field == "external_url" %}
                         {% if value %}
-                            <td><a href="{{ value }}" target="_blank">{{ value }}</a></td>
+                            <td>
+                              <a class="icon-link icon-link-hover" href="{{ value }}" target="_blank">Link {% bs_icon 'box-arrow-up-right' %}
+                              </a>
+                            </td>
                         {% endif %}
                     {% else %}
                         <td>{{ value }}</td>
