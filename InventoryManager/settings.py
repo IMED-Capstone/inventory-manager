@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     "core.apps.CoreConfig",
     "djmoney",
     "django_bootstrap5",
+    "django_bootstrap_icons",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -122,6 +123,9 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = Path.joinpath(BASE_DIR, "data", "staticfiles")
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+# Bootstrap Icons settings
+BS_ICONS_CACHE = os.path.join(STATIC_ROOT, 'icon_cache')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field

@@ -135,7 +135,7 @@ def export_to_excel(request):
         end_date_as_datetime = timezone.make_aware(datetime.datetime.combine(parse_date(end_date), datetime.time(23,59,59,999999)))
         queryset = queryset.filter(po_date__range=[start_date_as_datetime, end_date_as_datetime])
     
-    excluded_fields = ["ID", "price_currency",  "total_cost_currency", "par_level"]
+    excluded_fields = ["ID", "price_currency",  "total_cost_currency", "par_level", "external_url"]
     column_names = [field.verbose_name for field in Item._meta.fields if (field.verbose_name not in excluded_fields and field.name not in excluded_fields)]
     sheet.append(column_names)
     columns = [field.name for field in Item._meta.fields if (field.verbose_name not in excluded_fields and field.name not in excluded_fields)]
