@@ -22,8 +22,9 @@ class Item(models.Model):
     vend_code=models.CharField('VEND_CODE', max_length=200)
     item_no=models.CharField('ITEM_NO', max_length=200)
     dbo_vend_name=models.CharField('dbo_VEND.NAME', max_length=200)
-    expr1016=models.CharField('Expr1016', max_length=200)
-    expr1017=models.IntegerField('Expr1017')
+    dbo_cc_name=models.CharField('dbo_CC.NAME', max_length=200)
+    acct_no=models.IntegerField('ACCT_NO', default=0)
+    rcv_date=models.DateTimeField('RCV_DATE', null=True, blank=True)
     par_level=models.PositiveIntegerField(blank=True, default=1)    # maybe remove -> inherit and extend in the part of the app that manages the par levels?
     external_url=models.URLField(max_length=200, default="https://accessgudid.nlm.nih.gov/resources/developers/v3/device_lookup_api")
 
