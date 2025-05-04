@@ -402,9 +402,8 @@ class OrderDetailsAdvancedView(TemplateView):
                 if (trunc_datetime(start_date) != trunc_datetime(start_date_from_request)) and (trunc_datetime(end_date) != trunc_datetime(end_date_from_request)):
                     new_params = {
                         "start_date": start_date.strftime("%Y-%m-%d"),
-                        "end_date": end_date.strftime("%Y-%m-%d"),
                         "quarter": quarter_str,
-                        "group_by_quarter": self.request.GET.get("group_by_quarter"),
+                        "end_date": end_date.strftime("%Y-%m-%d"),
                     }
 
                     new_url = f"{request.path}?{urlencode(new_params)}"
