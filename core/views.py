@@ -200,10 +200,19 @@ class OrderDetailsAdvancedView(TemplateView):
         newest_item_date = Item.objects.all().order_by("-po_date").first().po_date
         oldest_item_date = Item.objects.all().order_by("po_date").first().po_date
 
-        delta = relativedelta(newest_item_date, oldest_item_date)
-        result =  [(oldest_item_date + relativedelta(months=i)).strftime( '%B %Y')\
-                                    for i in range(0, delta.years * 12 + delta.months + 1, 3)]
-        return result
+        quarter_month = ((oldest_item_date.month - 1) // 3) * 3 + 1
+        aligned_start = oldest_item_date.replace(month=quarter_month, day=1)
+
+        quarter_month_end = ((newest_item_date.month - 1) // 3) * 3 + 1
+        aligned_end = newest_item_date.replace(month=quarter_month_end, day=1)
+
+        delta = relativedelta(aligned_end, aligned_start)
+        months_diff = delta.years * 12 + delta.months
+
+        return [
+            (aligned_start + relativedelta(months=i)).strftime("%B %Y")
+            for i in range(0, months_diff + 1, 3)
+        ]
 
     def get_default_dates(self):
         end_date = timezone.localtime(timezone.now())
@@ -393,9 +402,8 @@ class OrderDetailsAdvancedView(TemplateView):
                 if (trunc_datetime(start_date) != trunc_datetime(start_date_from_request)) and (trunc_datetime(end_date) != trunc_datetime(end_date_from_request)):
                     new_params = {
                         "start_date": start_date.strftime("%Y-%m-%d"),
-                        "end_date": end_date.strftime("%Y-%m-%d"),
                         "quarter": quarter_str,
-                        "group_by_quarter": self.request.GET.get("group_by_quarter"),
+                        "end_date": end_date.strftime("%Y-%m-%d"),
                     }
 
                     new_url = f"{request.path}?{urlencode(new_params)}"
