@@ -44,5 +44,8 @@ class OrderAdmin(admin.ModelAdmin):
     # Select fields to display on the admin panel
     list_display = ['descr', 'po_date', 'rcv_date']
 
+    def descr(self, obj):
+        return obj.item.descr
+
 # Register your models here.
 admin.site.register(Order, OrderAdmin)

@@ -2,7 +2,7 @@ import datetime
 import json
 import zoneinfo
 
-from .utils import trunc_datetime
+from .utils import trunc_datetime, style_excel_sheet
 
 import openpyxl
 import openpyxl.utils
@@ -22,7 +22,7 @@ from djmoney.models.fields import MoneyFieldProxy
 from djmoney.money import Money
 from openpyxl.styles import Alignment, Border, Font, NamedStyle, PatternFill, Side
 
-from .models import Order
+from .models import Order, Item
 from urllib.parse import urlencode
 
 
@@ -125,31 +125,50 @@ def export_to_excel(request):
 
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
-    queryset = Order.objects.all().order_by("-po_date")
+    sheet.title = f"{start_date}_{end_date}"[:31]  # Excel limits sheet name to 31 characters
 
-    sheet.title = f"{start_date}_{end_date}"    # can't be longer than 31 characters
+    # Optimize related model access
+    queryset = Order.objects.select_related("order_item").all().order_by("-po_date")
 
+    # Filter by date range if provided
     if start_date and end_date:
-        start_date_as_datetime = timezone.make_aware(datetime.datetime.combine(parse_date(start_date), datetime.time(0,0,0,0)))
-        end_date_as_datetime = timezone.make_aware(datetime.datetime.combine(parse_date(end_date), datetime.time(23,59,59,999999)))
+        start_date_as_datetime = timezone.make_aware(datetime.datetime.combine(parse_date(start_date), datetime.time(0, 0, 0)))
+        end_date_as_datetime = timezone.make_aware(datetime.datetime.combine(parse_date(end_date), datetime.time(23, 59, 59, 999999)))
         queryset = queryset.filter(po_date__range=[start_date_as_datetime, end_date_as_datetime])
-    
-    excluded_fields = ["ID", "price_currency",  "total_cost_currency", "par_level", "external_url"]
-    column_names = [field.verbose_name for field in Order._meta.fields if (field.verbose_name not in excluded_fields and field.name not in excluded_fields)]
-    sheet.append(column_names)
-    columns = [field.name for field in Order._meta.fields if (field.verbose_name not in excluded_fields and field.name not in excluded_fields)]
 
+    # Define fields to exclude
+    excluded_fields = {"ID", "price_currency", "total_cost_currency", "par_level", "external_url", "order_item"}
+
+    # Get Order and Item fields (excluding those marked)
+    order_fields = [f for f in Order._meta.fields if f.verbose_name not in excluded_fields and f.name not in excluded_fields]
+    item_fields = [f for f in Order._meta.get_field("order_item").related_model._meta.fields if f.verbose_name not in excluded_fields and f.name not in excluded_fields]
+
+    # Build headers and add to sheet
+    column_names = [field.verbose_name for field in item_fields] + [field.verbose_name for field in order_fields]
+    sheet.append(column_names)
+
+    # Optionally apply number formatting
     currency_style = NamedStyle(name="currency_style", number_format='"$"#,##0.00')
 
-    # Set appropriate timestamp
+    # Populate rows
     for order in queryset:
         row = []
-        for field in columns:
-            value = getattr(order, field)
+
+        for field in item_fields:
+            value = getattr(order.order_item, field.name)
             if isinstance(value, Money):
                 row.append(value.amount)
             elif isinstance(value, datetime.datetime):
-                row.append(value.astimezone(zoneinfo.ZoneInfo("America/Chicago")).strftime("%d/%m/%Y %H:%M:%S %p"))
+                row.append(value.astimezone(zoneinfo.ZoneInfo("America/Chicago")).strftime("%d/%m/%Y %I:%M:%S %p"))
+            else:
+                row.append(value)
+
+        for field in order_fields:
+            value = getattr(order, field.name)
+            if isinstance(value, Money):
+                row.append(value.amount)
+            elif isinstance(value, datetime.datetime):
+                row.append(value.astimezone(zoneinfo.ZoneInfo("America/Chicago")).strftime("%d/%m/%Y %I:%M:%S %p"))
             else:
                 row.append(value)
 
@@ -157,34 +176,14 @@ def export_to_excel(request):
     
     # Apply dollar styling to money fields to match inputted Excel file.
     i = 0
-    for field in Order._meta.fields:
+    for field in (Item._meta.fields):
         if (field.verbose_name not in excluded_fields and field.name not in excluded_fields):
             i += 1
-            col_letter = openpyxl.utils.get_column_letter(i)
-            if isinstance(getattr(Order, field.name), MoneyFieldProxy):
-                for row in range(2, sheet.max_row + 1):  # Start from the second row (skip header)
-                    sheet[f'{col_letter}{row}'].style = currency_style  # Apply the style to the entire column
-            
-            # apply header formatting
-            cell_to_format = sheet.cell(row=1, column=i)
-            cell_to_format.fill = PatternFill(start_color="C0C0C0", end_color="C0C0C0", fill_type="solid")
-            cell_to_format.font = Font(bold=True, color="000000")
-            cell_to_format.alignment = Alignment(horizontal="center", vertical="center")
-            thin_border = Border(
-                left=Side(style="thin", color="000000"),
-                right=Side(style="thin", color="000000"),
-                top=Side(style="thin", color="000000"),
-                bottom=Side(style="thin", color="000000")
-            )
-            cell_to_format.border = thin_border
-
-
-            max_length = 0
-            for cell in list(sheet.columns)[i-1]:
-                if len(str(cell.value)) > max_length:
-                    max_length = len(str(cell.value))
-            
-            sheet.column_dimensions[col_letter].width = (max_length + 2)
+            style_excel_sheet(sheet, Item, field, i, currency_style)
+    for field in (Order._meta.fields):
+        if (field.verbose_name not in excluded_fields and field.name not in excluded_fields):
+            i += 1
+            style_excel_sheet(sheet, Order, field, i, currency_style)
     
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = f'attachment; filename=Orders_{sheet.title}.xlsx'
@@ -258,11 +257,11 @@ class OrderDetailsAdvancedView(TemplateView):
         item_no = self.request.GET.getlist("category[]")
         selected_item = None
 
-        qset = Order.objects.all().order_by("descr")
-        all_items = {item: descr for item, descr in qset.values_list("item", "descr")}
+        qset = Order.objects.all().order_by("order_item__descr")
+        all_items = {item: descr for item, descr in qset.values_list("order_item__item", "order_item__descr")}
         
         if item_no:
-            selected_item = Order.objects.filter(item__in=item_no).values_list("item", flat=True)
+            selected_item = Order.objects.filter(order_item__item_no__in=item_no).values_list("order_item__item", flat=True)
 
         start_date_str = start_date.strftime("%Y-%m-%d")
         end_date_str = end_date.strftime("%Y-%m-%d")
@@ -281,7 +280,7 @@ class OrderDetailsAdvancedView(TemplateView):
         if not selected_item:
             base_queryset = Order.objects.filter(po_date__range=(start_date, end_date))
         else:
-            base_queryset = Order.objects.filter(po_date__range=(start_date, end_date), item__in=item_no)
+            base_queryset = Order.objects.filter(po_date__range=(start_date, end_date), order_item__item_no__in=item_no)
         
         monthly_data = base_queryset.annotate(
             month=TruncMonth('po_date')
@@ -315,13 +314,13 @@ class OrderDetailsAdvancedView(TemplateView):
             cost_by_quarter_values.append(entry['total_cost'] or 0)
 
         # Fetch top manufacturers (top 50 by count)
-        top_mfrs = base_queryset.values('mfr').annotate(
-            count=Count('mfr')
+        top_mfrs = base_queryset.values('order_item__mfr').annotate(
+            count=Count('order_item__mfr')
         ).order_by('-count')[:50]
 
         # Fetch top items (top 50 by count)
-        top_items = base_queryset.values('item').annotate(
-            count=Count('item')
+        top_items = base_queryset.values('order_item__item').annotate(
+            count=Count('order_item__item')
         ).order_by('-count')[:50]
 
         # Process mfrs
@@ -331,9 +330,9 @@ class OrderDetailsAdvancedView(TemplateView):
         cumulative_mfr_count = 0
 
         for m in top_mfrs:
-            mfrs_dict[m['mfr']] = m['count']
+            mfrs_dict[m['order_item__mfr']] = m['count']
             cumulative_mfr_count += m['count']
-            mfrs_pareto_dict[m['mfr']] = (cumulative_mfr_count / total_mfr_count) * 100
+            mfrs_pareto_dict[m['order_item__mfr']] = (cumulative_mfr_count / total_mfr_count) * 100
 
         # Process items
         commonly_ordered_items_dict = {}
@@ -342,9 +341,9 @@ class OrderDetailsAdvancedView(TemplateView):
         cumulative_item_count = 0
 
         for i in top_items:
-            commonly_ordered_items_dict[i['item']] = i['count']
+            commonly_ordered_items_dict[i['order_item__item']] = i['count']
             cumulative_item_count += i['count']
-            commonly_ordered_items_pareto_dict[i['item']] = (cumulative_item_count / total_item_count) * 100
+            commonly_ordered_items_pareto_dict[i['order_item__item']] = (cumulative_item_count / total_item_count) * 100
         
         try:
             selected_item = list(selected_item)
