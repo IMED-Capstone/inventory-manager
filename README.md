@@ -72,7 +72,8 @@ Django application for managing inventory in the UIC IR department.
     - Information stored in a DB, where each transaction is logged as a separate record (row).
     - unique ID in the DB is for the specific transaction
     - views for orders and graphs
-        - basic list view available at `127.0.0.1:8000/dates/<start_date>/<end_date>/`
+        - basic list view available at `127.0.0.1:8000/orders/`
+        - graph views available at `127.0.0.1:8000/orders_advanced/`
 - Inventory (name TBD)
     - maintains par levels for each unique item inventory should be maintained for
     - provide alerts for when levels are approaching par level or fall under par level
