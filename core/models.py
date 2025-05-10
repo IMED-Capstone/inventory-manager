@@ -3,8 +3,8 @@ from djmoney.models.fields import MoneyField
 
 
 # Create your models here.
-class Item(models.Model):
-    """Defines an Item model representing an inventory item.
+class Order(models.Model):
+    """Defines an Order model representing an order for an item in inventory.
     """
     item=models.CharField('ITEM', max_length=200)
     mfr=models.CharField('MFR', max_length=200)

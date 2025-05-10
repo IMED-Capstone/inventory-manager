@@ -62,13 +62,13 @@ Django application for managing inventory in the UIC IR department.
 ### Adding Data from Excel File
 * Navigate to the admin panel at ```127.0.0.1:8000/admin```
 * Log in with admin credentials set at the ```createsuperuser``` step
-* Click on `Core/Items`, then click the `Import Data` button in the top right
-* Follow the prompt to upload the file, then navigating to the `Core/Items` page should show populated data
+* Click on `Core/Orders`, then click the `Import Data` button in the top right
+* Follow the prompt to upload the file, then navigating to the `Core/Orders` page should show populated data
 
 
 ## Current structure
 - Core Application
-    - Holds the logs for each transaction made for an item (a transaction ledger).
+    - Holds the logs for each transaction made for an order (a transaction ledger).
     - Information stored in a DB, where each transaction is logged as a separate record (row).
     - unique ID in the DB is for the specific transaction
     - views for orders and graphs

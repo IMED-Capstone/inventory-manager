@@ -22,7 +22,7 @@ from djmoney.models.fields import MoneyFieldProxy
 from djmoney.money import Money
 from openpyxl.styles import Alignment, Border, Font, NamedStyle, PatternFill, Side
 
-from .models import Item
+from .models import Order
 from urllib.parse import urlencode
 
 
@@ -56,7 +56,7 @@ class PaginationView(TemplateView):
     
 class OrderDetailsView(ListView):
     """Provides basic table view of orders, selectable by date range."""
-    model = Item
+    model = Order
     template_name = "core/order_details.html"
     context_object_name = "orders"
     paginate_by = 10
@@ -93,9 +93,9 @@ class OrderDetailsView(ListView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        lower_date_bound = Item.objects.order_by('po_date').first().po_date.strftime("%Y-%m-%d")
+        lower_date_bound = Order.objects.order_by('po_date').first().po_date.strftime("%Y-%m-%d")
         upper_date_bound = (timezone.localtime(timezone.now())).strftime('%Y-%m-%d')
-        all_fields = [field.name for field in Item._meta.fields]
+        all_fields = [field.name for field in Order._meta.fields]
         excluded_fields = ["id", "price_currency", "total_cost_currency", "item_no", "dbo_vend_name", "expr1010"]
         included_fields = [field for field in all_fields if field not in excluded_fields]
         context['start_date'] = self.start_date.strftime("%Y-%m-%d")
@@ -114,7 +114,7 @@ class OrderDetailsView(ListView):
             return int(per_page)
         except ValueError:
             if per_page == "All":
-                return Item.objects.order_by("po_date").count()
+                return Order.objects.order_by("po_date").count()
             else:
                 return 10
 
@@ -125,7 +125,7 @@ def export_to_excel(request):
 
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
-    queryset = Item.objects.all().order_by("-po_date")
+    queryset = Order.objects.all().order_by("-po_date")
 
     sheet.title = f"{start_date}_{end_date}"    # can't be longer than 31 characters
 
@@ -135,17 +135,17 @@ def export_to_excel(request):
         queryset = queryset.filter(po_date__range=[start_date_as_datetime, end_date_as_datetime])
     
     excluded_fields = ["ID", "price_currency",  "total_cost_currency", "par_level", "external_url"]
-    column_names = [field.verbose_name for field in Item._meta.fields if (field.verbose_name not in excluded_fields and field.name not in excluded_fields)]
+    column_names = [field.verbose_name for field in Order._meta.fields if (field.verbose_name not in excluded_fields and field.name not in excluded_fields)]
     sheet.append(column_names)
-    columns = [field.name for field in Item._meta.fields if (field.verbose_name not in excluded_fields and field.name not in excluded_fields)]
+    columns = [field.name for field in Order._meta.fields if (field.verbose_name not in excluded_fields and field.name not in excluded_fields)]
 
     currency_style = NamedStyle(name="currency_style", number_format='"$"#,##0.00')
 
     # Set appropriate timestamp
-    for item in queryset:
+    for order in queryset:
         row = []
         for field in columns:
-            value = getattr(item, field)
+            value = getattr(order, field)
             if isinstance(value, Money):
                 row.append(value.amount)
             elif isinstance(value, datetime.datetime):
@@ -157,11 +157,11 @@ def export_to_excel(request):
     
     # Apply dollar styling to money fields to match inputted Excel file.
     i = 0
-    for field in Item._meta.fields:
+    for field in Order._meta.fields:
         if (field.verbose_name not in excluded_fields and field.name not in excluded_fields):
             i += 1
             col_letter = openpyxl.utils.get_column_letter(i)
-            if isinstance(getattr(Item, field.name), MoneyFieldProxy):
+            if isinstance(getattr(Order, field.name), MoneyFieldProxy):
                 for row in range(2, sheet.max_row + 1):  # Start from the second row (skip header)
                     sheet[f'{col_letter}{row}'].style = currency_style  # Apply the style to the entire column
             
@@ -197,14 +197,14 @@ class OrderDetailsAdvancedView(TemplateView):
     template_name = "core/order_details_advanced.html"
 
     def get_quarters_list(self) -> list:
-        newest_item_date = Item.objects.all().order_by("-po_date").first().po_date
-        oldest_item_date = Item.objects.all().order_by("po_date").first().po_date
+        newest_order_date = Order.objects.all().order_by("-po_date").first().po_date
+        oldest_order_date = Order.objects.all().order_by("po_date").first().po_date
 
-        quarter_month = ((oldest_item_date.month - 1) // 3) * 3 + 1
-        aligned_start = oldest_item_date.replace(month=quarter_month, day=1)
+        quarter_month = ((oldest_order_date.month - 1) // 3) * 3 + 1
+        aligned_start = oldest_order_date.replace(month=quarter_month, day=1)
 
-        quarter_month_end = ((newest_item_date.month - 1) // 3) * 3 + 1
-        aligned_end = newest_item_date.replace(month=quarter_month_end, day=1)
+        quarter_month_end = ((newest_order_date.month - 1) // 3) * 3 + 1
+        aligned_end = newest_order_date.replace(month=quarter_month_end, day=1)
 
         delta = relativedelta(aligned_end, aligned_start)
         months_diff = delta.years * 12 + delta.months
@@ -252,17 +252,17 @@ class OrderDetailsAdvancedView(TemplateView):
     
         # Get the start and end dates to use for querying
         start_date, end_date = self.get_dates_from_request()
-        lower_date_bound = Item.objects.order_by("po_date").first().po_date.strftime("%Y-%m-%d")
+        lower_date_bound = Order.objects.order_by("po_date").first().po_date.strftime("%Y-%m-%d")
         upper_date_bound = datetime.datetime.now(zoneinfo.ZoneInfo("UTC")).strftime("%Y-%m-%d")
 
         item_no = self.request.GET.getlist("category[]")
         selected_item = None
 
-        qset = Item.objects.all().order_by("descr")
+        qset = Order.objects.all().order_by("descr")
         all_items = {item: descr for item, descr in qset.values_list("item", "descr")}
         
         if item_no:
-            selected_item = Item.objects.filter(item__in=item_no).values_list("item", flat=True)
+            selected_item = Order.objects.filter(item__in=item_no).values_list("item", flat=True)
 
         start_date_str = start_date.strftime("%Y-%m-%d")
         end_date_str = end_date.strftime("%Y-%m-%d")
@@ -279,9 +279,9 @@ class OrderDetailsAdvancedView(TemplateView):
         quarters_dict = {}
 
         if not selected_item:
-            base_queryset = Item.objects.filter(po_date__range=(start_date, end_date))
+            base_queryset = Order.objects.filter(po_date__range=(start_date, end_date))
         else:
-            base_queryset = Item.objects.filter(po_date__range=(start_date, end_date), item__in=item_no)
+            base_queryset = Order.objects.filter(po_date__range=(start_date, end_date), item__in=item_no)
         
         monthly_data = base_queryset.annotate(
             month=TruncMonth('po_date')

@@ -5,11 +5,11 @@ from django.shortcuts import render
 from django.urls import path, reverse
 
 from .forms import ExcelUploadForm
-from .models import Item
+from .models import Order
 from .utils import dict_from_excel_row
 
 
-class ItemAdmin(admin.ModelAdmin):
+class OrderAdmin(admin.ModelAdmin):
     def changelist_view(self, request, extra_context=None):
         """Pass import from Excel URL to template"""
         if extra_context is None:
@@ -33,7 +33,7 @@ class ItemAdmin(admin.ModelAdmin):
                 df = pd.read_excel(file, engine="openpyxl")
                 for _, row in df.iterrows():
                     data = dict_from_excel_row(row)
-                    Item.objects.create(**data)
+                    Order.objects.create(**data)
                 return HttpResponseRedirect("../")
         else:
             form = ExcelUploadForm()
@@ -45,4 +45,4 @@ class ItemAdmin(admin.ModelAdmin):
     list_display = ['descr', 'po_date', 'rcv_date']
 
 # Register your models here.
-admin.site.register(Item, ItemAdmin)
+admin.site.register(Order, OrderAdmin)
