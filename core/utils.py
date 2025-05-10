@@ -7,9 +7,31 @@ from djmoney.models.fields import MoneyFieldProxy
 
 # Adapted from https://stackoverflow.com/a/48457168
 def trunc_datetime(date:datetime.datetime):
+    """Zeroes out the hour, minute, second, and microsecond elements of a datetime object for ease of comparison of dates alone.
+
+    Args:
+        date (datetime.datetime): The datetime to truncate.
+
+    Returns:
+        datetime.datetime: The truncated datetime.
+    """
     return date.replace(hour=0, minute=0, second=0, microsecond=0)
 
 def dict_from_excel_row(row: pd.Series) -> dict:
+    """Creates a dictionary from an Excel row, corresponding to the predefined models used in this Django project.
+
+    Args:
+        row (pd.Series): _description_
+
+    Raises:
+        KeyError: _description_
+        Exception: _description_
+        KeyError: _description_
+        KeyError: _description_
+
+    Returns:
+        dict: _description_
+    """
     data = {}
     try:
         # Identify item by ITEM_NO or ITEM
@@ -79,6 +101,15 @@ def dict_from_excel_row(row: pd.Series) -> dict:
     return data
 
 def style_excel_sheet(sheet, type, field, i, currency_style):
+    """Styles the exported Excel sheet to match the original style received to use for importing.
+
+    Args:
+        sheet (_type_): The openpyxl active sheet
+        type (_type_): The model type by which to check field names against
+        field (_type_): The current field to format the corresponding Excel column for.
+        i (_type_): The current column index of the sheet
+        currency_style (_type_): The openpyxl named style to use for formatting currency.
+    """
     col_letter = openpyxl.utils.get_column_letter(i)
     if isinstance(getattr(type, field.name), MoneyFieldProxy):
         for row in range(2, sheet.max_row + 1):  # Start from the second row (skip header)

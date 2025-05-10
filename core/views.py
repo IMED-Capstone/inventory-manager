@@ -1,14 +1,11 @@
 import datetime
 import json
 import zoneinfo
-
-from .utils import trunc_datetime, style_excel_sheet
+from urllib.parse import urlencode
 
 import openpyxl
-import openpyxl.utils
 import simplejson
 from dateutil.relativedelta import relativedelta
-from django.contrib import messages
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Count, Sum
 from django.db.models.functions import TruncMonth, TruncQuarter
@@ -18,12 +15,11 @@ from django.utils import timezone
 from django.utils.dateparse import parse_date
 from django.views.generic import ListView
 from django.views.generic.base import TemplateView
-from djmoney.models.fields import MoneyFieldProxy
 from djmoney.money import Money
-from openpyxl.styles import Alignment, Border, Font, NamedStyle, PatternFill, Side
+from openpyxl.styles import NamedStyle
 
-from .models import Order, Item
-from urllib.parse import urlencode
+from .models import Item, Order
+from .utils import style_excel_sheet, trunc_datetime
 
 
 class HomePageView(TemplateView):
@@ -265,9 +261,6 @@ class OrderDetailsAdvancedView(TemplateView):
 
         start_date_str = start_date.strftime("%Y-%m-%d")
         end_date_str = end_date.strftime("%Y-%m-%d")
-
-        delta = relativedelta(end_date, start_date)
-        num_months = (delta.years * 12 + delta.months) + 1  # covers cases > 1yr (e.g. 12-month delta is 1 year and zero months)
 
         orders_by_month_keys = []
         orders_by_month_values = []
