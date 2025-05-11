@@ -49,7 +49,76 @@ class PaginationView(TemplateView):
             show_lines = paginator.page(paginator.num_pages)
         context["lines"] = show_lines
         return context
+
+class ItemDetailsView(ListView):
+    model = Item
+    template_name = "core/item_details.html"
+    context_object_name = "items"
+    paginate_by = 10
+
+    def get_queryset(self, included_fields=None):
+        queryset = Order.objects.all()
+        start_date_str = self.request.GET.get("start_date")
+        end_date_str = self.request.GET.get("end_date")
+
+        current_time = timezone.localtime(timezone.now())
+
+        if not start_date_str:
+            start_date = (current_time - relativedelta(years=1))
+            start_date_str = start_date.strftime("%Y-%m-%d")
+        else:
+            start_date = timezone.make_aware(datetime.datetime.combine(parse_date(start_date_str), datetime.time(0,0,0,0)))
+        if not end_date_str:
+            end_date = current_time
+            end_date_str = end_date.strftime("%Y-%m-%d")
+        else:
+            end_date = timezone.make_aware(datetime.datetime.combine(parse_date(end_date_str), datetime.time(23,59,59,999999)))
+        
+        # To include all items based on the date, start date should start at 12 AM and end date should end at 11:59 PM
+        start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_date = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+
+        self.start_date = start_date
+        self.end_date = end_date
+
+        orders = queryset.filter(po_date__range=[start_date, end_date]).order_by("-po_date")
+
+        item_ids = orders.values_list("order_item", flat=True).distinct()
+        
+        
+        if not included_fields:
+            return Item.objects.filter(id__in=item_ids)
+        else:
+            return Item.objects.filter(id__in=item_ids).only(*included_fields)
+        
     
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        lower_date_bound = Order.objects.order_by('po_date').first().po_date.strftime("%Y-%m-%d")
+        upper_date_bound = (timezone.localtime(timezone.now())).strftime('%Y-%m-%d')
+        all_fields = [field.name for field in Item._meta.fields]
+        excluded_fields = []
+        included_fields = [field for field in all_fields if field not in excluded_fields]
+        context['start_date'] = self.start_date.strftime("%Y-%m-%d")
+        context['end_date'] = self.end_date.strftime("%Y-%m-%d")
+        context['lower_date_bound'] = lower_date_bound
+        context['upper_date_bound'] = upper_date_bound
+        context["fields"] = included_fields
+        context['per_page'] = self.request.GET.get('per_page', self.paginate_by)
+        context['per_page_options'] = [5, 10, 25, 50, 100, "All"]
+        context['items_count'] = self.get_queryset(included_fields).count()
+        return context
+
+    def get_paginate_by(self, queryset):
+        per_page = self.request.GET.get('per_page', 10)
+        try:
+            return int(per_page)
+        except ValueError:
+            if per_page == "All":
+                return Item.objects.order_by("item").count()
+            else:
+                return 10
+
 class OrderDetailsView(ListView):
     """Provides basic table view of orders, selectable by date range."""
     model = Order
