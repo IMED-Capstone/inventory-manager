@@ -42,10 +42,13 @@ class OrderAdmin(admin.ModelAdmin):
         return render(request, "admin/import_excel.html", {"form": form, "title": "Import Excel"})
     
     # Select fields to display on the admin panel
-    list_display = ['descr', 'po_date', 'rcv_date']
+    list_display = ['item_no', 'descr', 'po_date', 'rcv_date']
 
     def descr(self, obj):
         return obj.order_item.descr
+    
+    def item_no(self, obj):
+        return obj.order_item.item_no
 
 class ItemAdmin(admin.ModelAdmin):
     list_display = ['item', 'mfr', 'descr', 'par_level']
