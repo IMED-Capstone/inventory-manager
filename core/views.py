@@ -54,7 +54,7 @@ class ItemDetailsView(ListView):
     model = Item
     template_name = "core/item_details.html"
     context_object_name = "items"
-    paginate_by = 10
+    paginate_by = 25
 
     def get_queryset(self, included_fields=None):
         queryset = Order.objects.all()
@@ -105,26 +105,26 @@ class ItemDetailsView(ListView):
         context['upper_date_bound'] = upper_date_bound
         context["fields"] = included_fields
         context['per_page'] = self.request.GET.get('per_page', self.paginate_by)
-        context['per_page_options'] = [5, 10, 25, 50, 100, "All"]
+        context['per_page_options'] = [25, 50, 100, 200, "All"]
         context['items_count'] = self.get_queryset(included_fields).count()
         return context
 
     def get_paginate_by(self, queryset):
-        per_page = self.request.GET.get('per_page', 10)
+        per_page = self.request.GET.get('per_page', 25)
         try:
             return int(per_page)
         except ValueError:
             if per_page == "All":
                 return Item.objects.order_by("item").count()
             else:
-                return 10
+                return 25
 
 class OrderDetailsView(ListView):
     """Provides basic table view of orders, selectable by date range."""
     model = Order
     template_name = "core/order_details.html"
     context_object_name = "orders"
-    paginate_by = 10
+    paginate_by = 25
 
     def get_queryset(self, included_fields=None):
         queryset = super().get_queryset()
@@ -169,19 +169,19 @@ class OrderDetailsView(ListView):
         context['upper_date_bound'] = upper_date_bound
         context["fields"] = included_fields
         context['per_page'] = self.request.GET.get('per_page', self.paginate_by)
-        context['per_page_options'] = [5, 10, 25, 50, 100, "All"]
+        context['per_page_options'] = [25, 50, 100, "All"]
         context['orders_count'] = self.get_queryset(included_fields).count()
         return context
     
     def get_paginate_by(self, queryset):
-        per_page = self.request.GET.get('per_page', 10)
+        per_page = self.request.GET.get('per_page', 25)
         try:
             return int(per_page)
         except ValueError:
             if per_page == "All":
                 return Order.objects.order_by("po_date").count()
             else:
-                return 10
+                return 25
 
 def export_to_excel(request):
     """Export selected date range transaction data to an Excel file."""
