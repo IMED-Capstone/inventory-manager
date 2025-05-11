@@ -5,7 +5,7 @@ from django.shortcuts import render
 from django.urls import path, reverse
 
 from .forms import ExcelUploadForm
-from .models import Order
+from .models import Order, Item
 from .utils import dict_from_excel_row
 
 
@@ -47,5 +47,9 @@ class OrderAdmin(admin.ModelAdmin):
     def descr(self, obj):
         return obj.order_item.descr
 
+class ItemAdmin(admin.ModelAdmin):
+    list_display = ['item', 'mfr', 'descr', 'par_level']
+
 # Register your models here.
 admin.site.register(Order, OrderAdmin)
+admin.site.register(Item, ItemAdmin)
