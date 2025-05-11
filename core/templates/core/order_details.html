@@ -9,7 +9,7 @@
 <div id="DateHeader">
     <br />
     <h4>Current range:</h4>
-    <form method="get" class="container">
+    <form method="get" class="container-fluid" style="width: 60%; margin-left: 0;">
         <div class="row mb-3">
             <div class="col-md-4">
                 <label for="start" class="form-label">Start Date:</label>
@@ -80,7 +80,7 @@
 {% endif %}
 
 <!-- Table -->
-<table class="table table-striped table-bordered container table-sm">
+<table class="table table-striped table-bordered table-sm">
     <thead class="table-light">
         <tr>
             {% for field in fields %}
