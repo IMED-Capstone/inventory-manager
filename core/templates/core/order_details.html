@@ -94,9 +94,9 @@
                 {% for field in fields %}
                 <td>
                   {% with value=order|get_field_value:field %}
-                    {% if field == "order_item" %}
+                    {% if field == "item" %}
                       <a href="#" data-bs-toggle="modal" data-bs-target="#itemModal{{ order.id }}">
-                        {{ order.order_item.item }}
+                        {{ order.item.item }}
                       </a>
                       <!-- Modal -->
                       <div class="modal fade" id="itemModal{{ order.id }}" tabindex="-1" aria-labelledby="itemModalLabel{{ order.id }}" aria-hidden="true">
@@ -107,13 +107,13 @@
                                       <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                   </div>
                                   <div class="modal-body text-start">
-                                      <p><strong>Item:</strong> {{ order.order_item.item }}</p>
-                                      <p><strong>Item No:</strong> {{ order.order_item.item_no }}</p>
-                                      <p><strong>Manufacturer:</strong> {{ order.order_item.mfr }}</p>
-                                      <p><strong>MFR Catalog:</strong> {{ order.order_item.mfr_cat }}</p>
-                                      <p><strong>Description:</strong> {{ order.order_item.descr }}</p>
-                                      <p><strong>Par Level:</strong> {{ order.order_item.par_level }}</p>
-                                      <p><strong>External URL:</strong> <a href="{{ order.order_item.external_url }}" target="_blank">{{ order.order_item.external_url }}</a></p>
+                                      <p><strong>Item:</strong> {{ order.item.item }}</p>
+                                      <p><strong>Item No:</strong> {{ order.item.item_no }}</p>
+                                      <p><strong>Manufacturer:</strong> {{ order.item.mfr }}</p>
+                                      <p><strong>MFR Catalog:</strong> {{ order.item.mfr_cat }}</p>
+                                      <p><strong>Description:</strong> {{ order.item.descr }}</p>
+                                      <p><strong>Par Level:</strong> {{ order.item.par_level }}</p>
+                                      <p><strong>External URL:</strong> <a href="{{ order.item.external_url }}" target="_blank">{{ order.item.external_url }}</a></p>
                                   </div>
                               </div>
                           </div>

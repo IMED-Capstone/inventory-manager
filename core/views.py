@@ -83,7 +83,7 @@ class ItemDetailsView(ListView):
 
         orders = queryset.filter(po_date__range=[start_date, end_date]).order_by("-po_date")
 
-        item_ids = orders.values_list("order_item", flat=True).distinct()
+        item_ids = orders.values_list("item", flat=True).distinct()
         
         
         if not included_fields:
@@ -193,7 +193,7 @@ def export_to_excel(request):
     sheet.title = f"{start_date}_{end_date}"[:31]  # Excel limits sheet name to 31 characters
 
     # Optimize related model access
-    queryset = Order.objects.select_related("order_item").all().order_by("-po_date")
+    queryset = Order.objects.select_related("item").all().order_by("-po_date")
 
     # Filter by date range if provided
     if start_date and end_date:
@@ -202,11 +202,11 @@ def export_to_excel(request):
         queryset = queryset.filter(po_date__range=[start_date_as_datetime, end_date_as_datetime])
 
     # Define fields to exclude
-    excluded_fields = {"ID", "price_currency", "total_cost_currency", "par_level", "external_url", "order_item"}
+    excluded_fields = {"ID", "price_currency", "total_cost_currency", "par_level", "external_url", "item"}
 
     # Get Order and Item fields (excluding those marked)
     order_fields = [f for f in Order._meta.fields if f.verbose_name not in excluded_fields and f.name not in excluded_fields]
-    item_fields = [f for f in Order._meta.get_field("order_item").related_model._meta.fields if f.verbose_name not in excluded_fields and f.name not in excluded_fields]
+    item_fields = [f for f in Order._meta.get_field("item").related_model._meta.fields if f.verbose_name not in excluded_fields and f.name not in excluded_fields]
 
     # Build headers and add to sheet
     column_names = [field.verbose_name for field in item_fields] + [field.verbose_name for field in order_fields]
@@ -220,7 +220,7 @@ def export_to_excel(request):
         row = []
 
         for field in item_fields:
-            value = getattr(order.order_item, field.name)
+            value = getattr(order.item, field.name)
             if isinstance(value, Money):
                 row.append(value.amount)
             elif isinstance(value, datetime.datetime):
@@ -322,11 +322,11 @@ class OrderDetailsAdvancedView(TemplateView):
         item_no = self.request.GET.getlist("category[]")
         selected_item = None
 
-        qset = Order.objects.all().order_by("order_item__descr")
-        all_items = {item: descr for item, descr in qset.values_list("order_item__item", "order_item__descr")}
+        qset = Order.objects.all().order_by("item__descr")
+        all_items = {item: descr for item, descr in qset.values_list("item__item", "item__descr")}
         
         if item_no:
-            selected_item = Order.objects.filter(order_item__item_no__in=item_no).values_list("order_item__item", flat=True)
+            selected_item = Order.objects.filter(item__item_no__in=item_no).values_list("item__item", flat=True)
 
         start_date_str = start_date.strftime("%Y-%m-%d")
         end_date_str = end_date.strftime("%Y-%m-%d")
@@ -342,7 +342,7 @@ class OrderDetailsAdvancedView(TemplateView):
         if not selected_item:
             base_queryset = Order.objects.filter(po_date__range=(start_date, end_date))
         else:
-            base_queryset = Order.objects.filter(po_date__range=(start_date, end_date), order_item__item_no__in=item_no)
+            base_queryset = Order.objects.filter(po_date__range=(start_date, end_date), item__item_no__in=item_no)
         
         monthly_data = base_queryset.annotate(
             month=TruncMonth('po_date')
@@ -376,13 +376,13 @@ class OrderDetailsAdvancedView(TemplateView):
             cost_by_quarter_values.append(entry['total_cost'] or 0)
 
         # Fetch top manufacturers (top 50 by count)
-        top_mfrs = base_queryset.values('order_item__mfr').annotate(
-            count=Count('order_item__mfr')
+        top_mfrs = base_queryset.values('item__mfr').annotate(
+            count=Count('item__mfr')
         ).order_by('-count')[:50]
 
         # Fetch top items (top 50 by count)
-        top_items = base_queryset.values('order_item__item').annotate(
-            count=Count('order_item__item')
+        top_items = base_queryset.values('item__item').annotate(
+            count=Count('item__item')
         ).order_by('-count')[:50]
 
         # Process mfrs
@@ -392,9 +392,9 @@ class OrderDetailsAdvancedView(TemplateView):
         cumulative_mfr_count = 0
 
         for m in top_mfrs:
-            mfrs_dict[m['order_item__mfr']] = m['count']
+            mfrs_dict[m['item__mfr']] = m['count']
             cumulative_mfr_count += m['count']
-            mfrs_pareto_dict[m['order_item__mfr']] = (cumulative_mfr_count / total_mfr_count) * 100
+            mfrs_pareto_dict[m['item__mfr']] = (cumulative_mfr_count / total_mfr_count) * 100
 
         # Process items
         commonly_ordered_items_dict = {}
@@ -403,9 +403,9 @@ class OrderDetailsAdvancedView(TemplateView):
         cumulative_item_count = 0
 
         for i in top_items:
-            commonly_ordered_items_dict[i['order_item__item']] = i['count']
+            commonly_ordered_items_dict[i['item__item']] = i['count']
             cumulative_item_count += i['count']
-            commonly_ordered_items_pareto_dict[i['order_item__item']] = (cumulative_item_count / total_item_count) * 100
+            commonly_ordered_items_pareto_dict[i['item__item']] = (cumulative_item_count / total_item_count) * 100
         
         try:
             selected_item = list(selected_item)

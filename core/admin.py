@@ -45,10 +45,10 @@ class OrderAdmin(admin.ModelAdmin):
     list_display = ['item_no', 'descr', 'po_date', 'rcv_date']
 
     def descr(self, obj):
-        return obj.order_item.descr
+        return obj.item.descr
     
     def item_no(self, obj):
-        return obj.order_item.item_no
+        return obj.item.item_no
 
 class ItemAdmin(admin.ModelAdmin):
     list_display = ['item', 'mfr', 'descr', 'par_level']
