@@ -18,7 +18,7 @@ class Item(models.Model):
 class Order(models.Model):
     """Defines an Order model representing an order for an item in inventory.
     """
-    order_item = models.ForeignKey(Item, on_delete=models.PROTECT)
+    item = models.ForeignKey(Item, on_delete=models.PROTECT)
     vendor=models.CharField('VENDOR', max_length=200)
     vend_cat=models.CharField('VEND CAT', max_length=200)
     recv_qty=models.IntegerField('RECV QTY')
@@ -36,5 +36,5 @@ class Order(models.Model):
 
     # show model description when using string representation (e.g. for display on admin panel)
     def __str__(self):
-        return self.order_item.descr
+        return self.item.descr
     

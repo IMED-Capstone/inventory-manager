@@ -9,7 +9,7 @@
 <div id="DateHeader">
     <br />
     <h4>Current range:</h4>
-    <form method="get" class="container">
+    <form method="get" class="container-fluid" style="width: 60%; margin-left: 0;">
         <div class="row mb-3">
             <div class="col-md-4">
                 <label for="start" class="form-label">Start Date:</label>
@@ -80,7 +80,7 @@
 {% endif %}
 
 <!-- Table -->
-<table class="table table-striped table-bordered container table-sm">
+<table class="table table-striped table-bordered table-sm">
     <thead class="table-light">
         <tr>
             {% for field in fields %}
@@ -89,20 +89,43 @@
         </tr>
     </thead>
     <tbody>
-        {% for item in orders %}
+        {% for order in orders %}
             <tr>
                 {% for field in fields %}
-                  {% with value=item|get_field_value:field %}
-                    {% if field == "external_url" %}
+                <td>
+                  {% with value=order|get_field_value:field %}
+                    {% if field == "item" %}
+                      <a href="#" data-bs-toggle="modal" data-bs-target="#itemModal{{ order.id }}">
+                        {{ order.item.item }}
+                      </a>
+                      <!-- Modal -->
+                      <div class="modal fade" id="itemModal{{ order.id }}" tabindex="-1" aria-labelledby="itemModalLabel{{ order.id }}" aria-hidden="true">
+                          <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                              <div class="modal-content">
+                                  <div class="modal-header">
+                                      <h5 class="modal-title" id="itemModalLabel{{ order.id }}">Item Details</h5>
+                                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                  </div>
+                                  <div class="modal-body text-start">
+                                      <p><strong>Item:</strong> {{ order.item.item }}</p>
+                                      <p><strong>Item No:</strong> {{ order.item.item_no }}</p>
+                                      <p><strong>Manufacturer:</strong> {{ order.item.mfr }}</p>
+                                      <p><strong>MFR Catalog:</strong> {{ order.item.mfr_cat }}</p>
+                                      <p><strong>Description:</strong> {{ order.item.descr }}</p>
+                                      <p><strong>Par Level:</strong> {{ order.item.par_level }}</p>
+                                      <p><strong>External URL:</strong> <a class="icon-link icon-link-hover" href="{{ order.item.external_url }}" target="_blank"> Link {% bs_icon 'box-arrow-up-right' %}</a></p>
+                                  </div>
+                              </div>
+                          </div>
+                      </div>
+                    {% elif field == "external_url" %}
                         {% if value %}
-                            <td>
-                              <a class="icon-link icon-link-hover" href="{{ value }}" target="_blank">Link {% bs_icon 'box-arrow-up-right' %}
-                              </a>
-                            </td>
+                              <a class="icon-link icon-link-hover" href="{{ value }}" target="_blank">Link {% bs_icon 'box-arrow-up-right' %}</a>
                         {% endif %}
                     {% else %}
-                        <td>{{ value }}</td>
+                        {{ value }}
                     {% endif %}
+                        </td>
                   {% endwith %}
                 {% endfor %}
             </tr>
