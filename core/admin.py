@@ -45,7 +45,7 @@ class OrderAdmin(admin.ModelAdmin):
     list_display = ['descr', 'po_date', 'rcv_date']
 
     def descr(self, obj):
-        return obj.item.descr
+        return obj.order_item.descr
 
 # Register your models here.
 admin.site.register(Order, OrderAdmin)
