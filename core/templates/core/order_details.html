@@ -100,7 +100,7 @@
                       </a>
                       <!-- Modal -->
                       <div class="modal fade" id="itemModal{{ order.id }}" tabindex="-1" aria-labelledby="itemModalLabel{{ order.id }}" aria-hidden="true">
-                          <div class="modal-dialog modal-dialog-scrollable">
+                          <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
                               <div class="modal-content">
                                   <div class="modal-header">
                                       <h5 class="modal-title" id="itemModalLabel{{ order.id }}">Item Details</h5>
@@ -113,15 +113,14 @@
                                       <p><strong>MFR Catalog:</strong> {{ order.item.mfr_cat }}</p>
                                       <p><strong>Description:</strong> {{ order.item.descr }}</p>
                                       <p><strong>Par Level:</strong> {{ order.item.par_level }}</p>
-                                      <p><strong>External URL:</strong> <a href="{{ order.item.external_url }}" target="_blank">{{ order.item.external_url }}</a></p>
+                                      <p><strong>External URL:</strong> <a class="icon-link icon-link-hover" href="{{ order.item.external_url }}" target="_blank"> Link {% bs_icon 'box-arrow-up-right' %}</a></p>
                                   </div>
                               </div>
                           </div>
                       </div>
                     {% elif field == "external_url" %}
                         {% if value %}
-                              <a class="icon-link icon-link-hover" href="{{ value }}" target="_blank">Link {% bs_icon 'box-arrow-up-right' %}
-                              </a>
+                              <a class="icon-link icon-link-hover" href="{{ value }}" target="_blank">Link {% bs_icon 'box-arrow-up-right' %}</a>
                         {% endif %}
                     {% else %}
                         {{ value }}
