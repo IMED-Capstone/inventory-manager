@@ -346,30 +346,34 @@ document.getElementById("start").addEventListener("input", (event) => quarterSel
 document.getElementById("end").addEventListener("input", (event) => quarterSelect.selectedIndex = 0)
 
 document.addEventListener('DOMContentLoaded', function () {
-            // Get the checkbox element by its ID
             const checkbox = document.getElementById('group_by_quarter');
-            // Get the div element to show/hide by its ID
-            const targetDiv = document.getElementById('orders-by-quarter-container');
+            const ordersByQuarterContainer = document.getElementById('orders-by-quarter-container');
 
-            // Function to update the visibility of the div
             function updateDivVisibility() {
                 if (checkbox.checked) {
-                    // If checkbox is checked, show the div
-                    targetDiv.style.display = 'block'; // Or 'flex', 'grid', etc. depending on your layout
+                    ordersByQuarterContainer.style.display = 'block';
                 } else {
-                    // If checkbox is not checked, hide the div
-                    targetDiv.style.display = 'none';
+                    ordersByQuarterContainer.style.display = 'none';
                 }
             }
 
-            // Add an event listener to the checkbox
-            // The 'change' event fires when the checked state of the checkbox changes
             checkbox.addEventListener('change', updateDivVisibility);
-
-            // Call the function once when the page loads
-            // This ensures the div visibility is correct based on the initial state of the checkbox
             updateDivVisibility();
         });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const urlParams = new URLSearchParams(window.location.search);
+        const selectedQuarter = urlParams.get('quarter');
+        const ordersByQuarterContainer = document.getElementById('orders-by-quarter-container');
+        
+        if (selectedQuarter) {
+            document.getElementById('group_by_quarter').checked = false;
+            ordersByQuarterContainer.style.display = 'none';
+        } else {
+            document.getElementById('group_by_quarter').checked = true;
+            ordersByQuarterContainer.style.display = 'block';
+        }
+    });
 </script>
 
 <style>
@@ -379,9 +383,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     .form-check {
-    display: flex; /* Ensures flexbox layout */
-    align-items: center; /* Vertically aligns items to the center */
-    /* Other Bootstrap styles for .form-check will also apply */    
+    display: flex;
+    align-items: center;
     }
 
     .chart-container {
