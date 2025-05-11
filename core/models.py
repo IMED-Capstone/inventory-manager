@@ -36,5 +36,5 @@ class Order(models.Model):
 
     # show model description when using string representation (e.g. for display on admin panel)
     def __str__(self):
-        return self.item.descr
+        return self.order_item.descr
     

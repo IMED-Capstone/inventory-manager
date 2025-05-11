@@ -12,6 +12,7 @@
 
         <ul class="nav nav-tabs">
             <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}" href="{% url 'home' %}">Home</a></li>
+            <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'item_details' %}active{% endif %}" href="{% url 'item_details' %}">Item Details</a></li>
             <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'order_details' %}active{% endif %}" href="{% url 'order_details' %}">Order Details</a></li>
             <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'order_details_advanced' %}active{% endif %}" href="{% url 'order_details_advanced' %}">Order Details Advanced</a></li>
 
