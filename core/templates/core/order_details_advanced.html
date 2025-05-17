@@ -351,7 +351,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             function updateDivVisibility() {
                 if (checkbox.checked) {
-                    ordersByQuarterContainer.style.display = 'block';
+                    ordersByQuarterContainer.style.display = 'inline-block';
                 } else {
                     ordersByQuarterContainer.style.display = 'none';
                 }
@@ -371,7 +371,7 @@ document.addEventListener('DOMContentLoaded', function () {
             ordersByQuarterContainer.style.display = 'none';
         } else {
             document.getElementById('group_by_quarter').checked = true;
-            ordersByQuarterContainer.style.display = 'block';
+            ordersByQuarterContainer.style.display = 'inline-block';
         }
     });
 </script>
@@ -388,7 +388,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     .chart-container {
-        width: 60%;
+        width: 47%;
+        display: inline-block;
     }
 
 </style>
