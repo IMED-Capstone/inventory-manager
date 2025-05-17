@@ -2,7 +2,7 @@
 
 {% load django_bootstrap5 %}
 {% load bootstrap_icons %}
-{% load order_details_extras %}
+{% load item_details_extras %}
 
 {% block content %}
 
@@ -39,7 +39,7 @@
                 <a href="{% url 'export-orders' %}?start_date={{ start_date }}&end_date={{ end_date }}" class="btn btn-success w-50">
                     Export to Excel
                 </a>
-                <a href="/orders" class="btn btn-danger w-50" id="reset-button">Reset Dates</a>
+                <a href="/items" class="btn btn-danger w-50" id="reset-button">Reset Dates</a>
             </div>
         </div>
     </form>
@@ -73,7 +73,7 @@
       {% endif %}
     </ul>
     <div class="text-muted small">
-      Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ orders_count }} total orders
+      Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ items_count }} total items
     </div>
   </div>
 </nav>
@@ -89,43 +89,20 @@
         </tr>
     </thead>
     <tbody>
-        {% for order in orders %}
+        {% for item in items %}
             <tr>
                 {% for field in fields %}
-                <td>
-                  {% with value=order|get_field_value:field %}
-                    {% if field == "item" %}
-                      <a href="#" data-bs-toggle="modal" data-bs-target="#itemModal{{ order.id }}">
-                        {{ order.item.item }}
-                      </a>
-                      <!-- Modal -->
-                      <div class="modal fade" id="itemModal{{ order.id }}" tabindex="-1" aria-labelledby="itemModalLabel{{ order.id }}" aria-hidden="true">
-                          <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-                              <div class="modal-content">
-                                  <div class="modal-header">
-                                      <h5 class="modal-title" id="itemModalLabel{{ order.id }}">Item Details</h5>
-                                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                  </div>
-                                  <div class="modal-body text-start">
-                                      <p><strong>Item:</strong> {{ order.item.item }}</p>
-                                      <p><strong>Item No:</strong> {{ order.item.item_no }}</p>
-                                      <p><strong>Manufacturer:</strong> {{ order.item.mfr }}</p>
-                                      <p><strong>MFR Catalog:</strong> {{ order.item.mfr_cat }}</p>
-                                      <p><strong>Description:</strong> {{ order.item.descr }}</p>
-                                      <p><strong>Par Level:</strong> {{ order.item.par_level }}</p>
-                                      <p><strong>External URL:</strong> <a class="icon-link icon-link-hover" href="{{ order.item.external_url }}" target="_blank"> Link {% bs_icon 'box-arrow-up-right' %}</a></p>
-                                  </div>
-                              </div>
-                          </div>
-                      </div>
-                    {% elif field == "external_url" %}
+                  {% with value=item|get_field_value:field %}
+                    {% if field == "external_url" %}
                         {% if value %}
-                              <a class="icon-link icon-link-hover" href="{{ value }}" target="_blank">Link {% bs_icon 'box-arrow-up-right' %}</a>
+                            <td>
+                              <a class="icon-link icon-link-hover" href="{{ value }}" target="_blank">Link {% bs_icon 'box-arrow-up-right' %}
+                              </a>
+                            </td>
                         {% endif %}
                     {% else %}
-                        {{ value }}
+                        <td>{{ value }}</td>
                     {% endif %}
-                        </td>
                   {% endwith %}
                 {% endfor %}
             </tr>
@@ -163,7 +140,7 @@
       {% endif %}
     </ul>
     <div class="text-muted small">
-      Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ orders_count }} total orders
+      Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ items_count }} total items
     </div>
   </div>
 </nav>

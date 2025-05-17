@@ -5,10 +5,11 @@ from django.shortcuts import render
 from django.urls import path, reverse
 
 from .forms import ExcelUploadForm
-from .models import Item
+from .models import Order, Item
+from .utils import dict_from_excel_row
 
 
-class ItemAdmin(admin.ModelAdmin):
+class OrderAdmin(admin.ModelAdmin):
     def changelist_view(self, request, extra_context=None):
         """Pass import from Excel URL to template"""
         if extra_context is None:
@@ -31,26 +32,8 @@ class ItemAdmin(admin.ModelAdmin):
                 file = request.FILES["excel_file"]
                 df = pd.read_excel(file, engine="openpyxl")
                 for _, row in df.iterrows():
-                    Item.objects.create(
-                        item=row["ITEM"],
-                        mfr=row["MFR"],
-                        mfr_cat=row["MFR CAT"],
-                        vendor=row["VENDOR"],
-                        vend_cat=row["VEND CAT"],
-                        descr=row["DESCR"],
-                        recv_qty=row["RECV QTY"],
-                        um=row["UM"],
-                        price=row["PRICE"],
-                        total_cost=row["TOTAL COST"],
-                        expr1010=row["Expr1010"],
-                        po_no=row["PO_NO"],
-                        po_date=row["PO_DATE"].tz_localize(tz="America/Chicago").tz_convert("UTC"),
-                        vend_code=row["VEND_CODE"],
-                        item_no=row["ITEM_NO"],
-                        dbo_vend_name=row["dbo_VEND.NAME"],
-                        expr1016=row["Expr1016"],
-                        expr1017=row["Expr1017"]
-                    )
+                    data = dict_from_excel_row(row)
+                    Order.objects.create(**data)
                 return HttpResponseRedirect("../")
         else:
             form = ExcelUploadForm()
@@ -59,7 +42,17 @@ class ItemAdmin(admin.ModelAdmin):
         return render(request, "admin/import_excel.html", {"form": form, "title": "Import Excel"})
     
     # Select fields to display on the admin panel
-    list_display = ['descr', 'po_date']
+    list_display = ['item_no', 'descr', 'po_date', 'rcv_date']
+
+    def descr(self, obj):
+        return obj.item.descr
+    
+    def item_no(self, obj):
+        return obj.item.item_no
+
+class ItemAdmin(admin.ModelAdmin):
+    list_display = ['item', 'mfr', 'descr', 'par_level']
 
 # Register your models here.
+admin.site.register(Order, OrderAdmin)
 admin.site.register(Item, ItemAdmin)

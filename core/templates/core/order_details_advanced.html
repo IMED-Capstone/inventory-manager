@@ -8,27 +8,63 @@
 <div id="DateHeader">
     <br />
     <h4>Current range:</h4>
-    <form method="get" class="container">
+    <form method="get" class="container-fluid" style="width: 60%; margin-left: 0;">
         <div class="row mb-3">
             <div class="col-md-4">
-                <label for="start" class="form-label">Start Date:</label>
-                <input type="date" name="start_date" id="start" value="{{ start_date }}"
-                       min="{{ lower_date_bound }}" max="{{ upper_date_bound }}"
-                       class="form-control">
+                <div class="col">
+                    <label for="start" class="form-label">Start Date:</label>
+                    <input type="date" name="start_date" id="start" value="{{ start_date }}"
+                        min="{{ lower_date_bound }}" max="{{ upper_date_bound }}"
+                        class="form-control">
+                </div>
+                <div class="col">
+                    <label for="quarter" class="form-label">Quarter:</label>
+                    <select name="quarter" id="quarter" class="form-select">
+                        <option value="">---</option>
+                        {% for quarter, quarter_display in all_quarters.items %}
+                            <option value="{{ quarter }}" {% if quarter in selected_quarter %}selected{% endif %}>
+                                {{ quarter_display }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
             <div class="col-md-4">
-                <label for="end" class="form-label">End Date:</label>
-                <input type="date" name="end_date" id="end" value="{{ end_date }}"
-                       min="{{ lower_date_bound }}" max="{{ upper_date_bound }}"
-                       class="form-control">
+                <div class="col">
+                    <label for="end" class="form-label">End Date:</label>
+                    <input type="date" name="end_date" id="end" value="{{ end_date }}"
+                        min="{{ lower_date_bound }}" max="{{ upper_date_bound }}"
+                        class="form-control">
+                </div>
+                <div class="col">
+                    <div class="form-check mt-5">
+                        <input class="form-check-input me-2" type="checkbox" value="1" id="group_by_quarter" checked>
+                        <label class="form-check-label" for="group_by_quarter">
+                            Group by Quarter
+                        </label>
+                    </div>                    
+                </div>
             </div>
-        </div>
+            <div class="col-md-4">
+                <label for="category" class="form-label">Item:</label>
+                <select name="category[]" id="category" class="form-select" multiple>
+                    <option value="">All</option>
+                    {% for item_no, item_descr in all_items.items %}
+                    <option value="{{ item_no }}" {% if item_no in selected_item_no %}selected{% endif %}>
+                        {{ item_descr }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
 
-        <div class="row mb-3">
-            <div class="col-md-6 d-flex gap-2">
-                <button type="submit" class="btn btn-primary w-50">Filter</button>
+            <div class="row mb-3 mt-3">
+                <div class="col-md-9 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary w-50" id="filter-button">Filter</button>
+                    <a href="{% url 'export-orders' %}?start_date={{ start_date }}&end_date={{ end_date }}" class="btn btn-success w-50">Export to Excel</a>
+                    <a href="/orders_advanced" class="btn btn-danger w-50" id="reset-button">Reset Dates</a>
+                </div>
             </div>
-        </div>
+            
     </form>
 </div>
 
@@ -38,12 +74,17 @@
     <div class="chart-container">
         <canvas id="orders-by-month"></canvas>
     </div>
+    <div class="chart-container" id="orders-by-quarter-container">
+        <canvas id="orders-by-quarter"></canvas>
+    </div>
     <div class="chart-container">
         <canvas id="orders-by-mfr"></canvas>
     </div>
+    {% if not selected_item_no %}
     <div class="chart-container">
         <canvas id="commonly-ordered-items"></canvas>
     </div>
+    {% endif %}
 </div>
 {% else %}
     <p> No orders found in the given range. </p>
@@ -117,6 +158,73 @@
         }
     });
 
+    var ordersByQuarterCtx = document.getElementById('orders-by-quarter')
+    var ordersByMonthChart = new Chart(ordersByQuarterCtx, {
+        type: 'bar',
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top'
+                },
+                title: {
+                    display: true,
+                    text: 'Orders and Cost by Quarter'
+                }
+            },
+            stacked: false,
+            scales: {
+                'Orders By Quarter': {
+                    type: 'linear',
+                    position: 'left',
+                    display: true,
+                    title: {
+                        text: "Order by Quarter",
+                        display: true
+                    }
+                },
+                'Cost By Quarter': {
+                    type: 'linear',
+                    position: 'right',
+                    display: true,
+                    grid: {
+                        drawOnChartArea: false,
+                    },
+                    ticks: {
+                        callback: function(value, index, ticks) {
+                            return '$' + Chart.Ticks.formatters.numeric.apply(this, [value, index, ticks]);
+                        }
+                    },
+                    title: {
+                        text: "Cost by Month ($)",
+                        display: true
+                    }
+                },
+            }
+        },
+        data: {
+            labels: JSON.parse('{{ orders_by_quarter_keys|safe }}'),
+            datasets: [
+                {
+                    label: 'Orders By Quarter',
+                    yAxisID: 'Orders By Quarter',
+                    data: JSON.parse('{{ orders_by_quarter_values|safe }}'),
+                    backgroundColor: 'rgba(0, 150, 136, 0.5)',
+                    borderColor: 'rgba(0, 150, 136, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Cost By Quarter',
+                    yAxisID: 'Cost By Quarter',
+                    data: JSON.parse('{{ cost_by_quarter_values|safe }}'),
+                    backgroundColor: 'rgba(156, 39, 176, 0.5)',
+                    borderColor: 'rgba(156, 39, 176, 0.5)',
+                    borderWidth: 1
+                }
+            ]
+        }
+    });
+
     var ordersByMfrCtx = document.getElementById('orders-by-mfr')
     var ordersByMfrChart = new Chart(ordersByMfrCtx, {
         options: {
@@ -148,6 +256,8 @@
                     grid: {
                         drawOnChartArea: false,
                     },
+                    min: 0,
+                    max: 100,
                 },
             }
         },
@@ -205,6 +315,8 @@
                     grid: {
                         drawOnChartArea: false,
                     },
+                    min: 0,
+                    max: 100,
                 },
             }
         },
@@ -228,12 +340,56 @@
             ]
         }
     });
+
+var quarterSelect = document.getElementById("quarter");
+document.getElementById("start").addEventListener("input", (event) => quarterSelect.selectedIndex = 0)
+document.getElementById("end").addEventListener("input", (event) => quarterSelect.selectedIndex = 0)
+
+document.addEventListener('DOMContentLoaded', function () {
+            const checkbox = document.getElementById('group_by_quarter');
+            const ordersByQuarterContainer = document.getElementById('orders-by-quarter-container');
+
+            function updateDivVisibility() {
+                if (checkbox.checked) {
+                    ordersByQuarterContainer.style.display = 'inline-block';
+                } else {
+                    ordersByQuarterContainer.style.display = 'none';
+                }
+            }
+
+            checkbox.addEventListener('change', updateDivVisibility);
+            updateDivVisibility();
+        });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const urlParams = new URLSearchParams(window.location.search);
+        const selectedQuarter = urlParams.get('quarter');
+        const ordersByQuarterContainer = document.getElementById('orders-by-quarter-container');
+        
+        if (selectedQuarter) {
+            document.getElementById('group_by_quarter').checked = false;
+            ordersByQuarterContainer.style.display = 'none';
+        } else {
+            document.getElementById('group_by_quarter').checked = true;
+            ordersByQuarterContainer.style.display = 'inline-block';
+        }
+    });
 </script>
 
 <style>
     input,
     label {
     margin: 0.4rem 0;
+    }
+
+    .form-check {
+    display: flex;
+    align-items: center;
+    }
+
+    .chart-container {
+        width: 47%;
+        display: inline-block;
     }
 
 </style>
