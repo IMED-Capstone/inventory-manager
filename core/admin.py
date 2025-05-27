@@ -7,7 +7,7 @@ from django.urls import path, reverse
 from .forms import ExcelUploadForm, UDI_Form
 from .models import Order, Item
 from .utils import dict_from_excel_row
-from gudid import create_item_from_id
+from .gudid import create_item_from_id
 
 class OrderAdmin(admin.ModelAdmin):
     def changelist_view(self, request, extra_context=None):
