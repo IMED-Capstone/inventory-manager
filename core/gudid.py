@@ -1,8 +1,8 @@
 import requests
 import json
 import pydantic
-from response import GudidResponse
-from models import Item
+from .response import GudidResponse
+from .models import Item
 
 def call_api(udi=None, headers=None):
     """
