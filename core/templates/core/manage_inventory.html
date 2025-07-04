@@ -1,0 +1,16 @@
+{% extends 'core/base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}Inventory Manager{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <br />
+    <form method="get">
+        <label for="lookup_by_id">Scan Barcode: </label>
+        <input id="lookup_by_id" type="text" name="lookup_by_id" value="{{ item_id }}">
+        <button type="submit" class="btn btn-primary w-10" id="lookup-barcode-button">Item Lookup</button>
+    </form>
+</div>
+{% endblock %}
+

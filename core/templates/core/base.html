@@ -16,9 +16,19 @@
             <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'order_details' %}active{% endif %}" href="{% url 'order_details' %}">Order Details</a></li>
             <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'order_details_advanced' %}active{% endif %}" href="{% url 'order_details_advanced' %}">Order Details Advanced</a></li>
 
-            <li class="nav-item ms-auto">
-                <a class="nav-link" href="/admin" role="button">Admin Panel</a>
+            <li class="nav-item">
+                
             </li>
+
+
+            <div class="d-flex ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link btn btn-secondary text-white {% if request.resolver_match.url_name == 'manage_inventory' %}active{% endif %}" href="{% url 'manage_inventory' %}">Manage Inventory</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link btn btn-secondary text-white" href="/admin" role="button">Admin Panel</a>
+                </li>
+            </div>
         </ul>
 
         {% autoescape off %}{% bootstrap_messages %}{% endautoescape %}
@@ -44,6 +54,22 @@
     background-color: #218838;
     color: white;
 }
+
+.nav-tabs .nav-item a.btn-secondary {
+    background-color: #218838;
+    color: white;
+}
+
+.nav-tabs .nav-item a.btn-secondary:hover {
+    background-color: #117a8b;
+    color: white;
+}
+
+a.btn-secondary.nav-link.active {
+    background-color: #117a8b;
+    color: white;
+}
+
 </style>
 
 {% endblock %}

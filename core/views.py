@@ -471,3 +471,10 @@ class OrderDetailsAdvancedView(TemplateView):
                     return redirect(new_url)
 
         return super().dispatch(request, *args, **kwargs)
+
+class ManageInventoryView(TemplateView):
+    template_name = "core/manage_inventory.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        return context
