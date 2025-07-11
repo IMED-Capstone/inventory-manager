@@ -6,6 +6,7 @@ from urllib.parse import urlencode
 import openpyxl
 import simplejson
 from dateutil.relativedelta import relativedelta
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Count, Sum
 from django.db.models.functions import TruncMonth, TruncQuarter
@@ -472,7 +473,7 @@ class OrderDetailsAdvancedView(TemplateView):
 
         return super().dispatch(request, *args, **kwargs)
 
-class ManageInventoryView(TemplateView):
+class ManageInventoryView(LoginRequiredMixin, TemplateView):
     template_name = "core/manage_inventory.html"
 
     def get_context_data(self, **kwargs):
