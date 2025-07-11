@@ -12,6 +12,7 @@ from django.db.models import Count, Sum
 from django.db.models.functions import TruncMonth, TruncQuarter
 from django.http import HttpResponse
 from django.shortcuts import redirect
+from django.urls import reverse_lazy
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 from django.views.generic import ListView
@@ -475,6 +476,7 @@ class OrderDetailsAdvancedView(TemplateView):
 
 class ManageInventoryView(LoginRequiredMixin, TemplateView):
     template_name = "core/manage_inventory.html"
+    login_url = reverse_lazy("admin:login")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
