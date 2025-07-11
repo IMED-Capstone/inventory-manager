@@ -4,11 +4,25 @@
 
 {% block bootstrap5_content %}
     <div class="container-fluid">
-        <h1>
-            <a href="{% url 'home' %}" class="text-decoration-none text-dark">
-                {% block title %}Inventory Manager{% endblock %}
-            </a>
-        </h1>
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <!-- Left: Title -->
+            <div>
+                <h1>
+                    <a href="{% url 'home' %}" class="text-decoration-none text-dark">
+                        {% block title %}Inventory Manager{% endblock %}
+                    </a>
+                </h1>
+            </div>
+            <div class="mt-auto">
+                <div class="fw-semibold" class="text-end">
+                {%if user.is_authenticated %}
+                Hello, {{user.get_username}}!
+                {% else %}
+                Hello!
+                {% endif %}
+                </div>
+            </div>
+        </div>
 
         <ul class="nav nav-tabs">
             <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}" href="{% url 'home' %}">Home</a></li>
