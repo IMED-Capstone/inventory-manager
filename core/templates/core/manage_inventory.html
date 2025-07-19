@@ -12,5 +12,23 @@
         <button type="submit" class="btn btn-primary w-10" id="lookup-barcode-button">Item Lookup</button>
     </form>
 </div>
+
+<form method="post" action="{% url 'add_remove_items_by_barcode' %}">
+    {% csrf_token %}
+    <div class="container-fluid mt-2">
+        <div class="btn-group" role="group" aria-label="Basic radio toggle button group">
+        <input type="radio" class="btn-check" name="btnradio" id="btnradio-add" value="add" autocomplete="off" {% if add_remove == "add" %}checked{% endif %}>
+        <label class="btn btn-outline-primary" for="btnradio-add">Add Items</label>
+
+        <input type="radio" class="btn-check" name="btnradio" id="btnradio-remove" value="remove" autocomplete="off" {% if add_remove == "remove" %}checked{% endif %}>
+        <label class="btn btn-outline-primary" for="btnradio-remove">Remove Items</label>
+        </div>
+    </div>
+
+    <div class="container-fluid mt-2">
+        {{ add_remove_items_by_barcode_form.as_p }}
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </div>
+</form>
 {% endblock %}
 

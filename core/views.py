@@ -3,6 +3,8 @@ import json
 import zoneinfo
 from urllib.parse import urlencode
 
+from .forms import AddRemoveItemsByBarcodeForm
+
 import openpyxl
 import simplejson
 from dateutil.relativedelta import relativedelta
@@ -11,10 +13,11 @@ from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Count, Sum
 from django.db.models.functions import TruncMonth, TruncQuarter
 from django.http import HttpResponse
-from django.shortcuts import redirect
-from django.urls import reverse_lazy
+from django.shortcuts import redirect, render
+from django.urls import reverse_lazy, reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_date
+from django.views import View
 from django.views.generic import ListView
 from django.views.generic.base import TemplateView
 from djmoney.money import Money
@@ -480,4 +483,57 @@ class ManageInventoryView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        initial_data = {}
+        if self.request.method == "GET":
+            if self.request.GET.get("lookup_by_id") is not None:
+                item_id = self.request.GET.get("lookup_by_id")
+                if Item.objects.filter(item=item_id).exists():
+                    context["lookup_by_id"] = item_id
+                    initial_data["barcode"] = item_id
+                else:
+                    context["lookup_by_id"] = ""
+        form = AddRemoveItemsByBarcodeForm(initial=initial_data)
+        context["add_remove_items_by_barcode_form"] = form
         return context
+
+
+class AddRemoveItemsByBarcodeView(LoginRequiredMixin, View):
+    template_name = "core/manage_inventory.html"
+
+    def get(self, request):
+        add_remove = request.GET.get("add_remove")
+        barcode = request.GET.get("barcode")
+        initial_data = {
+            "barcode": barcode,
+        }
+        form = AddRemoveItemsByBarcodeForm(initial=initial_data)
+
+        context = {
+            "add_remove_items_by_barcode_form": form,
+            "add_remove": add_remove,
+            "barcode": barcode,
+        }
+
+        return render(request, self.template_name, context)
+
+    def post(self, request):
+        form = AddRemoveItemsByBarcodeForm(request.POST)
+        if form.is_valid():
+            context = {}
+            btnradio = request.POST.get("btnradio")
+            context["add_remove"] = btnradio
+            barcode = request.POST.get("barcode")
+            context["barcode"] = barcode
+
+            if btnradio == "add":
+                print("add")
+            elif btnradio == "remove":
+                print("remove")
+            else:
+                print("invalid value")
+
+            query_string = urlencode(context)
+            url = f"{reverse('add_remove_items_by_barcode')}?{query_string}"
+            return redirect(url)
+        else:
+            return render(request, self.template_name, {'add_remove_items_by_barcode_form': form})
