@@ -13,22 +13,36 @@
     </form>
 </div>
 
-<form method="post" action="{% url 'add_remove_items_by_barcode' %}">
+<form method="post" action="{% url 'add_remove_items_by_barcode' %}" novalidate>
     {% csrf_token %}
+
+    <!-- Radio buttons (manually rendered) -->
     <div class="container-fluid mt-2">
         <div class="btn-group" role="group" aria-label="Basic radio toggle button group">
-        <input type="radio" class="btn-check" name="btnradio" id="btnradio-add" value="add" autocomplete="off" {% if add_remove == "add" %}checked{% endif %}>
-        <label class="btn btn-outline-primary" for="btnradio-add">Add Items</label>
+            <input type="radio" class="btn-check" name="add_remove" id="btnradio-add" value="add"
+                autocomplete="off" {% if add_remove_items_by_barcode_form.add_remove.value == "add" %}checked{% endif %}>
+            <label class="btn btn-outline-primary" for="btnradio-add">Add Items</label>
 
-        <input type="radio" class="btn-check" name="btnradio" id="btnradio-remove" value="remove" autocomplete="off" {% if add_remove == "remove" %}checked{% endif %}>
-        <label class="btn btn-outline-primary" for="btnradio-remove">Remove Items</label>
+            <input type="radio" class="btn-check" name="add_remove" id="btnradio-remove" value="remove"
+                autocomplete="off" {% if add_remove_items_by_barcode_form.add_remove.value == "remove" %}checked{% endif %}>
+            <label class="btn btn-outline-primary" for="btnradio-remove">Remove Items</label>
         </div>
     </div>
 
+    <!-- Other form fields -->
     <div class="container-fluid mt-2">
-        {{ add_remove_items_by_barcode_form.as_p }}
+        {{ add_remove_items_by_barcode_form.barcode.label_tag }}
+        {{ add_remove_items_by_barcode_form.barcode }}
+        {% if add_remove_items_by_barcode_form.barcode.errors %}
+            <div class="text-danger">
+                {{ add_remove_items_by_barcode_form.barcode.errors }}
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Submit -->
+    <div class="container-fluid mt-2">
         <button type="submit" class="btn btn-primary">Submit</button>
     </div>
 </form>
 {% endblock %}
-
