@@ -503,9 +503,11 @@ class AddRemoveItemsByBarcodeView(LoginRequiredMixin, View):
     def get(self, request):
         add_remove = request.GET.get("add_remove")
         barcode = request.GET.get("barcode")
+        item_quantity = request.GET.get("item_quantity")
         initial_data = {
             "barcode": barcode,
             "add_remove": add_remove or "add",
+            "item_quantity": item_quantity
         }
         form = AddRemoveItemsByBarcodeForm(initial=initial_data)
 
@@ -513,6 +515,7 @@ class AddRemoveItemsByBarcodeView(LoginRequiredMixin, View):
             "add_remove_items_by_barcode_form": form,
             "add_remove": add_remove,
             "barcode": barcode,
+            "item_quantity": item_quantity,
         }
 
         return render(request, self.template_name, context)
@@ -522,14 +525,16 @@ class AddRemoveItemsByBarcodeView(LoginRequiredMixin, View):
         if form.is_valid():
             barcode = form.cleaned_data["barcode"]
             add_remove = form.cleaned_data["add_remove"]
+            item_quantity = form.cleaned_data["item_quantity"]
 
-            print(f"Action: {add_remove}, Barcode: {barcode}")
+            print(f"Action: {add_remove}, Barcode: {barcode}, Quantity: {item_quantity}")
 
-            query_string = urlencode({"add_remove": add_remove, "barcode": barcode})
+            query_string = urlencode({"add_remove": add_remove, "barcode": barcode, "item_quantity": item_quantity})
             return redirect(f"{reverse('add_remove_items_by_barcode')}?{query_string}")
 
         return render(request, self.template_name, {
             "add_remove_items_by_barcode_form": form,
             "add_remove": request.POST.get("add_remove"),
             "barcode": request.POST.get("barcode"),
+            "item_quantity": request.POST.get("item_quantity")
         })

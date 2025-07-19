@@ -1,4 +1,5 @@
 from django import forms
+from django.core.validators import MinValueValidator
 
 
 class ExcelUploadForm(forms.Form):
@@ -11,4 +12,13 @@ class AddRemoveItemsByBarcodeForm(forms.Form):
         choices=[('add', 'Add Items'), ('remove', 'Remove Items')],
         widget=forms.RadioSelect(attrs={'class': 'btn-check', 'autocomplete': 'off'}),
         initial='add',
+    )
+    item_quantity = forms.IntegerField(
+        validators=[MinValueValidator(1)],
+        widget=forms.NumberInput(attrs={
+            'min': 1,
+            'class': 'form-control',
+        }),
+        initial=1,
+        required=True
     )

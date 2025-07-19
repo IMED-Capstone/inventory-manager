@@ -16,7 +16,6 @@
 <form method="post" action="{% url 'add_remove_items_by_barcode' %}" novalidate>
     {% csrf_token %}
 
-    <!-- Radio buttons (manually rendered) -->
     <div class="container-fluid mt-2">
         <div class="btn-group" role="group" aria-label="Basic radio toggle button group">
             <input type="radio" class="btn-check" name="add_remove" id="btnradio-add" value="add"
@@ -29,7 +28,6 @@
         </div>
     </div>
 
-    <!-- Other form fields -->
     <div class="container-fluid mt-2">
         {{ add_remove_items_by_barcode_form.barcode.label_tag }}
         {{ add_remove_items_by_barcode_form.barcode }}
@@ -40,7 +38,27 @@
         {% endif %}
     </div>
 
-    <!-- Submit -->
+    <div class="container-fluid mt-2">
+        <div class="d-flex align-items-center flex-wrap">
+            <label for="{{ add_remove_items_by_barcode_form.item_quantity.id_for_label }}" 
+                class="me-2 mb-0" 
+                style="max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            {{ add_remove_items_by_barcode_form.item_quantity.label }}
+            </label>
+            <div style="flex: 0 0 100px;">
+            {{ add_remove_items_by_barcode_form.item_quantity }}
+            </div>
+        </div>
+
+        {% if add_remove_items_by_barcode_form.item_quantity.errors %}
+            <div class="text-danger">
+            {{ add_remove_items_by_barcode_form.item_quantity.errors }}
+            </div>
+        {% endif %}
+        </div>
+
+
+
     <div class="container-fluid mt-2">
         <button type="submit" class="btn btn-primary">Submit</button>
     </div>
