@@ -1,68 +1,84 @@
 {% extends 'core/base.html' %}
 {% load django_bootstrap5 %}
+{% load django_bootstrap5 widget_tweaks %}
 
 {% block title %}Inventory Manager{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <br />
-    <form method="get">
-        <label for="lookup_by_id">Scan Barcode: </label>
-        <input id="lookup_by_id" type="text" name="lookup_by_id" value="{{ item_id }}">
-        <button type="submit" class="btn btn-primary w-10" id="lookup-barcode-button">Item Lookup</button>
-    </form>
+<div class="container py-4">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h2 class="card-title mb-4 text-center">Manage Inventory</h2>
+            
+            <form method="get" class="mb-4">
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-8 col-lg-6">
+                        <label for="lookup_by_id" class="form-label fw-bold">Scan Barcode</label>
+                        <input id="lookup_by_id" type="text" name="lookup_by_id" value="{{ item_id }}" 
+                               class="form-control" placeholder="Enter barcode">
+                    </div>
+                    <div class="col-md-4 col-lg-3">
+                        <button type="submit" class="btn btn-primary w-100" id="lookup-barcode-button">
+                            <i class="bi bi-search me-1"></i> Item Lookup
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            {% if lookup_by_id or barcode %}
+            <form method="post" action="{% url 'add_remove_items_by_barcode' %}" novalidate>
+                {% csrf_token %}
+                
+                <div class="mb-4">
+                    <label class="form-label fw-bold">Action</label>
+                    <div class="btn-group w-100" role="group" aria-label="Add or Remove items">
+                        <input type="radio" class="btn-check" name="add_remove" id="btnradio-add" value="add"
+                               autocomplete="off" {% if add_remove_items_by_barcode_form.add_remove.value == "add" %}checked{% endif %}>
+                        <label class="btn btn-outline-primary" for="btnradio-add">Add Items</label>
+
+                        <input type="radio" class="btn-check" name="add_remove" id="btnradio-remove" value="remove"
+                               autocomplete="off" {% if add_remove_items_by_barcode_form.add_remove.value == "remove" %}checked{% endif %}>
+                        <label class="btn btn-outline-primary" for="btnradio-remove">Remove Items</label>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="{{ add_remove_items_by_barcode_form.barcode.id_for_label }}" class="form-label fw-bold">
+                        {{ add_remove_items_by_barcode_form.barcode.label }}
+                    </label>
+                    {{ add_remove_items_by_barcode_form.barcode }}
+                    {% if add_remove_items_by_barcode_form.barcode.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ add_remove_items_by_barcode_form.barcode.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label for="{{ add_remove_items_by_barcode_form.item_quantity.id_for_label }}" class="form-label fw-bold">
+                        {{ add_remove_items_by_barcode_form.item_quantity.label }}
+                    </label>
+                    <div class="input-group" style="max-width: 200px;">
+                        {{ add_remove_items_by_barcode_form.item_quantity|add_class:"form-control"|attr:"type:number"|attr:"step:1"|attr:"min:1"|attr:'oninput:this.value=this.value.replace(/[^0-9]/g,"")'|attr:'onkeydown:return !["e","E",".","-","+"].includes(event.key)' }}
+                        <span class="input-group-text">units</span>
+                    </div>
+                    {% if add_remove_items_by_barcode_form.item_quantity.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ add_remove_items_by_barcode_form.item_quantity.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="text-end">
+                    <button type="submit" class="btn btn-primary px-4">
+                        <i class="bi bi-check-circle me-1"></i> Submit
+                    </button>
+                </div>
+            </form>
+            {% endif %}
+        </div>
+    </div>
 </div>
 
-{% if lookup_by_id %}
-<form method="post" action="{% url 'add_remove_items_by_barcode' %}" novalidate>
-    {% csrf_token %}
-
-    <div class="container-fluid mt-2">
-        <div class="btn-group" role="group" aria-label="Basic radio toggle button group">
-            <input type="radio" class="btn-check" name="add_remove" id="btnradio-add" value="add"
-                autocomplete="off" {% if add_remove_items_by_barcode_form.add_remove.value == "add" %}checked{% endif %}>
-            <label class="btn btn-outline-primary" for="btnradio-add">Add Items</label>
-
-            <input type="radio" class="btn-check" name="add_remove" id="btnradio-remove" value="remove"
-                autocomplete="off" {% if add_remove_items_by_barcode_form.add_remove.value == "remove" %}checked{% endif %}>
-            <label class="btn btn-outline-primary" for="btnradio-remove">Remove Items</label>
-        </div>
-    </div>
-
-    <div class="container-fluid mt-2">
-        {{ add_remove_items_by_barcode_form.barcode.label_tag }}
-        {{ add_remove_items_by_barcode_form.barcode }}
-        {% if add_remove_items_by_barcode_form.barcode.errors %}
-            <div class="text-danger">
-                {{ add_remove_items_by_barcode_form.barcode.errors }}
-            </div>
-        {% endif %}
-    </div>
-
-    <div class="container-fluid mt-2">
-        <div class="d-flex align-items-center flex-wrap">
-            <label for="{{ add_remove_items_by_barcode_form.item_quantity.id_for_label }}" 
-                class="me-2 mb-0" 
-                style="max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-            {{ add_remove_items_by_barcode_form.item_quantity.label }}
-            </label>
-            <div style="flex: 0 0 100px;">
-            {{ add_remove_items_by_barcode_form.item_quantity }}
-            </div>
-        </div>
-
-        {% if add_remove_items_by_barcode_form.item_quantity.errors %}
-            <div class="text-danger">
-            {{ add_remove_items_by_barcode_form.item_quantity.errors }}
-            </div>
-        {% endif %}
-        </div>
-
-
-
-    <div class="container-fluid mt-2">
-        <button type="submit" class="btn btn-primary">Submit</button>
-    </div>
-</form>
-{% endif %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 {% endblock %}
