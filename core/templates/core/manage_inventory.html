@@ -13,6 +13,7 @@
     </form>
 </div>
 
+{% if lookup_by_id %}
 <form method="post" action="{% url 'add_remove_items_by_barcode' %}" novalidate>
     {% csrf_token %}
 
@@ -63,4 +64,5 @@
         <button type="submit" class="btn btn-primary">Submit</button>
     </div>
 </form>
+{% endif %}
 {% endblock %}
