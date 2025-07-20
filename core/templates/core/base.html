@@ -37,7 +37,7 @@
 
             <div class="d-flex ms-auto">
                 <li class="nav-item">
-                    <a class="nav-link btn btn-secondary text-white {% if request.resolver_match.url_name == 'manage_inventory' %}active{% endif %}" href="{% url 'manage_inventory' %}">Manage Inventory</a>
+                    <a class="nav-link btn btn-secondary text-white {% if request.resolver_match.url_name == 'manage_inventory' or request.resolver_match.url_name == 'add_remove_items_by_barcode' %}active{% endif %}" href="{% url 'manage_inventory' %}">Manage Inventory</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link btn btn-secondary text-white" href="/admin" role="button">Admin Panel</a>
