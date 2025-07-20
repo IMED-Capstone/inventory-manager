@@ -499,6 +499,7 @@ class ManageInventoryView(LoginRequiredMixin, TemplateView):
 
 class AddRemoveItemsByBarcodeView(LoginRequiredMixin, View):
     template_name = "core/manage_inventory.html"
+    login_url = reverse_lazy("admin:login")
 
     def get(self, request):
         add_remove = request.GET.get("add_remove")
