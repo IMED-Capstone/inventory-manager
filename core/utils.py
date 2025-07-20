@@ -135,3 +135,10 @@ def style_excel_sheet(sheet, type, field, i, currency_style):
             max_length = len(str(cell.value))
     
     sheet.column_dimensions[col_letter].width = (max_length + 2)
+
+def absolute_add_remove_quantity(item_quantity: int, add_remove_mode: str):
+    quantity = abs(item_quantity)
+    if add_remove_mode.lower() == "remove":
+        quantity = quantity * -1
+    
+    return quantity

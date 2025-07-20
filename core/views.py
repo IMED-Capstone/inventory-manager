@@ -11,7 +11,7 @@ from dateutil.relativedelta import relativedelta
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.db.models import Count, Sum
+from django.db.models import Count, Sum, F
 from django.db.models.functions import TruncMonth, TruncQuarter
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
@@ -25,7 +25,7 @@ from djmoney.money import Money
 from openpyxl.styles import NamedStyle
 
 from .models import Item, Order
-from .utils import style_excel_sheet, trunc_datetime
+from .utils import style_excel_sheet, trunc_datetime, absolute_add_remove_quantity
 
 
 class HomePageView(TemplateView):
@@ -528,6 +528,12 @@ class AddRemoveItemsByBarcodeView(LoginRequiredMixin, View):
             item_quantity = form.cleaned_data["item_quantity"]
 
             print(f"Action: {add_remove}, Barcode: {barcode}, Quantity: {item_quantity}")
+
+            # Update DB with new value
+            # TODO (update the following, then uncomment below code snippet):
+                #  The "quantity" field does not currently exist, update the model with this field
+                # Replace "item" with the appropriate UID field once created as well
+            # Item.objects.filter(item=barcode).update(quantity=F("quantity") + absolute_add_remove_quantity(item_quantity, add_remove))
 
             query_string = urlencode({"add_remove": add_remove, "barcode": barcode, "item_quantity": item_quantity})
             return redirect(f"{reverse('add_remove_items_by_barcode')}?{query_string}")
