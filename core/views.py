@@ -3,23 +3,29 @@ import json
 import zoneinfo
 from urllib.parse import urlencode
 
+from .forms import AddRemoveItemsByBarcodeForm
+
 import openpyxl
 import simplejson
 from dateutil.relativedelta import relativedelta
+from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.db.models import Count, Sum
+from django.db.models import Count, Sum, F
 from django.db.models.functions import TruncMonth, TruncQuarter
 from django.http import HttpResponse
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
+from django.urls import reverse_lazy, reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_date
+from django.views import View
 from django.views.generic import ListView
 from django.views.generic.base import TemplateView
 from djmoney.money import Money
 from openpyxl.styles import NamedStyle
 
 from .models import Item, Order
-from .utils import style_excel_sheet, trunc_datetime
+from .utils import style_excel_sheet, trunc_datetime, absolute_add_remove_quantity
 
 
 class HomePageView(TemplateView):
@@ -471,3 +477,70 @@ class OrderDetailsAdvancedView(TemplateView):
                     return redirect(new_url)
 
         return super().dispatch(request, *args, **kwargs)
+
+class ManageInventoryView(LoginRequiredMixin, TemplateView):
+    template_name = "core/manage_inventory.html"
+    login_url = reverse_lazy("admin:login")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        initial_data = {}
+        if self.request.method == "GET":
+            if self.request.GET.get("lookup_by_id") is not None:
+                item_id = self.request.GET.get("lookup_by_id")
+                if Item.objects.filter(item=item_id).exists():
+                    context["lookup_by_id"] = item_id
+                    initial_data["barcode"] = item_id
+                else:
+                    context["lookup_by_id"] = ""
+                    messages.error(self.request, f"Item with ID \"{item_id}\" does not exist.")
+        form = AddRemoveItemsByBarcodeForm(initial=initial_data)
+        context["add_remove_items_by_barcode_form"] = form
+        return context
+
+
+class AddRemoveItemsByBarcodeView(LoginRequiredMixin, View):
+    template_name = "core/manage_inventory.html"
+    login_url = reverse_lazy("admin:login")
+
+    def get(self, request):
+        form = AddRemoveItemsByBarcodeForm(data=request.GET)
+
+        if form.is_valid():
+            cleaned_data = form.cleaned_data
+        else:
+            cleaned_data = {}
+
+        context = {
+            "add_remove_items_by_barcode_form": form,
+            "add_remove": cleaned_data.get("add_remove"),
+            "barcode": cleaned_data.get("barcode"),
+            "item_quantity": cleaned_data.get("item_quantity"),
+        }
+
+        return render(request, self.template_name, context)
+
+    def post(self, request):
+        form = AddRemoveItemsByBarcodeForm(request.POST)
+        if form.is_valid():
+            barcode = form.cleaned_data["barcode"]
+            add_remove = form.cleaned_data["add_remove"]
+            item_quantity = form.cleaned_data["item_quantity"]
+
+            print(f"Action: {add_remove}, Barcode: {barcode}, Quantity: {item_quantity}")
+
+            # Update DB with new value
+            # TODO (update the following, then uncomment below code snippet):
+                #  The "quantity" field does not currently exist, update the model with this field
+                # Replace "item" with the appropriate UID field once created as well
+            # Item.objects.filter(item=barcode).update(quantity=F("quantity") + absolute_add_remove_quantity(item_quantity, add_remove))
+
+            query_string = urlencode({"add_remove": add_remove, "barcode": barcode, "item_quantity": item_quantity})
+            return redirect(f"{reverse('add_remove_items_by_barcode')}?{query_string}")
+
+        return render(request, self.template_name, {
+            "add_remove_items_by_barcode_form": form,
+            "add_remove": request.POST.get("add_remove"),
+            "barcode": request.POST.get("barcode"),
+            "item_quantity": request.POST.get("item_quantity")
+        })
