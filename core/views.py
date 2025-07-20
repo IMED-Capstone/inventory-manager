@@ -8,6 +8,7 @@ from .forms import AddRemoveItemsByBarcodeForm
 import openpyxl
 import simplejson
 from dateutil.relativedelta import relativedelta
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Count, Sum
@@ -492,6 +493,7 @@ class ManageInventoryView(LoginRequiredMixin, TemplateView):
                     initial_data["barcode"] = item_id
                 else:
                     context["lookup_by_id"] = ""
+                    messages.error(self.request, f"Item with ID \"{item_id}\" does not exist.")
         form = AddRemoveItemsByBarcodeForm(initial=initial_data)
         context["add_remove_items_by_barcode_form"] = form
         return context
