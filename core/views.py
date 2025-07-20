@@ -504,21 +504,18 @@ class AddRemoveItemsByBarcodeView(LoginRequiredMixin, View):
     login_url = reverse_lazy("admin:login")
 
     def get(self, request):
-        add_remove = request.GET.get("add_remove")
-        barcode = request.GET.get("barcode")
-        item_quantity = request.GET.get("item_quantity")
-        initial_data = {
-            "barcode": barcode,
-            "add_remove": add_remove or "add",
-            "item_quantity": item_quantity
-        }
-        form = AddRemoveItemsByBarcodeForm(initial=initial_data)
+        form = AddRemoveItemsByBarcodeForm(data=request.GET)
+
+        if form.is_valid():
+            cleaned_data = form.cleaned_data
+        else:
+            cleaned_data = {}
 
         context = {
             "add_remove_items_by_barcode_form": form,
-            "add_remove": add_remove,
-            "barcode": barcode,
-            "item_quantity": item_quantity,
+            "add_remove": cleaned_data.get("add_remove"),
+            "barcode": cleaned_data.get("barcode"),
+            "item_quantity": cleaned_data.get("item_quantity"),
         }
 
         return render(request, self.template_name, context)
