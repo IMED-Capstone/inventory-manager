@@ -6,30 +6,252 @@
 
 {% block content %}
 
+<style>
+/* General container styling */
+#DateHeader {
+    padding: 0.75rem;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#DateHeader h4 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #343a40;
+}
+
+/* Form styling */
+.form-container {
+    max-width: 50rem;
+}
+
+.form-label {
+    font-weight: 500;
+    color: #495057;
+}
+
+.form-control, .form-select {
+    border-radius: 6px;
+    border: 1px solid #ced4da;
+    transition: border-color 0.3s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Button group styling */
+.d-flex.gap-2 {
+    gap: 0.75rem !important;
+}
+
+.btn {
+    padding: 0.5rem 1.5rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+    border-color: #004085;
+}
+
+.btn-success:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+}
+
+/* Table styling */
+.table {
+    background-color: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.table thead {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.table thead th {
+    background-color: #e9ecef;
+    font-weight: 600;
+    color: #343a40;
+    padding: 1rem;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+}
+
+.table tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+.table tbody tr:hover {
+    background-color: #f1f3f5;
+}
+
+.table td {
+    vertical-align: middle;
+    padding: 0.75rem;
+    font-size: 0.95rem;
+    color: #495057;
+}
+
+.table a[data-bs-toggle="modal"] {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.table a[data-bs-toggle="modal"]:hover {
+    color: #0056b3;
+    text-decoration: underline;
+}
+
+.table .icon-link {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.table .icon-link:hover {
+    color: #0056b3;
+    text-decoration: underline;
+}
+
+/* Modal styling */
+.modal-content {
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.modal-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #343a40;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-body p {
+    margin-bottom: 0.75rem;
+    font-size: 0.95rem;
+    color: #495057;
+}
+
+.modal-body strong {
+    color: #343a40;
+}
+
+.btn-close {
+    transition: opacity 0.3s ease;
+}
+
+.btn-close:hover {
+    opacity: 0.7;
+}
+
+/* Pagination styling */
+.pagination {
+    margin-top: 1.5rem;
+}
+
+.page-link {
+    border-radius: 6px;
+    margin: 0 0.25rem;
+    color: #007bff;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.page-link:hover {
+    background-color: #e9ecef;
+    color: #0056b3;
+}
+
+.page-item.disabled .page-link {
+    background-color: #f8f9fa;
+    color: #6c757d;
+}
+
+.text-muted {
+    font-size: 0.85rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .form-container {
+        width: 100% !important;
+    }
+
+    .row.mb-3 .col-md-4 {
+        margin-bottom: 1rem;
+    }
+
+    .d-flex.gap-2 {
+        flex-direction: column;
+    }
+
+    .btn {
+        width: 100% !important;
+        margin-bottom: 0.5rem;
+    }
+
+    .table {
+        font-size: 0.9rem;
+    }
+
+    .pagination {
+        flex-wrap: wrap;
+    }
+
+    .modal-dialog {
+        margin: 0.5rem;
+    }
+}
+</style>
+
 <div id="DateHeader">
-    <br />
     <h4>Current range:</h4>
-    <form method="get" class="container-fluid" style="width: 60%; margin-left: 0;">
+    <form method="get" class="form-container">
         <div class="row mb-3">
             <div class="col-md-4">
                 <label for="start" class="form-label">Start Date:</label>
                 <input type="date" name="start_date" id="start" value="{{ start_date }}"
                     min="{{ lower_date_bound }}" max="{{ upper_date_bound }}"
-                    class="form-control">
+                    class="form-control" aria-describedby="startHelp">
+                    <small id="startHelp" class="form-text text-muted">Select start date for the range.</small>
             </div>
             <div class="col-md-4">
                 <label for="end" class="form-label">End Date:</label>
                 <input type="date" name="end_date" id="end" value="{{ end_date }}"
                     min="{{ lower_date_bound }}" max="{{ upper_date_bound }}"
-                    class="form-control">
+                    class="form-control" aria-describedby="endHelp">
+                    <small id="endHelp" class="form-text text-muted">Select end date for the range.</small>
             </div>
             <div class="col-md-4">
                 <label for="per_page" class="form-label">Items per page:</label>
-                <select class="form-select" name="per_page" id="per_page" onchange="this.form.submit()">
+                <select class="form-select" name="per_page" id="per_page" onchange="this.form.submit()" aria-describedby="paginatorHelp">
                     {% for option in per_page_options %}
                         <option value="{{ option }}" {% if per_page|stringformat:"s" == option|stringformat:"s" %}selected{% endif %}>{{ option }}</option>
                     {% endfor %}
                 </select>
+                <small id="paginatorHelp" class="form-text text-muted">Items to display per page.</small>
             </div>
         </div>
 
@@ -47,35 +269,35 @@
 
 <!-- Pagination (Above Table) -->
 {% if is_paginated %}
-<nav>
-  <div class="container d-flex flex-column align-items-center">
-    <ul class="pagination justify-content-center mb-1">
-      {% if page_obj.has_previous %}
-        <li class="page-item">
-          <a class="page-link" href="?page=1&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}">First</a>
-        </li>
-        <li class="page-item">
-          <a class="page-link" href="?page={{ page_obj.previous_page_number }}&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}">Previous</a>
-        </li>
-      {% endif %}
+<nav aria-label="Pagination">
+    <div class="container d-flex flex-column align-items-center">
+        <ul class="pagination justify-content-center mb-1">
+            {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}" aria-label="First page">First</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}" aria-label="Previous page">Previous</a>
+                </li>
+            {% endif %}
 
-      <li class="page-item disabled">
-        <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
-      </li>
+            <li class="page-item disabled" aria-current="page">
+                <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+            </li>
 
-      {% if page_obj.has_next %}
-        <li class="page-item">
-          <a class="page-link" href="?page={{ page_obj.next_page_number }}&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}">Next</a>
-        </li>
-        <li class="page-item">
-          <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}">Last</a>
-        </li>
-      {% endif %}
-    </ul>
-    <div class="text-muted small">
-      Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ orders_count }} total orders
+            {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}" aria-label="Next page">Next</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}" aria-label="Last page">Last</a>
+                </li>
+            {% endif %}
+        </ul>
+        <div class="text-muted small">
+            Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ orders_count }} total orders
+        </div>
     </div>
-  </div>
 </nav>
 {% endif %}
 
@@ -92,80 +314,92 @@
         {% for order in orders %}
             <tr>
                 {% for field in fields %}
-                <td>
-                  {% with value=order|get_field_value:field %}
-                    {% if field == "item" %}
-                      <a href="#" data-bs-toggle="modal" data-bs-target="#itemModal{{ order.id }}">
-                        {{ order.item.item }}
-                      </a>
-                      <!-- Modal -->
-                      <div class="modal fade" id="itemModal{{ order.id }}" tabindex="-1" aria-labelledby="itemModalLabel{{ order.id }}" aria-hidden="true">
-                          <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-                              <div class="modal-content">
-                                  <div class="modal-header">
-                                      <h5 class="modal-title" id="itemModalLabel{{ order.id }}">Item Details</h5>
-                                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                  </div>
-                                  <div class="modal-body text-start">
-                                      <p><strong>Item:</strong> {{ order.item.item }}</p>
-                                      <p><strong>Item No:</strong> {{ order.item.item_no }}</p>
-                                      <p><strong>Manufacturer:</strong> {{ order.item.mfr }}</p>
-                                      <p><strong>MFR Catalog:</strong> {{ order.item.mfr_cat }}</p>
-                                      <p><strong>Description:</strong> {{ order.item.descr }}</p>
-                                      <p><strong>Par Level:</strong> {{ order.item.par_level }}</p>
-                                      <p><strong>External URL:</strong> <a class="icon-link icon-link-hover" href="{{ order.item.external_url }}" target="_blank"> Link {% bs_icon 'box-arrow-up-right' %}</a></p>
-                                  </div>
-                              </div>
-                          </div>
-                      </div>
-                    {% elif field == "external_url" %}
-                        {% if value %}
-                              <a class="icon-link icon-link-hover" href="{{ value }}" target="_blank">Link {% bs_icon 'box-arrow-up-right' %}</a>
-                        {% endif %}
-                    {% else %}
-                        {{ value }}
-                    {% endif %}
+                    <td>
+                        {% with value=order|get_field_value:field %}
+                            {% if field == "item" %}
+                                <a href="#" data-bs-toggle="modal" data-bs-target="#itemModal{{ order.id }}">
+                                    {{ order.item.item }}
+                                </a>
+                                <!-- Modal -->
+                                <div class="modal fade" id="itemModal{{ order.id }}" tabindex="-1" aria-labelledby="itemModalLabel{{ order.id }}" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="itemModalLabel{{ order.id }}">Item Details</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body text-start">
+                                                <p><strong>Item:</strong> {{ order.item.item }}</p>
+                                                <p><strong>Item No:</strong> {{ order.item.item_no }}</p>
+                                                <p><strong>Manufacturer:</strong> {{ order.item.mfr }}</p>
+                                                <p><strong>MFR Catalog:</strong> {{ order.item.mfr_cat }}</p>
+                                                <p><strong>Description:</strong> {{ order.item.descr }}</p>
+                                                <p><strong>Par Level:</strong> {{ order.item.par_level }}</p>
+                                                <p><strong>External URL:</strong> 
+                                                    {% if order.item.external_url %}
+                                                        <a class="icon-link icon-link-hover" href="{{ order.item.external_url }}" target="_blank">Link {% bs_icon 'box-arrow-up-right' %}</a>
+                                                    {% else %}
+                                                        None
+                                                    {% endif %}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% elif field == "external_url" %}
+                                {% if value %}
+                                    <a class="icon-link icon-link-hover" href="{{ value }}" target="_blank">Link {% bs_icon 'box-arrow-up-right' %}</a>
+                                {% else %}
+                                    <span>None</span>
+                                {% endif %}
+                            {% else %}
+                                {{ value }}
+                            {% endif %}
                         </td>
-                  {% endwith %}
-                {% endfor %}
-            </tr>
-        {% empty %}
-        <tr><td colspan="{{ fields|length }}">No items found.</td></tr>
-        {% endfor %}
-    </tbody>
-</table>
+                        {% endwith %}
+                    {% endfor %}
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="{{ fields|length }}" class="text-center text-muted py-4">
+                        No orders found. Try adjusting the date range or filters.
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 
 <!-- Pagination (Below Table) -->
 {% if is_paginated %}
-<nav class="mt-3">
-  <div class="container d-flex flex-column align-items-center">
-    <ul class="pagination justify-content-center mb-1">
-      {% if page_obj.has_previous %}
-        <li class="page-item">
-          <a class="page-link" href="?page=1&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}">First</a>
-        </li>
-        <li class="page-item">
-          <a class="page-link" href="?page={{ page_obj.previous_page_number }}&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}">Previous</a>
-        </li>
-      {% endif %}
+<nav aria-label="Pagination" class="mt-3">
+    <div class="container d-flex flex-column align-items-center">
+        <ul class="pagination justify-content-center mb-1">
+            {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}" aria-label="First page">First</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}" aria-label="Previous page">Previous</a>
+                </li>
+            {% endif %}
 
-      <li class="page-item disabled">
-        <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
-      </li>
+            <li class="page-item disabled" aria-current="page">
+                <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+            </li>
 
-      {% if page_obj.has_next %}
-        <li class="page-item">
-          <a class="page-link" href="?page={{ page_obj.next_page_number }}&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}">Next</a>
-        </li>
-        <li class="page-item">
-          <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}">Last</a>
-        </li>
-      {% endif %}
-    </ul>
-    <div class="text-muted small">
-      Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ orders_count }} total orders
+            {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}" aria-label="Next page">Next</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}" aria-label="Last page">Last</a>
+                </li>
+            {% endif %}
+        </ul>
+        <div class="text-muted small">
+            Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ orders_count }} total orders
+        </div>
     </div>
-  </div>
 </nav>
 {% endif %}
 
