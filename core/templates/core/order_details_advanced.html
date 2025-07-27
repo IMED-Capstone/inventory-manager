@@ -5,394 +5,657 @@
 
 {% block content %}
 
+<style>
+#DateHeader {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#DateHeader h4 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #343a40;
+    margin-left: 0.5rem;
+}
+
+.form-container {
+    max-width: 200rem;
+    margin: 0 auto;
+    margin-left: 0.5rem;
+    margin-right: 0.5rem;
+}
+
+.form-label {
+    font-weight: 500;
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+.form-control, .form-select {
+    border-radius: 6px;
+    border: 1px solid #ced4da;
+    transition: border-color 0.3s ease;
+    margin-bottom: 0.75rem;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.form-check {
+    display: flex;
+    align-items: center;
+    margin-top: 0.5rem;
+}
+
+.form-check-input {
+    margin-right: 0.5rem;
+}
+
+.form-check-label {
+    font-size: 0.95rem;
+    color: #495057;
+}
+
+#category {
+    height: 200px;
+    min-width: 400px;
+}
+
+.d-flex.gap-2 {
+    gap: 0.75rem !important;
+}
+
+.btn {
+    padding: 0.5rem 1.5rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+    border-color: #004085;
+}
+
+.btn-success:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+}
+
+#ChartContainer {
+    padding: 1.5rem;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.chart-container {
+    display: inline-block;
+    width: 47%;
+    margin: 1%;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+    
+    height: 33rem;
+    vertical-align: top;
+    box-sizing: border-box;
+}
+
+.no-orders {
+    text-align: center;
+    font-size: 1rem;
+    color: #6c757d;
+    padding: 2rem;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-top: 1rem;
+}
+
+@media (max-width: 768px) {
+    .form-container {
+        width: 100% !important;
+    }
+
+    .row.mb-3 .col-md-5, .row.mb-3 .col-md-7, .row.mb-3 .col-md-6 {
+        margin-bottom: 1rem;
+    }
+
+    .d-flex.gap-2 {
+        flex-direction: column;
+    }
+
+    .btn {
+        width: 100% !important;
+        margin-bottom: 0.5rem;
+    }
+
+    .chart-container {
+        width: 100%;
+        margin: 1rem 0;
+        min-height: 300px;
+        height: auto;
+    }
+
+    .form-check {
+        margin-top: 1rem;
+    }
+
+    #category {
+        height: 150px;
+        min-width: auto;
+    }
+}
+
+@media (max-width: 768px) {
+    .chart-container canvas {
+        font-size: 10px;
+    }
+    .chart-container canvas .chartjs-tooltip {
+        font-size: 10px;
+    }
+}
+</style>
+
+
 <div id="DateHeader">
     <br />
     <h4>Current range:</h4>
-    <form method="get" class="container-fluid" style="width: 60%; margin-left: 0;">
+    <form method="get" class="form-container">
         <div class="row mb-3">
-            <div class="col-md-4">
-                <div class="col">
-                    <label for="start" class="form-label">Start Date:</label>
-                    <input type="date" name="start_date" id="start" value="{{ start_date }}"
-                        min="{{ lower_date_bound }}" max="{{ upper_date_bound }}"
-                        class="form-control">
+            <div class="col-md-5">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="start" class="form-label">Start Date:</label>
+                        <input type="date" name="start_date" id="start" value="{{ start_date }}"
+                            min="{{ lower_date_bound }}" max="{{ upper_date_bound }}"
+                            class="form-control" aria-describedby="startHelp">
+                        <small id="startHelp" class="form-text text-muted">Select start date for the range.</small>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="end" class="form-label">End Date:</label>
+                        <input type="date" name="end_date" id="end" value="{{ end_date }}"
+                            min="{{ lower_date_bound }}" max="{{ upper_date_bound }}"
+                            class="form-control" aria-describedby="endHelp">
+                        <small id="endHelp" class="form-text text-muted">Select end date for the range.</small>
+                    </div>
                 </div>
-                <div class="col">
-                    <label for="quarter" class="form-label">Quarter:</label>
-                    <select name="quarter" id="quarter" class="form-select">
-                        <option value="">---</option>
-                        {% for quarter, quarter_display in all_quarters.items %}
-                            <option value="{{ quarter }}" {% if quarter in selected_quarter %}selected{% endif %}>
-                                {{ quarter_display }}
-                            </option>
-                        {% endfor %}
-                    </select>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="quarter" class="form-label">Quarter:</label>
+                        <select name="quarter" id="quarter" class="form-select" aria-describedby="quarterHelp">
+                            <option value="">---</option>
+                            {% for quarter, quarter_display in all_quarters.items %}
+                                <option value="{{ quarter }}" {% if quarter in selected_quarter %}selected{% endif %}>
+                                    {{ quarter_display }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <small id="quarterHelp" class="form-text text-muted">Select a quarter to filter.</small>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="1" id="group_by_quarter" checked aria-describedby="groupByQuarterHelp">
+                            <label class="form-check-label" for="group_by_quarter">
+                                Group by Quarter
+                            </label>
+                        </div>
+                        <small id="groupByQuarterHelp" class="form-text text-muted">Toggle to show/hide quarterly chart.</small>
+                    </div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="col">
-                    <label for="end" class="form-label">End Date:</label>
-                    <input type="date" name="end_date" id="end" value="{{ end_date }}"
-                        min="{{ lower_date_bound }}" max="{{ upper_date_bound }}"
-                        class="form-control">
-                </div>
-                <div class="col">
-                    <div class="form-check mt-5">
-                        <input class="form-check-input me-2" type="checkbox" value="1" id="group_by_quarter" checked>
-                        <label class="form-check-label" for="group_by_quarter">
-                            Group by Quarter
-                        </label>
-                    </div>                    
-                </div>
-            </div>
-            <div class="col-md-4">
+            <div class="col-md-7">
                 <label for="category" class="form-label">Item:</label>
-                <select name="category[]" id="category" class="form-select" multiple>
+                <select name="category[]" id="category" class="form-select" multiple aria-describedby="categoryHelp">
                     <option value="">All</option>
                     {% for item_no, item_descr in all_items.items %}
-                    <option value="{{ item_no }}" {% if item_no in selected_item_no %}selected{% endif %}>
-                        {{ item_descr }}
-                    </option>
+                        <option value="{{ item_no }}" {% if item_no in selected_item_no %}selected{% endif %}>
+                            {{ item_descr }}
+                        </option>
                     {% endfor %}
                 </select>
+                <small id="categoryHelp" class="form-text text-muted">Select one or more items to filter (ctrl + click to select multiple items).</small>
             </div>
-
-            <div class="row mb-3 mt-3">
-                <div class="col-md-9 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary w-50" id="filter-button">Filter</button>
-                    <a href="{% url 'export-orders' %}?start_date={{ start_date }}&end_date={{ end_date }}" class="btn btn-success w-50">Export to Excel</a>
-                    <a href="/orders_advanced" class="btn btn-danger w-50" id="reset-button">Reset Dates</a>
-                </div>
+        </div>
+        <div class="row mb-3 mt-3">
+            <div class="col-md-7 d-flex gap-2">
+                <button type="submit" class="btn btn-primary w-50" id="filter-button">Filter</button>
+                <a href="{% url 'export-orders' %}?start_date={{ start_date }}&end_date={{ end_date }}" class="btn btn-success w-50">Export to Excel</a>
+                <a href="/orders_advanced" class="btn btn-danger w-50" id="reset-button">Reset Dates</a>
             </div>
-            
+        </div>
     </form>
 </div>
 
-
-{%if total_orders_across_range > 0 %}
+{% if total_orders_across_range > 0 %}
 <div id="ChartContainer">
     <div class="chart-container">
-        <canvas id="orders-by-month"></canvas>
+        <canvas id="orders-by-month" role="img" aria-label="Bar chart showing orders and cost by month"></canvas>
     </div>
     <div class="chart-container" id="orders-by-quarter-container">
-        <canvas id="orders-by-quarter"></canvas>
+        <canvas id="orders-by-quarter" role="img" aria-label="Bar chart showing orders and cost by quarter"></canvas>
     </div>
     <div class="chart-container">
-        <canvas id="orders-by-mfr"></canvas>
+        <canvas id="orders-by-mfr" role="img" aria-label="Bar and line chart showing orders by manufacturer with cumulative percentage"></canvas>
     </div>
     {% if not selected_item_no %}
     <div class="chart-container">
-        <canvas id="commonly-ordered-items"></canvas>
+        <canvas id="commonly-ordered-items" role="img" aria-label="Bar and line chart showing commonly ordered items with cumulative percentage"></canvas>
     </div>
     {% endif %}
 </div>
 {% else %}
-    <p> No orders found in the given range. </p>
+    <p class="no-orders">No orders found in the given range. Try adjusting the date range or filters.</p>
 {% endif %}
 
 <script>
-    var ordersByMonthCtx = document.getElementById('orders-by-month')
-    var ordersByMonthChart = new Chart(ordersByMonthCtx, {
-        type: 'bar',
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    position: 'top'
-                },
-                title: {
-                    display: true,
-                    text: 'Orders and Cost by Month'
-                }
-            },
-            stacked: false,
-            scales: {
-                'Orders By Month': {
-                    type: 'linear',
-                    position: 'left',
-                    display: true,
-                    title: {
-                        text: "Order by Month",
-                        display: true
-                    }
-                },
-                'Cost By Month': {
-                    type: 'linear',
-                    position: 'right',
-                    display: true,
-                    grid: {
-                        drawOnChartArea: false,
-                    },
-                    ticks: {
-                        callback: function(value, index, ticks) {
-                            return '$' + Chart.Ticks.formatters.numeric.apply(this, [value, index, ticks]);
-                        }
-                    },
-                    title: {
-                        text: "Cost by Month ($)",
-                        display: true
-                    }
-                },
-            }
-        },
-        data: {
-            labels: JSON.parse('{{ orders_by_month_keys|safe }}'),
-            datasets: [
-                {
-                    label: 'Orders By Month',
-                    yAxisID: 'Orders By Month',
-                    data: JSON.parse('{{ orders_by_month_values|safe }}'),
-                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    borderWidth: 1
-                },
-                {
-                    label: 'Cost By Month',
-                    yAxisID: 'Cost By Month',
-                    data: JSON.parse('{{ cost_by_month_values|safe }}'),
-                    backgroundColor: 'rgba(255, 104, 0, 0.5)',
-                    borderColor: 'rgba(255, 104, 0, 0.5)',
-                    borderWidth: 1
-                }
-            ]
+    function getChartFontSizes() {
+        if (window.innerWidth < 768) {
+            return {
+                titleSize: 14,
+                legendSize: 12,
+                axisLabelSize: 10,
+                tickLabelSize: 10
+            };
         }
-    });
+        return {
+            titleSize: 16,
+            legendSize: 14,
+            axisLabelSize: 14,
+            tickLabelSize: 12
+        };
+    }
 
-    var ordersByQuarterCtx = document.getElementById('orders-by-quarter')
-    var ordersByMonthChart = new Chart(ordersByQuarterCtx, {
-        type: 'bar',
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    position: 'top'
-                },
-                title: {
-                    display: true,
-                    text: 'Orders and Cost by Quarter'
-                }
-            },
-            stacked: false,
-            scales: {
-                'Orders By Quarter': {
-                    type: 'linear',
-                    position: 'left',
-                    display: true,
-                    title: {
-                        text: "Order by Quarter",
-                        display: true
-                    }
-                },
-                'Cost By Quarter': {
-                    type: 'linear',
-                    position: 'right',
-                    display: true,
-                    grid: {
-                        drawOnChartArea: false,
-                    },
-                    ticks: {
-                        callback: function(value, index, ticks) {
-                            return '$' + Chart.Ticks.formatters.numeric.apply(this, [value, index, ticks]);
-                        }
-                    },
-                    title: {
-                        text: "Cost by Month ($)",
-                        display: true
-                    }
-                },
-            }
-        },
-        data: {
-            labels: JSON.parse('{{ orders_by_quarter_keys|safe }}'),
-            datasets: [
-                {
-                    label: 'Orders By Quarter',
-                    yAxisID: 'Orders By Quarter',
-                    data: JSON.parse('{{ orders_by_quarter_values|safe }}'),
-                    backgroundColor: 'rgba(0, 150, 136, 0.5)',
-                    borderColor: 'rgba(0, 150, 136, 1)',
-                    borderWidth: 1
-                },
-                {
-                    label: 'Cost By Quarter',
-                    yAxisID: 'Cost By Quarter',
-                    data: JSON.parse('{{ cost_by_quarter_values|safe }}'),
-                    backgroundColor: 'rgba(156, 39, 176, 0.5)',
-                    borderColor: 'rgba(156, 39, 176, 0.5)',
-                    borderWidth: 1
-                }
-            ]
+    function createChart(ctx, type, options, data) {
+        const fontSizes = getChartFontSizes();
+        
+        if (options.plugins && options.plugins.legend && options.plugins.legend.labels) {
+            options.plugins.legend.labels.font = { size: fontSizes.legendSize, weight: '500' };
         }
-    });
-
-    var ordersByMfrCtx = document.getElementById('orders-by-mfr')
-    var ordersByMfrChart = new Chart(ordersByMfrCtx, {
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    position: 'top'
-                },
-                title: {
-                    display: true,
-                    text: 'Orders by Manufacturer (Top 50)'
-                }
-            },
-            stacked: false,
-            scales: {
-                "Orders by Manufacturer": {
-                    beginAtZero: true,
-                    title: {
-                        text: "Orders by Manufacturer",
-                        display: true
-                    },
-                },
-                "Pareto": {
-                    position: "right",
-                    title: {
-                        text: "Cumulative Percentage",
-                        display: true
-                    },
-                    grid: {
-                        drawOnChartArea: false,
-                    },
-                    min: 0,
-                    max: 100,
-                },
-            }
-        },
-        data: {
-            labels: JSON.parse('{{ mfrs_keys|safe }}'),
-            datasets: [
-                {
-                    type: "bar",
-                    label: 'Orders by Manufacturer',
-                    yAxisID: "Orders by Manufacturer",
-                    backgroundColor: 'rgba(75, 192, 192, 0.5)',
-                    data: JSON.parse('{{ mfrs_values|safe }}'),
-                },
-                {
-                    type: 'line',
-                    label: 'Cumulative Percentage',
-                    yAxisID: "Pareto",
-                    borderColor: 'rgba(255, 99, 132, 1)',
-                    data: JSON.parse('{{ mfrs_pareto|safe }}'),
-                }
-            ]
+        if (options.plugins && options.plugins.title) {
+            options.plugins.title.font = { size: fontSizes.titleSize, weight: '600' };
         }
-    });
 
-
-
-    var commonlyOrderedItemsCtx = document.getElementById('commonly-ordered-items')
-    var commonlyOrderedItemsChart = new Chart(commonlyOrderedItemsCtx, {
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    position: 'top'
-                },
-                title: {
-                    display: true,
-                    text: 'Commonly Ordered Items (Top 50)'
-                }
-            },
-            stacked: false,
-            scales: {
-                "Commonly Ordered Items": {
-                    beginAtZero: true,
-                    title: {
-                        text: "Commonly Ordered Items",
-                        display: true
-                    },
-                },
-                "Pareto": {
-                    position: "right",
-                    title: {
-                        text: "Cumulative Percentage",
-                        display: true
-                    },
-                    grid: {
-                        drawOnChartArea: false,
-                    },
-                    min: 0,
-                    max: 100,
-                },
+        for (const scaleId in options.scales) {
+            const scale = options.scales[scaleId];
+            if (scale.title) {
+                scale.title.font = scale.title.font || {};
+                scale.title.font.size = fontSizes.axisLabelSize;
             }
-        },
-        data: {
-            labels: JSON.parse('{{ commonly_ordered_keys|safe }}'),
-            datasets: [
-                {
-                    type: 'bar',
-                    label: "Commonly Ordered Items",
-                    yAxisID: "Commonly Ordered Items",
-                    backgroundColor: 'rgba(153, 102, 255, 0.5)',
-                    data: JSON.parse('{{ commonly_ordered_values|safe }}'),
-                },
-                {
-                    type: 'line',
-                    label: 'Cumulative Percentage',
-                    yAxisID: "Pareto",
-                    borderColor: 'rgba(255, 99, 132, 1)',
-                    data: JSON.parse('{{ commonly_ordered_values_pareto|safe }}'),
-                }
-            ]
+            if (scale.ticks) {
+                scale.ticks.font = scale.ticks.font || {};
+                scale.ticks.font.size = fontSizes.tickLabelSize;
+            }
         }
-    });
 
-var quarterSelect = document.getElementById("quarter");
-document.getElementById("start").addEventListener("input", (event) => quarterSelect.selectedIndex = 0)
-document.getElementById("end").addEventListener("input", (event) => quarterSelect.selectedIndex = 0)
-
-document.addEventListener('DOMContentLoaded', function () {
-            const checkbox = document.getElementById('group_by_quarter');
-            const ordersByQuarterContainer = document.getElementById('orders-by-quarter-container');
-
-            function updateDivVisibility() {
-                if (checkbox.checked) {
-                    ordersByQuarterContainer.style.display = 'inline-block';
-                } else {
-                    ordersByQuarterContainer.style.display = 'none';
-                }
-            }
-
-            checkbox.addEventListener('change', updateDivVisibility);
-            updateDivVisibility();
+        return new Chart(ctx, {
+            type: type,
+            options: options,
+            data: data
         });
+    }
+
+    const ordersByMonthData = {
+        labels: JSON.parse('{{ orders_by_month_keys|safe }}'),
+        datasets: [
+            {
+                label: 'Orders By Month',
+                yAxisID: 'Orders By Month',
+                data: JSON.parse('{{ orders_by_month_values|safe }}'),
+                backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            },
+            {
+                label: 'Cost By Month',
+                yAxisID: 'Cost By Month',
+                data: JSON.parse('{{ cost_by_month_values|safe }}'),
+                backgroundColor: 'rgba(255, 159, 64, 0.5)',
+                borderColor: 'rgba(255, 159, 64, 1)',
+                borderWidth: 1
+            }
+        ]
+    };
+    const ordersByMonthOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'top',
+                labels: {
+                    color: '#343a40'
+                }
+            },
+            title: {
+                display: true,
+                text: 'Orders and Cost by Month',
+                color: '#343a40',
+                padding: 20
+            }
+        },
+        scales: {
+            'Orders By Month': {
+                type: 'linear',
+                position: 'left',
+                display: true,
+                title: {
+                    text: "Orders by Month",
+                    display: true,
+                    color: '#495057'
+                },
+                grid: {
+                    borderColor: '#dee2e6'
+                }
+            },
+            'Cost By Month': {
+                type: 'linear',
+                position: 'right',
+                display: true,
+                grid: {
+                    drawOnChartArea: false
+                },
+                ticks: {
+                    callback: function(value, index, ticks) {
+                        return '$' + Chart.Ticks.formatters.numeric.apply(this, [value, index, ticks]);
+                    },
+                    color: '#495057'
+                },
+                title: {
+                    text: "Cost by Month ($)",
+                    display: true,
+                    color: '#495057'
+                }
+            }
+        }
+    };
+
+    const ordersByQuarterData = {
+        labels: JSON.parse('{{ orders_by_quarter_keys|safe }}'),
+        datasets: [
+            {
+                label: 'Orders By Quarter',
+                yAxisID: 'Orders By Quarter',
+                data: JSON.parse('{{ orders_by_quarter_values|safe }}'),
+                backgroundColor: 'rgba(0, 150, 136, 0.5)',
+                borderColor: 'rgba(0, 150, 136, 1)',
+                borderWidth: 1
+            },
+            {
+                label: 'Cost By Quarter',
+                yAxisID: 'Cost By Quarter',
+                data: JSON.parse('{{ cost_by_quarter_values|safe }}'),
+                backgroundColor: 'rgba(156, 39, 176, 0.5)',
+                borderColor: 'rgba(156, 39, 176, 1)',
+                borderWidth: 1
+            }
+        ]
+    };
+    const ordersByQuarterOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'top',
+                labels: {
+                    color: '#343a40'
+                }
+            },
+            title: {
+                display: true,
+                text: 'Orders and Cost by Quarter',
+                color: '#343a40',
+                padding: 20
+            }
+        },
+        scales: {
+            'Orders By Quarter': {
+                type: 'linear',
+                position: 'left',
+                display: true,
+                title: {
+                    text: "Orders by Quarter",
+                    display: true,
+                    color: '#495057'
+                },
+                grid: {
+                    borderColor: '#dee2e6'
+                }
+            },
+            'Cost By Quarter': {
+                type: 'linear',
+                position: 'right',
+                display: true,
+                grid: {
+                    drawOnChartArea: false
+                },
+                ticks: {
+                    callback: function(value, index, ticks) {
+                        return '$' + Chart.Ticks.formatters.numeric.apply(this, [value, index, ticks]);
+                    },
+                    color: '#495057'
+                },
+                title: {
+                    text: "Cost by Quarter ($)",
+                    display: true,
+                    color: '#495057'
+                }
+            }
+        }
+    };
+
+    const ordersByMfrData = {
+        labels: JSON.parse('{{ mfrs_keys|safe }}'),
+        datasets: [
+            {
+                type: "bar",
+                label: 'Orders by Manufacturer',
+                yAxisID: "Orders by Manufacturer",
+                backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1,
+                data: JSON.parse('{{ mfrs_values|safe }}')
+            },
+            {
+                type: 'line',
+                label: 'Cumulative Percentage',
+                yAxisID: "Pareto",
+                borderColor: 'rgba(255, 99, 132, 1)',
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                borderWidth: 2,
+                fill: false,
+                data: JSON.parse('{{ mfrs_pareto|safe }}')
+            }
+        ]
+    };
+    const ordersByMfrOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'top',
+                labels: {
+                    color: '#343a40'
+                }
+            },
+            title: {
+                display: true,
+                text: 'Orders by Manufacturer (Top 50)',
+                color: '#343a40',
+                padding: 20
+            }
+        },
+        scales: {
+            "Orders by Manufacturer": {
+                beginAtZero: true,
+                title: {
+                    text: "Orders by Manufacturer",
+                    display: true,
+                    color: '#495057'
+                },
+                grid: {
+                    borderColor: '#dee2e6'
+                }
+            },
+            "Pareto": {
+                position: "right",
+                title: {
+                    text: "Cumulative Percentage",
+                    display: true,
+                    color: '#495057'
+                },
+                grid: {
+                    drawOnChartArea: false
+                },
+                min: 0,
+                max: 100,
+                ticks: {
+                    color: '#495057'
+                }
+            }
+        }
+    };
+
+    const commonlyOrderedItemsData = {
+        labels: JSON.parse('{{ commonly_ordered_keys|safe }}'),
+        datasets: [
+            {
+                type: 'bar',
+                label: "Commonly Ordered Items",
+                yAxisID: "Commonly Ordered Items",
+                backgroundColor: 'rgba(153, 102, 255, 0.5)',
+                borderColor: 'rgba(153, 102, 255, 1)',
+                borderWidth: 1,
+                data: JSON.parse('{{ commonly_ordered_values|safe }}')
+            },
+            {
+                type: 'line',
+                label: 'Cumulative Percentage',
+                yAxisID: "Pareto",
+                borderColor: 'rgba(255, 99, 132, 1)',
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                borderWidth: 2,
+                fill: false,
+                data: JSON.parse('{{ commonly_ordered_values_pareto|safe }}')
+            }
+        ]
+    };
+    const commonlyOrderedItemsOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'top',
+                labels: {
+                    color: '#343a40'
+                }
+            },
+            title: {
+                display: true,
+                text: 'Commonly Ordered Items (Top 50)',
+                color: '#343a40',
+                padding: 20
+            }
+        },
+        scales: {
+            "Commonly Ordered Items": {
+                beginAtZero: true,
+                title: {
+                    text: "Commonly Ordered Items",
+                    display: true,
+                    color: '#495057'
+                },
+                grid: {
+                    borderColor: '#dee2e6'
+                }
+            },
+            "Pareto": {
+                position: "right",
+                title: {
+                    text: "Cumulative Percentage",
+                    display: true,
+                    color: '#495057'
+                },
+                grid: {
+                    drawOnChartArea: false
+                },
+                min: 0,
+                max: 100,
+                ticks: {
+                    color: '#495057'
+                }
+            }
+        }
+    };
+
+    var ordersByMonthChart;
+    var ordersByQuarterChart;
+    var ordersByMfrChart;
+    var commonlyOrderedItemsChart;
 
     document.addEventListener('DOMContentLoaded', function () {
+        var ordersByMonthCtx = document.getElementById('orders-by-month');
+        var ordersByQuarterCtx = document.getElementById('orders-by-quarter');
+        var ordersByMfrCtx = document.getElementById('orders-by-mfr');
+        var commonlyOrderedItemsCtx = document.getElementById('commonly-ordered-items');
+
+        ordersByMonthChart = createChart(ordersByMonthCtx, 'bar', ordersByMonthOptions, ordersByMonthData);
+        ordersByQuarterChart = createChart(ordersByQuarterCtx, 'bar', ordersByQuarterOptions, ordersByQuarterData);
+        ordersByMfrChart = createChart(ordersByMfrCtx, 'bar', ordersByMfrOptions, ordersByMfrData);
+        if (commonlyOrderedItemsCtx) {
+            commonlyOrderedItemsChart = createChart(commonlyOrderedItemsCtx, 'bar', commonlyOrderedItemsOptions, commonlyOrderedItemsData);
+        }
+
+        const quarterSelect = document.getElementById("quarter");
+        document.getElementById("start").addEventListener("input", (event) => quarterSelect.selectedIndex = 0);
+        document.getElementById("end").addEventListener("input", (event) => quarterSelect.selectedIndex = 0);
+
+        const checkbox = document.getElementById('group_by_quarter');
+        const ordersByQuarterContainer = document.getElementById('orders-by-quarter-container');
+
+        function updateDivVisibility() {
+            if (checkbox.checked) {
+                ordersByQuarterContainer.style.display = 'inline-block';
+            } else {
+                ordersByQuarterContainer.style.display = 'none';
+            }
+        }
+
+        checkbox.addEventListener('change', updateDivVisibility);
+        updateDivVisibility();
+
         const urlParams = new URLSearchParams(window.location.search);
         const selectedQuarter = urlParams.get('quarter');
-        const ordersByQuarterContainer = document.getElementById('orders-by-quarter-container');
         
         if (selectedQuarter) {
             document.getElementById('group_by_quarter').checked = false;
             ordersByQuarterContainer.style.display = 'none';
         } else {
-            document.getElementById('group_by_quarter').checked = true;
-            ordersByQuarterContainer.style.display = 'inline-block';
         }
+
+        window.addEventListener('resize', function() {
+            if (ordersByMonthChart) ordersByMonthChart.destroy();
+            if (ordersByQuarterChart) ordersByQuarterChart.destroy();
+            if (ordersByMfrChart) ordersByMfrChart.destroy();
+            if (commonlyOrderedItemsChart) commonlyOrderedItemsChart.destroy();
+            
+            ordersByMonthChart = createChart(ordersByMonthCtx, 'bar', ordersByMonthOptions, ordersByMonthData);
+            ordersByQuarterChart = createChart(ordersByQuarterCtx, 'bar', ordersByQuarterOptions, ordersByQuarterData);
+            ordersByMfrChart = createChart(ordersByMfrCtx, 'bar', ordersByMfrOptions, ordersByMfrData);
+            if (commonlyOrderedItemsCtx) {
+                commonlyOrderedItemsChart = createChart(commonlyOrderedItemsCtx, 'bar', commonlyOrderedItemsOptions, commonlyOrderedItemsData);
+            }
+        });
     });
 </script>
 
-<style>
-    input,
-    label {
-    margin: 0.4rem 0;
-    }
-
-    .form-check {
-    display: flex;
-    align-items: center;
-    }
-
-    .chart-container {
-        width: 47%;
-        display: inline-block;
-    }
-
-</style>
-
 {% endblock %}
-
