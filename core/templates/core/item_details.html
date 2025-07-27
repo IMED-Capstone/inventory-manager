@@ -7,7 +7,6 @@
 {% block content %}
 
 <style>
-/* General container styling */
 #DateHeader {
     padding: 0.75rem;
     background-color: #f8f9fa;
@@ -21,7 +20,6 @@
     color: #343a40;
 }
 
-/* Form styling */
 .form-container {
     max-width: 50rem;
 }
@@ -42,7 +40,6 @@
     box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
-/* Button group styling */
 .d-flex.gap-2 {
     gap: 0.75rem !important;
 }
@@ -68,7 +65,6 @@
     border-color: #bd2130;
 }
 
-/* Table styling */
 .table {
     background-color: #fff;
     border-radius: 8px;
@@ -110,7 +106,6 @@
     text-decoration: underline;
 }
 
-/* Pagination styling */
 .pagination {
     margin-top: 1.5rem;
 }
@@ -137,7 +132,6 @@
     font-size: 0.85rem;
 }
 
-/* Responsive adjustments */
 @media (max-width: 768px) {
     .form-container {
         width: 100% !important;
@@ -207,7 +201,6 @@
     </form>
 </div>
 
-<!-- Pagination (Above Table) -->
 {% if is_paginated %}
 <nav aria-label="Pagination">
     <div class="container d-flex flex-column align-items-center">
@@ -241,7 +234,6 @@
 </nav>
 {% endif %}
 
-<!-- Table -->
 <table class="table table-striped table-bordered table-sm">
     <thead class="table-light">
         <tr>
@@ -280,7 +272,6 @@
     </tbody>
 </table>
 
-<!-- Pagination (Below Table) -->
 {% if is_paginated %}
 <nav aria-label="Pagination">
     <div class="container d-flex flex-column align-items-center">
