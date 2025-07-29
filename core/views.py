@@ -18,6 +18,7 @@ from django.shortcuts import redirect, render
 from django.urls import reverse_lazy, reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_date
+from django.utils.safestring import mark_safe
 from django.views import View
 from django.views.generic import ListView
 from django.views.generic.base import TemplateView
@@ -483,6 +484,7 @@ class ManageInventoryView(LoginRequiredMixin, TemplateView):
     login_url = reverse_lazy("admin:login")
 
     def get_context_data(self, **kwargs):
+        add_item_url = reverse_lazy("admin:core_item_add")
         context = super().get_context_data(**kwargs)
         initial_data = {}
         if self.request.method == "GET":
@@ -493,7 +495,13 @@ class ManageInventoryView(LoginRequiredMixin, TemplateView):
                     initial_data["barcode"] = item_id
                 else:
                     context["lookup_by_id"] = ""
-                    messages.error(self.request, f"Item with ID \"{item_id}\" does not exist.")
+                    messages.error(
+                        self.request,
+                        mark_safe(
+                            f'Item with ID "{item_id}" does not exist. Click <a href="{add_item_url}">here</a> to create.'
+                        )
+                    )
+
         form = AddRemoveItemsByBarcodeForm(initial=initial_data)
         context["add_remove_items_by_barcode_form"] = form
         return context
