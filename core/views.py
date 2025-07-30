@@ -484,7 +484,6 @@ class ManageInventoryView(LoginRequiredMixin, TemplateView):
     login_url = reverse_lazy("admin:login")
 
     def get_context_data(self, **kwargs):
-        add_item_url = reverse_lazy("admin:core_item_add")
         context = super().get_context_data(**kwargs)
         initial_data = {}
         if self.request.method == "GET":
@@ -494,6 +493,9 @@ class ManageInventoryView(LoginRequiredMixin, TemplateView):
                     context["lookup_by_id"] = item_id
                     initial_data["barcode"] = item_id
                 else:
+                    base_url = reverse_lazy("admin:core_item_add")
+                    query_string = urlencode({"item": item_id, "item_no": item_id})
+                    add_item_url = f"{base_url}?{query_string}"
                     context["lookup_by_id"] = ""
                     messages.error(
                         self.request,
