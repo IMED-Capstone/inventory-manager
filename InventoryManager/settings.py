@@ -31,6 +31,7 @@ ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", default="127.0.0.1").spli
 
 INSTALLED_APPS = [
     "core.apps.CoreConfig",
+    "data_browser",
     "djmoney",
     "django_bootstrap5",
     "django_bootstrap_icons",
