@@ -9,9 +9,9 @@ class ExcelUploadForm(forms.Form):
 class AddRemoveItemsByBarcodeForm(forms.Form):
     barcode = forms.CharField()
     add_remove = forms.ChoiceField(
-        choices=[('add', 'Add Items'), ('remove', 'Remove Items')],
+        choices=[('in', 'Add Items'), ('out', 'Remove Items')],
         widget=forms.RadioSelect(attrs={'class': 'btn-check', 'autocomplete': 'off'}),
-        initial='add',
+        initial='in',
     )
     item_quantity = forms.IntegerField(
         validators=[MinValueValidator(1)],

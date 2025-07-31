@@ -26,7 +26,7 @@ from django.views.generic.base import TemplateView
 from djmoney.money import Money
 from openpyxl.styles import NamedStyle
 
-from .models import Item, Order
+from .models import Item, Order, ItemTransaction
 from .utils import style_excel_sheet, trunc_datetime, absolute_add_remove_quantity
 
 
@@ -116,10 +116,11 @@ class ItemDetailsView(ListView):
         context['end_date'] = self.end_date.strftime("%Y-%m-%d")
         context['lower_date_bound'] = lower_date_bound
         context['upper_date_bound'] = upper_date_bound
-        context["fields"] = included_fields
         context['per_page'] = self.request.GET.get('per_page', self.paginate_by)
         context['per_page_options'] = [25, 50, 100, 200, "All"]
         context['items_count'] = self.get_queryset(included_fields).count()
+        included_fields.append("quantity")
+        context["fields"] = included_fields
         return context
 
     def get_paginate_by(self, queryset):
@@ -545,11 +546,10 @@ class AddRemoveItemsByBarcodeView(LoginRequiredMixin, View):
 
             print(f"Action: {add_remove}, Barcode: {barcode}, Quantity: {item_quantity}")
 
-            # Update DB with new value
-            # TODO (update the following, then uncomment below code snippet):
-                #  The "quantity" field does not currently exist, update the model with this field
-                # Replace "item" with the appropriate UID field once created as well
-            # Item.objects.filter(item=barcode).update(quantity=F("quantity") + absolute_add_remove_quantity(item_quantity, add_remove))
+            # TODO:
+                # item field here (item=barcode) needs to be replaced with UDI/DI equivalent once implemented rather than item ID (which might be more UIC specific)
+            item = Item.objects.filter(item=barcode)[0]
+            ItemTransaction.objects.create(item=item, transaction_type=add_remove, change=absolute_add_remove_quantity(item_quantity,add_remove))
 
             query_string = urlencode({"add_remove": add_remove, "barcode": barcode, "item_quantity": item_quantity})
             return redirect(f"{reverse('add_remove_items_by_barcode')}?{query_string}")
