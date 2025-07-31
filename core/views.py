@@ -133,6 +133,112 @@ class ItemDetailsView(ListView):
             else:
                 return 25
 
+class ItemTransactionView(ListView):
+    model = ItemTransaction
+    template_name = "core/item_transactions.html"
+    context_object_name = "item_transactions"
+    paginate_by = 25
+
+    def get_quarters_list(self) -> list:
+        newest_item_transaction_date = ItemTransaction.objects.all().order_by("-timestamp").first().timestamp
+        oldest_item_transaction_date = ItemTransaction.objects.all().order_by("timestamp").first().timestamp
+
+        quarter_month = ((oldest_item_transaction_date.month - 1) // 3) * 3 + 1
+        aligned_start = oldest_item_transaction_date.replace(month=quarter_month, day=1)
+
+        quarter_month_end = ((newest_item_transaction_date.month - 1) // 3) * 3 + 1
+        aligned_end = newest_item_transaction_date.replace(month=quarter_month_end, day=1)
+
+        delta = relativedelta(aligned_end, aligned_start)
+        months_diff = delta.years * 12 + delta.months
+
+        return [
+            (aligned_start + relativedelta(months=i)).strftime("%B %Y")
+            for i in range(0, months_diff + 1, 3)
+        ]
+    
+    def get_default_dates(self):
+        end_date = timezone.localtime(timezone.now())
+        start_date = end_date - relativedelta(years=1)
+        return start_date, end_date
+    
+    def get_end_date_for_quarter(self, start_date:datetime.datetime):
+        end_date = start_date + relativedelta(months=3)
+        end_date = end_date.replace(day=1) - datetime.timedelta(days=1)
+        end_date = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+        return end_date
+    
+    def get_dates_from_request(self):
+        quarter_str = self.request.GET.get("quarter")
+        if quarter_str:
+            start_date = timezone.make_aware(datetime.datetime.combine(datetime.datetime.strptime(quarter_str, "%B %Y"), datetime.time(0,0,0,0)))
+            end_date = self.get_end_date_for_quarter(start_date)
+        else:
+            start_date_str = self.request.GET.get("start_date")
+            end_date_str = self.request.GET.get("end_date")
+
+            start_date = timezone.make_aware(datetime.datetime.combine(parse_date(start_date_str), datetime.time(0,0,0,0))) if start_date_str else None
+            end_date = timezone.make_aware(datetime.datetime.combine(parse_date(end_date_str), datetime.time(23,59,59,999999))) if end_date_str else None
+
+        self.quarter_str = self.request.GET.get("quarter")
+
+        if not start_date or not end_date:
+            start_date, end_date = self.get_default_dates()
+
+        start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_date = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+        
+        return start_date, end_date
+
+    def get_queryset(self, included_fields=None):
+        queryset = ItemTransaction.objects.all()
+        start_date_str = self.request.GET.get("start_date")
+        end_date_str = self.request.GET.get("end_date")
+
+        current_time = timezone.localtime(timezone.now())
+
+        if not start_date_str:
+            start_date = (current_time - relativedelta(years=1))
+            start_date_str = start_date.strftime("%Y-%m-%d")
+        else:
+            start_date = timezone.make_aware(datetime.datetime.combine(parse_date(start_date_str), datetime.time(0,0,0,0)))
+        if not end_date_str:
+            end_date = current_time
+            end_date_str = end_date.strftime("%Y-%m-%d")
+        else:
+            end_date = timezone.make_aware(datetime.datetime.combine(parse_date(end_date_str), datetime.time(23,59,59,999999)))
+        
+        # To include all items based on the date, start date should start at 12 AM and end date should end at 11:59 PM
+        start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_date = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+
+        self.start_date = start_date
+        self.end_date = end_date
+
+        item_transactions = queryset.filter(timestamp__range=[start_date, end_date]).order_by("-timestamp")
+        
+        if not included_fields:
+            return item_transactions
+        else:
+            return item_transactions.only(*included_fields)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        lower_date_bound = ItemTransaction.objects.order_by('timestamp').first().timestamp.strftime("%Y-%m-%d")
+        upper_date_bound = (timezone.localtime(timezone.now())).strftime('%Y-%m-%d')
+        all_fields = [field.name for field in ItemTransaction._meta.fields]
+        excluded_fields = []
+        included_fields = [field for field in all_fields if field not in excluded_fields]
+        context['start_date'] = self.start_date.strftime("%Y-%m-%d")
+        context['end_date'] = self.end_date.strftime("%Y-%m-%d")
+        context['lower_date_bound'] = lower_date_bound
+        context['upper_date_bound'] = upper_date_bound
+        context['per_page'] = self.request.GET.get('per_page', self.paginate_by)
+        context['per_page_options'] = [25, 50, 100, 200, "All"]
+        context['items_count'] = self.get_queryset(included_fields).count()
+        context["fields"] = included_fields
+        return context
+
 class OrderDetailsView(ListView):
     """Provides basic table view of orders, selectable by date range."""
     model = Order
