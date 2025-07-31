@@ -7,7 +7,7 @@
 {% block content %}
 
 <div class="text-center">
-    <h1 class="display4">Welcome</h1>
+    <h1 class="display4 mb-5">Welcome</h1>
     <div id="SummaryTable" class="container">
         <div class="row outer-wrapper">
             {% for model_name, model_count in models.items %}
@@ -29,12 +29,27 @@
             {% endfor %}
         </div>
     </div>
+    <div class="container" id="ReportsTable">
+        <div class="row outer-wrapper">
+            <div class="col-xl-3 col-md-4">
+                <a href="{% url 'order_details_advanced' %}" class="model-card">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <img class="card-img-top mb-3" src="{% static 'core/graph-combined.svg' %}"/>
+                            <h6 class="card-title">Order Graphs</h6>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
 </div>
 
 <style>
-    #SummaryTable{
+    #SummaryTable, #ReportsTable{
         margin: auto;
-                        }
+        /* border-bottom: 0.1em solid #000000; */
+    }
 
     .outer-wrapper{
         margin: auto;
