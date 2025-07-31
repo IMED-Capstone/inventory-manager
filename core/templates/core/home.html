@@ -4,5 +4,49 @@
 {% block title %}Inventory Manager{% endblock %}
 
 {% block content %}
-    This is <em>bootstrap5</em> for <strong>Django</strong>.
+
+<div class="text-center">
+    <h1 class="display4">Welcome</h1>
+    <div id="SummaryTable" class="container">
+        <div class="row outer-wrapper">
+            {% for model_name, model_count in models.items %}
+                <div class="col-xl-3 col-md-4">
+                    <a href="{% url model_name|lower|add:'_details' %}" class="model-card">
+                        <div class="card shadow-sm">
+                            <div class="card-body">
+                                <h6 class="card-title">{{ model_name }}</h6>
+                                <p class="card-text">Item Count: {{ model_count }}</p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<style>
+    #SummaryTable{
+        margin: auto;
+                        }
+
+    .outer-wrapper{
+        margin: auto;
+    }
+
+    .col-xl-3,
+    .col-md-4{
+        width: 50%;
+        display: inline-block;
+        padding-bottom: 50px;
+    }
+
+    a.model-card,
+    a.model-card:hover{
+        color: black;
+        text-decoration: none;
+    }
+
+</style>
 {% endblock %}
+

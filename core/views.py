@@ -8,6 +8,7 @@ from .forms import AddRemoveItemsByBarcodeForm
 import openpyxl
 import simplejson
 from dateutil.relativedelta import relativedelta
+from django.apps import apps
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
@@ -34,6 +35,11 @@ class HomePageView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        core_models = apps.get_app_config("core").get_models()
+        core_model_counts = {}
+        for model in core_models:
+            core_model_counts[model.__name__] = model.objects.count()
+        context["models"] = core_model_counts
         return context
 
 class PaginationView(TemplateView):
