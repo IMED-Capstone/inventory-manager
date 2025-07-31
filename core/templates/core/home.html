@@ -5,9 +5,10 @@
 {% block content %}
 
 <div class="text-center">
-    <h1 class="display4 mb-5">Welcome</h1>
+    <h1 class="display4 mb-4">Welcome</h1>
     <div id="SummaryTable" class="container">
         <div class="row outer-wrapper">
+            <h4 class="mb-2">Models</h4>
             {% for model_name, model_count in models.items %}
                 <div class="col-xl-3 col-md-4">
                     <a href="{% url model_name|lower|add:'_details' %}" class="model-card">
@@ -29,6 +30,7 @@
     </div>
     <div class="container" id="ReportsTable">
         <div class="row outer-wrapper">
+            <h4 class="mb-2">Data</h4>
             <div class="col-xl-3 col-md-4">
                 <a href="{% url 'order_details_advanced' %}" class="model-card">
                     <div class="card shadow-sm">
