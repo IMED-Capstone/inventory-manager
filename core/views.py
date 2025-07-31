@@ -191,7 +191,6 @@ class ItemTransactionView(ListView):
         return start_date, end_date
 
     def get_queryset(self, included_fields=None):
-        queryset = ItemTransaction.objects.all()
         start_date_str = self.request.GET.get("start_date")
         end_date_str = self.request.GET.get("end_date")
 
@@ -215,6 +214,13 @@ class ItemTransactionView(ListView):
         self.start_date = start_date
         self.end_date = end_date
 
+        item_no = self.request.GET.getlist("category[]")
+
+        if any(s.strip() for s in item_no):     # consider a list with only empty strings as false as well
+            queryset = ItemTransaction.objects.filter(item__item_no__in=item_no)
+        else:
+            queryset = ItemTransaction.objects.all()
+        
         item_transactions = queryset.filter(timestamp__range=[start_date, end_date]).order_by("-timestamp")
         
         if not included_fields:
