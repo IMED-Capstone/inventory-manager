@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 
 from . import views
 
@@ -11,4 +11,5 @@ urlpatterns = [
     path("manage_inventory/add_remove/", views.AddRemoveItemsByBarcodeView.as_view(), name="add_remove_items_by_barcode"),
     path("pagination", views.PaginationView.as_view(), name="pagination"),
     path("", views.HomePageView.as_view(), name="home"),
+    path("data-browser/", include("data_browser.urls")),
 ]

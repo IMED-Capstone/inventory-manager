@@ -1,8 +1,88 @@
 {% extends 'core/base.html' %}
 {% load django_bootstrap5 %}
-
-{% block title %}Inventory Manager{% endblock %}
+{% load static %}
 
 {% block content %}
-    This is <em>bootstrap5</em> for <strong>Django</strong>.
+
+<div class="text-center">
+    <h1 class="display4 mb-4">Welcome</h1>
+    <div id="SummaryTable" class="container">
+        <div class="row outer-wrapper">
+            <h4 class="mb-2">Models</h4>
+            {% for model_name, model_count in models.items %}
+                <div class="col-xl-3 col-md-4">
+                    <a href="{% url model_name|lower|add:'_details' %}" class="model-card">
+                        <div class="card shadow-sm">
+                            <div class="card-body">
+                                {% if model_name|lower == "item" %}
+                                    <img class="card-img-top mb-3" src="{% static 'core/box-seam.svg' %}"/>
+                                {% elif model_name|lower == "order" %}
+                                    <img class="card-img-top mb-3" src="{% static 'core/cart.svg' %}"/>
+                                {% endif %}
+                                <h6 class="card-title">{{ model_name|add:"s" }}</h6>
+                                <p class="card-text">{{ model_name }} Count: {{ model_count }}</p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="container" id="ReportsTable">
+        <div class="row outer-wrapper">
+            <h4 class="mb-2">Data</h4>
+            <div class="col-xl-3 col-md-4">
+                <a href="{% url 'order_details_advanced' %}" class="model-card">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <img class="card-img-top mb-3" src="{% static 'core/graph-combined.svg' %}"/>
+                            <h6 class="card-title">Order Graphs</h6>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-xl-3 col-md-4">
+                <a href="/data-browser/" class="model-card">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <img class="card-img-top mb-3" src="{% static 'core/database.svg' %}"/>
+                            <h6 class="card-title">Data Browser</h6>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    #SummaryTable, #ReportsTable{
+        margin: auto;
+        /* border-bottom: 0.1em solid #000000; */
+    }
+
+    .outer-wrapper{
+        margin: auto;
+    }
+
+    .col-xl-3,
+    .col-md-4{
+        width: 50%;
+        display: inline-block;
+        padding-bottom: 50px;
+    }
+
+    a.model-card,
+    a.model-card:hover{
+        color: black;
+        text-decoration: none;
+    }
+
+    .card-img-top{
+        max-height: 10em;
+
+    }
+
+</style>
 {% endblock %}
+
