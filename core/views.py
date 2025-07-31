@@ -229,6 +229,8 @@ class ItemTransactionView(ListView):
         all_fields = [field.name for field in ItemTransaction._meta.fields]
         excluded_fields = []
         included_fields = [field for field in all_fields if field not in excluded_fields]
+        qset = Order.objects.all().order_by("item__descr")
+        all_items = {item: descr for item, descr in qset.values_list("item__item", "item__descr")}
         context['start_date'] = self.start_date.strftime("%Y-%m-%d")
         context['end_date'] = self.end_date.strftime("%Y-%m-%d")
         context['lower_date_bound'] = lower_date_bound
@@ -237,6 +239,7 @@ class ItemTransactionView(ListView):
         context['per_page_options'] = [25, 50, 100, 200, "All"]
         context['items_count'] = self.get_queryset(included_fields).count()
         context["fields"] = included_fields
+        context["all_items"] = all_items
         return context
 
 class OrderDetailsView(ListView):
