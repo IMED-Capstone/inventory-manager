@@ -294,7 +294,7 @@
                     <option value="">All</option>
                     {% for item_no, item_descr in all_items.items %}
                         <option value="{{ item_no }}" {% if item_no in selected_item_no %}selected{% endif %}>
-                            {{ item_descr }}
+                            {{ item_descr }} ( {{item_no}} )
                         </option>
                     {% endfor %}
                 </select>
