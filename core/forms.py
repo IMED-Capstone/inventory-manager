@@ -7,7 +7,7 @@ class ExcelUploadForm(forms.Form):
     excel_file = forms.FileField(label="Upload Excel File")
 
 class AddRemoveItemsByBarcodeForm(forms.Form):
-    barcode = forms.CharField()
+    barcode = forms.CharField(widget=forms.TextInput(attrs={'disabled': 'disabled'}))
     add_remove = forms.ChoiceField(
         choices=[('in', 'Add Items'), ('out', 'Remove Items')],
         widget=forms.RadioSelect(attrs={'class': 'btn-check', 'autocomplete': 'off'}),
