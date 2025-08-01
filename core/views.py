@@ -26,7 +26,7 @@ from django.views.generic.base import TemplateView
 from djmoney.money import Money
 from openpyxl.styles import NamedStyle
 
-from .models import Item, Order
+from .models import Item, Order, ItemTransaction
 from .utils import style_excel_sheet, trunc_datetime, absolute_add_remove_quantity
 
 
@@ -116,10 +116,11 @@ class ItemDetailsView(ListView):
         context['end_date'] = self.end_date.strftime("%Y-%m-%d")
         context['lower_date_bound'] = lower_date_bound
         context['upper_date_bound'] = upper_date_bound
-        context["fields"] = included_fields
         context['per_page'] = self.request.GET.get('per_page', self.paginate_by)
         context['per_page_options'] = [25, 50, 100, 200, "All"]
         context['items_count'] = self.get_queryset(included_fields).count()
+        included_fields.append("quantity")
+        context["fields"] = included_fields
         return context
 
     def get_paginate_by(self, queryset):
@@ -131,6 +132,121 @@ class ItemDetailsView(ListView):
                 return Item.objects.order_by("item").count()
             else:
                 return 25
+
+class ItemTransactionView(ListView):
+    model = ItemTransaction
+    template_name = "core/item_transactions.html"
+    context_object_name = "item_transactions"
+    paginate_by = 25
+
+    def get_quarters_list(self) -> list:
+        newest_item_transaction_date = ItemTransaction.objects.all().order_by("-timestamp").first().timestamp
+        oldest_item_transaction_date = ItemTransaction.objects.all().order_by("timestamp").first().timestamp
+
+        quarter_month = ((oldest_item_transaction_date.month - 1) // 3) * 3 + 1
+        aligned_start = oldest_item_transaction_date.replace(month=quarter_month, day=1)
+
+        quarter_month_end = ((newest_item_transaction_date.month - 1) // 3) * 3 + 1
+        aligned_end = newest_item_transaction_date.replace(month=quarter_month_end, day=1)
+
+        delta = relativedelta(aligned_end, aligned_start)
+        months_diff = delta.years * 12 + delta.months
+
+        return [
+            (aligned_start + relativedelta(months=i)).strftime("%B %Y")
+            for i in range(0, months_diff + 1, 3)
+        ]
+    
+    def get_default_dates(self):
+        end_date = timezone.localtime(timezone.now())
+        start_date = end_date - relativedelta(years=1)
+        return start_date, end_date
+    
+    def get_end_date_for_quarter(self, start_date:datetime.datetime):
+        end_date = start_date + relativedelta(months=3)
+        end_date = end_date.replace(day=1) - datetime.timedelta(days=1)
+        end_date = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+        return end_date
+    
+    def get_dates_from_request(self):
+        quarter_str = self.request.GET.get("quarter")
+        if quarter_str:
+            start_date = timezone.make_aware(datetime.datetime.combine(datetime.datetime.strptime(quarter_str, "%B %Y"), datetime.time(0,0,0,0)))
+            end_date = self.get_end_date_for_quarter(start_date)
+        else:
+            start_date_str = self.request.GET.get("start_date")
+            end_date_str = self.request.GET.get("end_date")
+
+            start_date = timezone.make_aware(datetime.datetime.combine(parse_date(start_date_str), datetime.time(0,0,0,0))) if start_date_str else None
+            end_date = timezone.make_aware(datetime.datetime.combine(parse_date(end_date_str), datetime.time(23,59,59,999999))) if end_date_str else None
+
+        self.quarter_str = self.request.GET.get("quarter")
+
+        if not start_date or not end_date:
+            start_date, end_date = self.get_default_dates()
+
+        start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_date = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+        
+        return start_date, end_date
+
+    def get_queryset(self, included_fields=None):
+        start_date_str = self.request.GET.get("start_date")
+        end_date_str = self.request.GET.get("end_date")
+
+        current_time = timezone.localtime(timezone.now())
+
+        if not start_date_str:
+            start_date = (current_time - relativedelta(years=1))
+            start_date_str = start_date.strftime("%Y-%m-%d")
+        else:
+            start_date = timezone.make_aware(datetime.datetime.combine(parse_date(start_date_str), datetime.time(0,0,0,0)))
+        if not end_date_str:
+            end_date = current_time
+            end_date_str = end_date.strftime("%Y-%m-%d")
+        else:
+            end_date = timezone.make_aware(datetime.datetime.combine(parse_date(end_date_str), datetime.time(23,59,59,999999)))
+        
+        # To include all items based on the date, start date should start at 12 AM and end date should end at 11:59 PM
+        start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_date = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+
+        self.start_date = start_date
+        self.end_date = end_date
+
+        item_no = self.request.GET.getlist("category[]")
+
+        if any(s.strip() for s in item_no):     # consider a list with only empty strings as false as well
+            queryset = ItemTransaction.objects.filter(item__item_no__in=item_no)
+        else:
+            queryset = ItemTransaction.objects.all()
+        
+        item_transactions = queryset.filter(timestamp__range=[start_date, end_date]).order_by("-timestamp")
+        
+        if not included_fields:
+            return item_transactions
+        else:
+            return item_transactions.only(*included_fields)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        lower_date_bound = ItemTransaction.objects.order_by('timestamp').first().timestamp.strftime("%Y-%m-%d")
+        upper_date_bound = (timezone.localtime(timezone.now())).strftime('%Y-%m-%d')
+        all_fields = [field.name for field in ItemTransaction._meta.fields]
+        excluded_fields = []
+        included_fields = [field for field in all_fields if field not in excluded_fields]
+        qset = Order.objects.all().order_by("item__descr")
+        all_items = {item: descr for item, descr in qset.values_list("item__item", "item__descr")}
+        context['start_date'] = self.start_date.strftime("%Y-%m-%d")
+        context['end_date'] = self.end_date.strftime("%Y-%m-%d")
+        context['lower_date_bound'] = lower_date_bound
+        context['upper_date_bound'] = upper_date_bound
+        context['per_page'] = self.request.GET.get('per_page', self.paginate_by)
+        context['per_page_options'] = [25, 50, 100, 200, "All"]
+        context['items_count'] = self.get_queryset(included_fields).count()
+        context["fields"] = included_fields
+        context["all_items"] = all_items
+        return context
 
 class OrderDetailsView(ListView):
     """Provides basic table view of orders, selectable by date range."""
@@ -545,11 +661,10 @@ class AddRemoveItemsByBarcodeView(LoginRequiredMixin, View):
 
             print(f"Action: {add_remove}, Barcode: {barcode}, Quantity: {item_quantity}")
 
-            # Update DB with new value
-            # TODO (update the following, then uncomment below code snippet):
-                #  The "quantity" field does not currently exist, update the model with this field
-                # Replace "item" with the appropriate UID field once created as well
-            # Item.objects.filter(item=barcode).update(quantity=F("quantity") + absolute_add_remove_quantity(item_quantity, add_remove))
+            # TODO:
+                # item field here (item=barcode) needs to be replaced with UDI/DI equivalent once implemented rather than item ID (which might be more UIC specific)
+            item = Item.objects.filter(item=barcode)[0]
+            ItemTransaction.objects.create(item=item, transaction_type=add_remove, change=absolute_add_remove_quantity(item_quantity,add_remove))
 
             query_string = urlencode({"add_remove": add_remove, "barcode": barcode, "item_quantity": item_quantity})
             return redirect(f"{reverse('add_remove_items_by_barcode')}?{query_string}")

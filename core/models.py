@@ -11,6 +11,10 @@ class Item(models.Model):
     par_level=models.PositiveIntegerField(blank=True, default=1)
     external_url=models.URLField(max_length=200, default="https://accessgudid.nlm.nih.gov/resources/developers/v3/device_lookup_api")
 
+    @property
+    def quantity(self):
+        return self.transactions.aggregate(total=models.Sum('change'))["total"] or 0
+
     def __str__(self):
         return self.item
 
@@ -37,4 +41,30 @@ class Order(models.Model):
     # show model description when using string representation (e.g. for display on admin panel)
     def __str__(self):
         return self.item.descr
+
+class ItemTransaction(models.Model):
+    class TransactionType(models.TextChoices):
+        STOCK_IN = "in"
+        STOCK_OUT = "out"
+    item = models.ForeignKey(Item, on_delete=models.PROTECT, related_name="transactions")
+    timestamp = models.DateTimeField(auto_now_add=True)
+    change = models.IntegerField()
+    transaction_type = models.CharField(max_length=3, choices=TransactionType.choices)
+    reason = models.CharField(max_length=255, blank=True)
+    # changed_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
+
+    def get_transaction_type(self) -> TransactionType:
+        return self.TransactionType(self.transaction_type)
     
+    def __str__(self):
+        return f"{self.timestamp.date()} - {self.item.name} ({self.change})"
+
+class ParLevelTransaction(models.Model):
+    item = models.ForeignKey(Item, on_delete=models.PROTECT, related_name="par_changes")
+    timestamp = models.DateTimeField(auto_now_add=True)
+    previous_par = models.PositiveIntegerField()
+    new_par = models.PositiveIntegerField()
+    reason = models.CharField(max_length=255, blank=True)
+    # changed_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
+    def __str__(self):
+        return f"{self.timestamp.date()} - {self.item.name} par level changed from {self.previous_par} to {self.new_par}"

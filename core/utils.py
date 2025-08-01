@@ -138,7 +138,7 @@ def style_excel_sheet(sheet, type, field, i, currency_style):
 
 def absolute_add_remove_quantity(item_quantity: int, add_remove_mode: str):
     quantity = abs(item_quantity)
-    if add_remove_mode.lower() == "remove":
+    if add_remove_mode.lower() == "out":
         quantity = quantity * -1
     
     return quantity

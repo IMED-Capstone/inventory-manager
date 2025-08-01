@@ -32,12 +32,12 @@
                 <div class="mb-4">
                     <label class="form-label fw-bold">Action</label>
                     <div class="btn-group w-100" role="group" aria-label="Add or Remove items">
-                        <input type="radio" class="btn-check" name="add_remove" id="btnradio-add" value="add"
-                               autocomplete="off" {% if add_remove_items_by_barcode_form.add_remove.value == "add" %}checked{% endif %}>
+                        <input type="radio" class="btn-check" name="add_remove" id="btnradio-add" value="in"
+                               autocomplete="off" {% if add_remove_items_by_barcode_form.add_remove.value == "in" %}checked{% endif %}>
                         <label class="btn btn-outline-primary" for="btnradio-add">Add Items</label>
 
-                        <input type="radio" class="btn-check" name="add_remove" id="btnradio-remove" value="remove"
-                               autocomplete="off" {% if add_remove_items_by_barcode_form.add_remove.value == "remove" %}checked{% endif %}>
+                        <input type="radio" class="btn-check" name="add_remove" id="btnradio-remove" value="out"
+                               autocomplete="off" {% if add_remove_items_by_barcode_form.add_remove.value == "out" %}checked{% endif %}>
                         <label class="btn btn-outline-primary" for="btnradio-remove">Remove Items</label>
                     </div>
                 </div>
