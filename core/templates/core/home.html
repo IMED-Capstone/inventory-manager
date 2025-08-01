@@ -1,6 +1,7 @@
 {% extends 'core/base.html' %}
 {% load django_bootstrap5 %}
 {% load static %}
+{% load generic_extras %}
 
 {% block content %}
 
@@ -22,8 +23,8 @@
                                 {% elif model_name|lower == "itemtransaction" %}
                                     <img class="card-img-top mb-3" src="{% static 'core/arrow-down-up.svg' %}"/>
                                 {% endif %}
-                                <h6 class="card-title">{{ model_name|add:"s" }}</h6>
-                                <p class="card-text">{{ model_name }} Count: {{ model_count }}</p>
+                                <h6 class="card-title">{{ model_name|camel_to_words|add:"s" }}</h6>
+                                <p class="card-text">{{ model_name|camel_to_words }} Count: {{ model_count }}</p>
                             </div>
                         </div>
                     </a>
