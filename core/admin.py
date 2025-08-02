@@ -4,9 +4,10 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import path, reverse
 
-from .forms import ExcelUploadForm
+from .forms import ExcelUploadForm, UDI_Form
 from .models import Order, Item
 from .utils import dict_from_excel_row
+from .gudid import create_item_from_id
 
 
 class OrderAdmin(admin.ModelAdmin):
@@ -51,7 +52,33 @@ class OrderAdmin(admin.ModelAdmin):
         return obj.item.item_no
 
 class ItemAdmin(admin.ModelAdmin):
-    list_display = ['item', 'mfr', 'descr', 'par_level']
+    def changelist_view(self, request, extra_context=None):
+        if extra_context is None:
+            extra_context = {}
+        extra_context["import_url"] = reverse("admin:import_udi")
+        return super().changelist_view(request, extra_context=extra_context)
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path("import-udi/", self.admin_site.admin_view(self.import_udi), name="import_udi"),
+        ]
+        return custom_urls + urls
+
+    def import_udi(self, request):
+        """Defines form for adding an item using a udi."""
+        if request.method == "POST":
+            form = UDI_Form(request.POST)
+            if form.is_valid():
+                udi_input = form.cleaned_data["udi_input"]
+                if (udi_input[0] == "\\" and udi_input[-1] == "\\"):
+                    udi_input = udi_input[1:-1]
+                create_item_from_id(udi_input)
+                return HttpResponseRedirect("../")
+        else:
+            form = UDI_Form()
+
+        return render(request, "admin/import_udi.html", {"form": form, "title": "Import UDI"})
 
 # Register your models here.
 admin.site.register(Order, OrderAdmin)
