@@ -107,20 +107,23 @@ class ItemDetailsView(ListView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        lower_date_bound = Order.objects.order_by('po_date').first().po_date.strftime("%Y-%m-%d")
-        upper_date_bound = (timezone.localtime(timezone.now())).strftime('%Y-%m-%d')
-        all_fields = [field.name for field in Item._meta.fields]
-        excluded_fields = []
-        included_fields = [field for field in all_fields if field not in excluded_fields]
-        context['start_date'] = self.start_date.strftime("%Y-%m-%d")
-        context['end_date'] = self.end_date.strftime("%Y-%m-%d")
-        context['lower_date_bound'] = lower_date_bound
-        context['upper_date_bound'] = upper_date_bound
-        context['per_page'] = self.request.GET.get('per_page', self.paginate_by)
-        context['per_page_options'] = [25, 50, 100, 200, "All"]
-        context['items_count'] = self.get_queryset(included_fields).count()
-        included_fields.append("quantity")
-        context["fields"] = included_fields
+        if not context["items"]:
+            context["message"] = "No items available yet."
+        else:
+            lower_date_bound = Order.objects.order_by('po_date').first().po_date.strftime("%Y-%m-%d")
+            upper_date_bound = (timezone.localtime(timezone.now())).strftime('%Y-%m-%d')
+            all_fields = [field.name for field in Item._meta.fields]
+            excluded_fields = []
+            included_fields = [field for field in all_fields if field not in excluded_fields]
+            context['start_date'] = self.start_date.strftime("%Y-%m-%d")
+            context['end_date'] = self.end_date.strftime("%Y-%m-%d")
+            context['lower_date_bound'] = lower_date_bound
+            context['upper_date_bound'] = upper_date_bound
+            context['per_page'] = self.request.GET.get('per_page', self.paginate_by)
+            context['per_page_options'] = [25, 50, 100, 200, "All"]
+            context['items_count'] = self.get_queryset(included_fields).count()
+            included_fields.append("quantity")
+            context["fields"] = included_fields
         return context
 
     def get_paginate_by(self, queryset):
@@ -129,7 +132,8 @@ class ItemDetailsView(ListView):
             return int(per_page)
         except ValueError:
             if per_page == "All":
-                return Item.objects.order_by("item").count()
+                count = queryset.count()
+                return count if count > 0 else 1
             else:
                 return 25
 
@@ -230,22 +234,25 @@ class ItemTransactionView(ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        lower_date_bound = ItemTransaction.objects.order_by('timestamp').first().timestamp.strftime("%Y-%m-%d")
-        upper_date_bound = (timezone.localtime(timezone.now())).strftime('%Y-%m-%d')
-        all_fields = [field.name for field in ItemTransaction._meta.fields]
-        excluded_fields = []
-        included_fields = [field for field in all_fields if field not in excluded_fields]
-        qset = Order.objects.all().order_by("item__descr")
-        all_items = {item: descr for item, descr in qset.values_list("item__item", "item__descr")}
-        context['start_date'] = self.start_date.strftime("%Y-%m-%d")
-        context['end_date'] = self.end_date.strftime("%Y-%m-%d")
-        context['lower_date_bound'] = lower_date_bound
-        context['upper_date_bound'] = upper_date_bound
-        context['per_page'] = self.request.GET.get('per_page', self.paginate_by)
-        context['per_page_options'] = [25, 50, 100, 200, "All"]
-        context['items_count'] = self.get_queryset(included_fields).count()
-        context["fields"] = included_fields
-        context["all_items"] = all_items
+        if not context["item_transactions"]:
+            context["message"] = "No item transactions available yet."
+        else:
+            lower_date_bound = ItemTransaction.objects.order_by('timestamp').first().timestamp.strftime("%Y-%m-%d")
+            upper_date_bound = (timezone.localtime(timezone.now())).strftime('%Y-%m-%d')
+            all_fields = [field.name for field in ItemTransaction._meta.fields]
+            excluded_fields = []
+            included_fields = [field for field in all_fields if field not in excluded_fields]
+            qset = Order.objects.all().order_by("item__descr")
+            all_items = {item: descr for item, descr in qset.values_list("item__item", "item__descr")}
+            context['start_date'] = self.start_date.strftime("%Y-%m-%d")
+            context['end_date'] = self.end_date.strftime("%Y-%m-%d")
+            context['lower_date_bound'] = lower_date_bound
+            context['upper_date_bound'] = upper_date_bound
+            context['per_page'] = self.request.GET.get('per_page', self.paginate_by)
+            context['per_page_options'] = [25, 50, 100, 200, "All"]
+            context['items_count'] = self.get_queryset(included_fields).count()
+            context["fields"] = included_fields
+            context["all_items"] = all_items
         return context
 
 class OrderDetailsView(ListView):
@@ -287,19 +294,22 @@ class OrderDetailsView(ListView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        lower_date_bound = Order.objects.order_by('po_date').first().po_date.strftime("%Y-%m-%d")
-        upper_date_bound = (timezone.localtime(timezone.now())).strftime('%Y-%m-%d')
-        all_fields = [field.name for field in Order._meta.fields]
-        excluded_fields = ["id", "price_currency", "total_cost_currency", "item_no", "dbo_vend_name", "expr1010"]
-        included_fields = [field for field in all_fields if field not in excluded_fields]
-        context['start_date'] = self.start_date.strftime("%Y-%m-%d")
-        context['end_date'] = self.end_date.strftime("%Y-%m-%d")
-        context['lower_date_bound'] = lower_date_bound
-        context['upper_date_bound'] = upper_date_bound
-        context["fields"] = included_fields
-        context['per_page'] = self.request.GET.get('per_page', self.paginate_by)
-        context['per_page_options'] = [25, 50, 100, "All"]
-        context['orders_count'] = self.get_queryset(included_fields).count()
+        if not context["orders"]:
+            context["message"] = "No orders available yet."
+        else:
+            lower_date_bound = Order.objects.order_by('po_date').first().po_date.strftime("%Y-%m-%d")
+            upper_date_bound = (timezone.localtime(timezone.now())).strftime('%Y-%m-%d')
+            all_fields = [field.name for field in Order._meta.fields]
+            excluded_fields = ["id", "price_currency", "total_cost_currency", "item_no", "dbo_vend_name", "expr1010"]
+            included_fields = [field for field in all_fields if field not in excluded_fields]
+            context['start_date'] = self.start_date.strftime("%Y-%m-%d")
+            context['end_date'] = self.end_date.strftime("%Y-%m-%d")
+            context['lower_date_bound'] = lower_date_bound
+            context['upper_date_bound'] = upper_date_bound
+            context["fields"] = included_fields
+            context['per_page'] = self.request.GET.get('per_page', self.paginate_by)
+            context['per_page_options'] = [25, 50, 100, "All"]
+            context['orders_count'] = self.get_queryset(included_fields).count()
         return context
     
     def get_paginate_by(self, queryset):
@@ -308,7 +318,8 @@ class OrderDetailsView(ListView):
             return int(per_page)
         except ValueError:
             if per_page == "All":
-                return Order.objects.order_by("po_date").count()
+                count = queryset.count()
+                return count if count > 0 else 1
             else:
                 return 25
 
@@ -442,138 +453,142 @@ class OrderDetailsAdvancedView(TemplateView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-    
-        # Get the start and end dates to use for querying
-        start_date, end_date = self.get_dates_from_request()
-        lower_date_bound = Order.objects.order_by("po_date").first().po_date.strftime("%Y-%m-%d")
-        upper_date_bound = datetime.datetime.now(zoneinfo.ZoneInfo("UTC")).strftime("%Y-%m-%d")
-
-        item_no = self.request.GET.getlist("category[]")
-        selected_item = None
-
-        qset = Order.objects.all().order_by("item__descr")
-        all_items = {item: descr for item, descr in qset.values_list("item__item", "item__descr")}
-        
-        if item_no:
-            selected_item = Order.objects.filter(item__item_no__in=item_no).values_list("item__item", flat=True)
-
-        start_date_str = start_date.strftime("%Y-%m-%d")
-        end_date_str = end_date.strftime("%Y-%m-%d")
-
-        orders_by_month_keys = []
-        orders_by_month_values = []
-        cost_by_month_values = []
-        orders_by_quarter_keys = []
-        orders_by_quarter_values = []
-        cost_by_quarter_values = []
-        quarters_dict = {}
-
-        if not selected_item:
-            base_queryset = Order.objects.filter(po_date__range=(start_date, end_date))
+        queryset = Order.objects.all()
+        if not queryset.exists():
+            context["message"] = "No orders available yet."
         else:
-            base_queryset = Order.objects.filter(po_date__range=(start_date, end_date), item__item_no__in=item_no)
-        
-        monthly_data = base_queryset.annotate(
-            month=TruncMonth('po_date')
-        ).values(
-            "month"
-        ).annotate(
-            total_orders=Count("id"),
-            total_cost=Sum("total_cost")
-        ).order_by("month")
 
-        quarterly_data = base_queryset.annotate(
-            quarter=TruncQuarter("po_date")
-        ).values(
-            "quarter"
-        ).annotate(
-            total_orders=Count("id"),
-            total_cost=Sum("total_cost")
-        ).order_by("quarter")
+            # Get the start and end dates to use for querying
+            start_date, end_date = self.get_dates_from_request()
+            lower_date_bound = queryset.order_by("po_date").first().po_date.strftime("%Y-%m-%d")
+            upper_date_bound = datetime.datetime.now(zoneinfo.ZoneInfo("UTC")).strftime("%Y-%m-%d")
 
-        for entry in monthly_data:
-            orders_by_month_keys.append(entry["month"].strftime("%B %Y"))
-            orders_by_month_values.append(entry["total_orders"])
-            cost_by_month_values.append(entry["total_cost"] or 0)
-        
-        for entry in quarterly_data:
-            quarter_number = (entry['quarter'].month - 1) // 3 + 1
-            quarter_label = f"Q{quarter_number} {entry['quarter'].year}"
+            item_no = self.request.GET.getlist("category[]")
+            selected_item = None
 
-            orders_by_quarter_keys.append(quarter_label)
-            orders_by_quarter_values.append(entry['total_orders'])
-            cost_by_quarter_values.append(entry['total_cost'] or 0)
+            qset = queryset.order_by("item__descr")
+            all_items = {item: descr for item, descr in qset.values_list("item__item", "item__descr")}
+            
+            if item_no:
+                selected_item = Order.objects.filter(item__item_no__in=item_no).values_list("item__item", flat=True)
 
-        # Fetch top manufacturers (top 50 by count)
-        top_mfrs = base_queryset.values('item__mfr').annotate(
-            count=Count('item__mfr')
-        ).order_by('-count')[:50]
+            start_date_str = start_date.strftime("%Y-%m-%d")
+            end_date_str = end_date.strftime("%Y-%m-%d")
 
-        # Fetch top items (top 50 by count)
-        top_items = base_queryset.values('item__item').annotate(
-            count=Count('item__item')
-        ).order_by('-count')[:50]
+            orders_by_month_keys = []
+            orders_by_month_values = []
+            cost_by_month_values = []
+            orders_by_quarter_keys = []
+            orders_by_quarter_values = []
+            cost_by_quarter_values = []
+            quarters_dict = {}
 
-        # Process mfrs
-        mfrs_dict = {}
-        mfrs_pareto_dict = {}
-        total_mfr_count = sum(m['count'] for m in top_mfrs)
-        cumulative_mfr_count = 0
-
-        for m in top_mfrs:
-            mfrs_dict[m['item__mfr']] = m['count']
-            cumulative_mfr_count += m['count']
-            mfrs_pareto_dict[m['item__mfr']] = (cumulative_mfr_count / total_mfr_count) * 100
-
-        # Process items
-        commonly_ordered_items_dict = {}
-        commonly_ordered_items_pareto_dict = {}
-        total_item_count = sum(i['count'] for i in top_items)
-        cumulative_item_count = 0
-
-        for i in top_items:
-            commonly_ordered_items_dict[i['item__item']] = i['count']
-            cumulative_item_count += i['count']
-            commonly_ordered_items_pareto_dict[i['item__item']] = (cumulative_item_count / total_item_count) * 100
-        
-        try:
-            selected_item = list(selected_item)
-            if len(selected_item == 0):
-                selected_item = ""
-            else:
-                selected_item = json.dumps(selected_item, ensure_ascii=False)
-        except TypeError:
             if not selected_item:
-                selected_item = ""
-        
-        for quarter in self.get_quarters_list():
-            quarter_date_obj = datetime.datetime.strptime(quarter, "%B %Y")
-            quarter_date = (quarter_date_obj.month - 1) // 3 + 1
-            quarters_dict[quarter] = f"Q{quarter_date} {quarter_date_obj.year}"
+                base_queryset = Order.objects.filter(po_date__range=(start_date, end_date))
+            else:
+                base_queryset = Order.objects.filter(po_date__range=(start_date, end_date), item__item_no__in=item_no)
+            
+            monthly_data = base_queryset.annotate(
+                month=TruncMonth('po_date')
+            ).values(
+                "month"
+            ).annotate(
+                total_orders=Count("id"),
+                total_cost=Sum("total_cost")
+            ).order_by("month")
 
-        context.update({
-            "start_date": start_date_str,
-            "end_date": end_date_str,
-            "lower_date_bound": lower_date_bound,
-            "upper_date_bound": upper_date_bound,
-            "orders_by_month_keys": json.dumps(orders_by_month_keys, ensure_ascii=False),
-            "orders_by_month_values": json.dumps(orders_by_month_values, ensure_ascii=False),
-            "orders_by_quarter_keys": json.dumps(orders_by_quarter_keys, ensure_ascii=False),
-            "orders_by_quarter_values": json.dumps(orders_by_quarter_values, ensure_ascii=False),
-            "total_orders_across_range": sum(orders_by_month_values),
-            "cost_by_month_values": simplejson.dumps(cost_by_month_values, ensure_ascii=False, use_decimal=True),
-            "cost_by_quarter_values": simplejson.dumps(cost_by_quarter_values, ensure_ascii=False, use_decimal=True),
-            "mfrs_keys": json.dumps(list(mfrs_dict.keys()), ensure_ascii=False).replace("'", "\\'"),
-            "mfrs_values": json.dumps(list(mfrs_dict.values()), ensure_ascii=False),
-            "mfrs_pareto": json.dumps(list(mfrs_pareto_dict.values()), ensure_ascii=False),
-            "commonly_ordered_keys": json.dumps(list(commonly_ordered_items_dict.keys()), ensure_ascii=False),
-            "commonly_ordered_values": json.dumps(list(commonly_ordered_items_dict.values()), ensure_ascii=False),
-            "commonly_ordered_values_pareto": json.dumps(list(commonly_ordered_items_pareto_dict.values()), ensure_ascii=False),
-            "selected_item_no": selected_item,
-            "all_items": all_items,
-            "all_quarters": quarters_dict,
-            "selected_quarter": self.quarter_str,
-        })
+            quarterly_data = base_queryset.annotate(
+                quarter=TruncQuarter("po_date")
+            ).values(
+                "quarter"
+            ).annotate(
+                total_orders=Count("id"),
+                total_cost=Sum("total_cost")
+            ).order_by("quarter")
+
+            for entry in monthly_data:
+                orders_by_month_keys.append(entry["month"].strftime("%B %Y"))
+                orders_by_month_values.append(entry["total_orders"])
+                cost_by_month_values.append(entry["total_cost"] or 0)
+            
+            for entry in quarterly_data:
+                quarter_number = (entry['quarter'].month - 1) // 3 + 1
+                quarter_label = f"Q{quarter_number} {entry['quarter'].year}"
+
+                orders_by_quarter_keys.append(quarter_label)
+                orders_by_quarter_values.append(entry['total_orders'])
+                cost_by_quarter_values.append(entry['total_cost'] or 0)
+
+            # Fetch top manufacturers (top 50 by count)
+            top_mfrs = base_queryset.values('item__mfr').annotate(
+                count=Count('item__mfr')
+            ).order_by('-count')[:50]
+
+            # Fetch top items (top 50 by count)
+            top_items = base_queryset.values('item__item').annotate(
+                count=Count('item__item')
+            ).order_by('-count')[:50]
+
+            # Process mfrs
+            mfrs_dict = {}
+            mfrs_pareto_dict = {}
+            total_mfr_count = sum(m['count'] for m in top_mfrs)
+            cumulative_mfr_count = 0
+
+            for m in top_mfrs:
+                mfrs_dict[m['item__mfr']] = m['count']
+                cumulative_mfr_count += m['count']
+                mfrs_pareto_dict[m['item__mfr']] = (cumulative_mfr_count / total_mfr_count) * 100
+
+            # Process items
+            commonly_ordered_items_dict = {}
+            commonly_ordered_items_pareto_dict = {}
+            total_item_count = sum(i['count'] for i in top_items)
+            cumulative_item_count = 0
+
+            for i in top_items:
+                commonly_ordered_items_dict[i['item__item']] = i['count']
+                cumulative_item_count += i['count']
+                commonly_ordered_items_pareto_dict[i['item__item']] = (cumulative_item_count / total_item_count) * 100
+            
+            try:
+                selected_item = list(selected_item)
+                if len(selected_item == 0):
+                    selected_item = ""
+                else:
+                    selected_item = json.dumps(selected_item, ensure_ascii=False)
+            except TypeError:
+                if not selected_item:
+                    selected_item = ""
+            
+            for quarter in self.get_quarters_list():
+                quarter_date_obj = datetime.datetime.strptime(quarter, "%B %Y")
+                quarter_date = (quarter_date_obj.month - 1) // 3 + 1
+                quarters_dict[quarter] = f"Q{quarter_date} {quarter_date_obj.year}"
+
+            context.update({
+                "start_date": start_date_str,
+                "end_date": end_date_str,
+                "lower_date_bound": lower_date_bound,
+                "upper_date_bound": upper_date_bound,
+                "orders_by_month_keys": json.dumps(orders_by_month_keys, ensure_ascii=False),
+                "orders_by_month_values": json.dumps(orders_by_month_values, ensure_ascii=False),
+                "orders_by_quarter_keys": json.dumps(orders_by_quarter_keys, ensure_ascii=False),
+                "orders_by_quarter_values": json.dumps(orders_by_quarter_values, ensure_ascii=False),
+                "total_orders_across_range": sum(orders_by_month_values),
+                "cost_by_month_values": simplejson.dumps(cost_by_month_values, ensure_ascii=False, use_decimal=True),
+                "cost_by_quarter_values": simplejson.dumps(cost_by_quarter_values, ensure_ascii=False, use_decimal=True),
+                "mfrs_keys": json.dumps(list(mfrs_dict.keys()), ensure_ascii=False).replace("'", "\\'"),
+                "mfrs_values": json.dumps(list(mfrs_dict.values()), ensure_ascii=False),
+                "mfrs_pareto": json.dumps(list(mfrs_pareto_dict.values()), ensure_ascii=False),
+                "commonly_ordered_keys": json.dumps(list(commonly_ordered_items_dict.keys()), ensure_ascii=False),
+                "commonly_ordered_values": json.dumps(list(commonly_ordered_items_dict.values()), ensure_ascii=False),
+                "commonly_ordered_values_pareto": json.dumps(list(commonly_ordered_items_pareto_dict.values()), ensure_ascii=False),
+                "selected_item_no": selected_item,
+                "all_items": all_items,
+                "all_quarters": quarters_dict,
+                "selected_quarter": self.quarter_str,
+            })
         return context
 
     def dispatch(self, request, *args, **kwargs):
