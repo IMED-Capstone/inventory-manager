@@ -7,12 +7,14 @@ from .forms import AddRemoveItemsByBarcodeForm
 
 import openpyxl
 import simplejson
+from functools import reduce
+from operator import or_
 from dateutil.relativedelta import relativedelta
 from django.apps import apps
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.db.models import Count, Sum, F
+from django.db.models import Count, Sum, F, Q
 from django.db.models.functions import TruncMonth, TruncQuarter
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
@@ -69,7 +71,7 @@ class ItemDetailsView(ListView):
     context_object_name = "items"
     paginate_by = 25
 
-    def get_queryset(self, included_fields=None):
+    def get_queryset(self, search_term=None, search_field=None, included_fields=None):
         queryset = Order.objects.all()
         start_date_str = self.request.GET.get("start_date")
         end_date_str = self.request.GET.get("end_date")
@@ -98,15 +100,26 @@ class ItemDetailsView(ListView):
 
         item_ids = orders.values_list("item", flat=True).distinct()
         
-        
+        initial_result = Item.objects.filter(id__in=item_ids)
+
+        valid_fields = [field.name for field in Item._meta.fields]
+
+        if search_term and search_field in valid_fields:
+            filter_kwargs = {f"{search_field}__icontains": search_term}
+            initial_result = initial_result.filter(**filter_kwargs)
+        elif search_term and not search_field:  # search across all fields
+            initial_filter = reduce(or_, [Q(**{'{}__icontains'.format(f): search_term}) for f in valid_fields], Q())
+            initial_result = Item.objects.filter(initial_filter)
+
         if not included_fields:
-            return Item.objects.filter(id__in=item_ids)
+            return initial_result
         else:
-            return Item.objects.filter(id__in=item_ids).only(*included_fields)
+            return initial_result.only(*included_fields)
         
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+
         if not context["items"]:
             context["message"] = "No items available yet."
         else:
@@ -115,15 +128,25 @@ class ItemDetailsView(ListView):
             all_fields = [field.name for field in Item._meta.fields]
             excluded_fields = []
             included_fields = [field for field in all_fields if field not in excluded_fields]
+
+            search_field = self.request.GET.get("search_field")
+            search_term = self.request.GET.get("search_term")
+
             context['start_date'] = self.start_date.strftime("%Y-%m-%d")
             context['end_date'] = self.end_date.strftime("%Y-%m-%d")
             context['lower_date_bound'] = lower_date_bound
             context['upper_date_bound'] = upper_date_bound
             context['per_page'] = self.request.GET.get('per_page', self.paginate_by)
             context['per_page_options'] = [25, 50, 100, 200, "All"]
-            context['items_count'] = self.get_queryset(included_fields).count()
+            context["filtered_items"] = self.get_queryset(search_term, search_field, included_fields)
+            context['items_count'] = self.get_queryset(search_term, search_field, included_fields).count()
             included_fields.append("quantity")
             context["fields"] = included_fields
+            context["search_field"] = search_field
+            if search_term:
+                context["search_term"] = search_term
+            else:
+                context["search_term"] = ""
         return context
 
     def get_paginate_by(self, queryset):

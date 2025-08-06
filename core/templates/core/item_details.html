@@ -201,6 +201,27 @@
         </div>
 
         <div class="row mb-3">
+            <div class="col-md-4">
+            <label for="search_field" class="form-label">Field:</label>
+                <select name="search_field" id="search_field" class="form-select" aria-describedby="search_field_help">
+                    <option value="">All</option>
+                    {% for field in fields %}
+                        <option value="{{ field }}" {% if field in search_field %}selected{% endif %}>
+                            {{ field }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <small id="search_field_help" class="form-text text-muted">Select a field to filter by.</small>
+                </div>
+            <div class="col-md-4">
+                <label for="search_term" class="form-label">Search:</label>
+                <input id="search_term" type="text" name="search_term" value="{{ search_term }}" 
+                               class="form-control" placeholder="query" aria-describedby="search_term_help">
+                <small id="search_term_help" class="form-text text-muted">Enter text to search.</small>
+            </div>
+        </div>
+
+        <div class="row mb-3">
             <div class="col-md-9 d-flex gap-2">
                 <button type="submit" class="btn btn-primary w-50">Filter</button>
                 <a href="{% url 'export-orders' %}?start_date={{ start_date }}&end_date={{ end_date }}" class="btn btn-success w-50">
@@ -256,7 +277,7 @@
             </tr>
         </thead>
         <tbody>
-            {% for item in items %}
+            {% for item in filtered_items %}
                 <tr>
                     {% for field in fields %}
                         {% with value=item|get_field_value:field %}
