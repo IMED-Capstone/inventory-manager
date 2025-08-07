@@ -10,11 +10,12 @@ import simplejson
 from functools import reduce
 from operator import or_
 from dateutil.relativedelta import relativedelta
+from decimal import Decimal, InvalidOperation
 from django.apps import apps
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.db.models import Count, Sum, F, Q
+from django.db.models import Count, Sum, F, Q, CharField, TextField
 from django.db.models.functions import TruncMonth, TruncQuarter
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
@@ -109,7 +110,7 @@ class ItemDetailsView(ListView):
             initial_result = initial_result.filter(**filter_kwargs)
         elif search_term and not search_field:  # search across all fields
             initial_filter = reduce(or_, [Q(**{'{}__icontains'.format(f): search_term}) for f in valid_fields], Q())
-            initial_result = Item.objects.filter(initial_filter)
+            initial_result = initial_result.filter(initial_filter)
 
         if not included_fields:
             return initial_result
@@ -279,62 +280,108 @@ class ItemTransactionView(ListView):
         return context
 
 class OrderDetailsView(ListView):
-    """Provides basic table view of orders, selectable by date range."""
     model = Order
     template_name = "core/order_details.html"
     context_object_name = "orders"
     paginate_by = 25
 
-    def get_queryset(self, included_fields=None):
+    def get_queryset(self):
         queryset = super().get_queryset()
+        current_time = timezone.localtime(timezone.now())
         start_date_str = self.request.GET.get("start_date")
         end_date_str = self.request.GET.get("end_date")
 
-        current_time = timezone.localtime(timezone.now())
-
         if not start_date_str:
-            start_date = (current_time - relativedelta(years=1))
-            start_date_str = start_date.strftime("%Y-%m-%d")
+            start_date = current_time - relativedelta(years=1)
         else:
-            start_date = timezone.make_aware(datetime.datetime.combine(parse_date(start_date_str), datetime.time(0,0,0,0)))
+            start_date = timezone.make_aware(datetime.datetime.combine(parse_date(start_date_str), datetime.time(0, 0)))
+
         if not end_date_str:
             end_date = current_time
-            end_date_str = end_date.strftime("%Y-%m-%d")
         else:
-            end_date = timezone.make_aware(datetime.datetime.combine(parse_date(end_date_str), datetime.time(23,59,59,999999)))
-        
-        # To include all orders based on the date, start date should start at 12 AM and end date should end at 11:59 PM
+            end_date = timezone.make_aware(datetime.datetime.combine(parse_date(end_date_str), datetime.time(23, 59, 59, 999999)))
+
         start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
         end_date = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
 
         self.start_date = start_date
         self.end_date = end_date
-        
-        if not included_fields:
-            return queryset.filter(po_date__range=[start_date, end_date]).order_by("-po_date")
-        else:
-            return queryset.filter(po_date__range=[start_date, end_date]).only(*included_fields).order_by("-po_date")
-    
+
+        orders = queryset.filter(po_date__range=[start_date, end_date]).order_by("-po_date")
+
+        search_term = self.request.GET.get("search_term")
+        search_field = self.request.GET.get("search_field")
+
+        valid_text_fields = [
+            field.name for field in Order._meta.fields
+            if isinstance(field, (CharField, TextField))
+        ]
+
+        money_fields = ["price", "total_cost"]
+
+        if search_term:
+            filters = Q()
+
+            if search_field:
+                if search_field in valid_text_fields:
+                    filters |= Q(**{f"{search_field}__icontains": search_term})
+                elif search_field in money_fields:
+                    try:
+                        amount = Decimal(search_term)
+                        filters |= Q(**{search_field: amount})
+                    except InvalidOperation:
+                        return queryset.none()  # invalid number when targeting a MoneyField
+            else:
+                # Search text fields
+                filters |= reduce(or_, [
+                    Q(**{f"{field}__icontains": search_term}) for field in valid_text_fields
+                ], Q())
+
+                # Search both MoneyFields, only if valid number
+                try:
+                    amount = Decimal(search_term)
+                    for money_field in money_fields:
+                        filters |= Q(**{money_field: amount})
+                except InvalidOperation:
+                    pass  # not numeric, skip numeric matching
+
+            orders = orders.filter(filters)
+
+        return orders
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        if not context["orders"]:
+        orders_qs = context.get("orders")
+
+        if not orders_qs:
             context["message"] = "No orders available yet."
+
+        lower_date_bound = Order.objects.order_by('po_date').first().po_date.strftime("%Y-%m-%d")
+        upper_date_bound = timezone.localtime(timezone.now()).strftime('%Y-%m-%d')
+
+        all_fields = [field.name for field in Order._meta.fields]
+        excluded_fields = ["id", "price_currency", "total_cost_currency", "item_no", "dbo_vend_name", "expr1010"]
+        included_fields = [f for f in all_fields if f not in excluded_fields]
+
+        context.update({
+            'start_date': self.start_date.strftime("%Y-%m-%d"),
+            'end_date': self.end_date.strftime("%Y-%m-%d"),
+            'lower_date_bound': lower_date_bound,
+            'upper_date_bound': upper_date_bound,
+            'fields': included_fields,
+            'per_page': self.request.GET.get('per_page', self.paginate_by),
+            'per_page_options': [25, 50, 100, "All"],
+            'search_field': self.request.GET.get("search_field"),
+            'orders_count': context["paginator"].count if "paginator" in context else 0,
+        })
+
+        if self.request.GET.get("search_term"):
+            context["search_term"] = self.request.GET.get("search_term")
         else:
-            lower_date_bound = Order.objects.order_by('po_date').first().po_date.strftime("%Y-%m-%d")
-            upper_date_bound = (timezone.localtime(timezone.now())).strftime('%Y-%m-%d')
-            all_fields = [field.name for field in Order._meta.fields]
-            excluded_fields = ["id", "price_currency", "total_cost_currency", "item_no", "dbo_vend_name", "expr1010"]
-            included_fields = [field for field in all_fields if field not in excluded_fields]
-            context['start_date'] = self.start_date.strftime("%Y-%m-%d")
-            context['end_date'] = self.end_date.strftime("%Y-%m-%d")
-            context['lower_date_bound'] = lower_date_bound
-            context['upper_date_bound'] = upper_date_bound
-            context["fields"] = included_fields
-            context['per_page'] = self.request.GET.get('per_page', self.paginate_by)
-            context['per_page_options'] = [25, 50, 100, "All"]
-            context['orders_count'] = self.get_queryset(included_fields).count()
+            context["search_term"] = ""
+
         return context
-    
+
     def get_paginate_by(self, queryset):
         per_page = self.request.GET.get('per_page', 25)
         try:
@@ -343,8 +390,7 @@ class OrderDetailsView(ListView):
             if per_page == "All":
                 count = queryset.count()
                 return count if count > 0 else 1
-            else:
-                return 25
+            return 25
 
 def export_to_excel(request):
     """Export selected date range transaction data to an Excel file."""
