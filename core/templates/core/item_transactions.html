@@ -274,6 +274,15 @@
                             class="form-control" aria-describedby="endHelp">
                         <small id="endHelp" class="form-text text-muted">Select end date for the range.</small>
                     </div>
+                    <div class="col-md-4">
+                        <label for="per_page" class="form-label">Items per page:</label>
+                        <select class="form-select" name="per_page" id="per_page" onchange="this.form.submit()" aria-describedby="paginatorHelp">
+                            {% for option in per_page_options %}
+                                <option value="{{ option }}" {% if per_page|stringformat:"s" == option|stringformat:"s" %}selected{% endif %}>{{ option }}</option>
+                            {% endfor %}
+                        </select>
+                        <small id="paginatorHelp" class="form-text text-muted">Items to display per page.</small>
+                    </div>
                 </div>
                 <div class="row mb-3">
                     <div class="col-md-6">
@@ -364,11 +373,19 @@
         <thead class="table-light">
             <tr>
                 {% for field in fields %}
-                    <th>{{ field }}</th>
+                    <th>
+                        {% if request.GET.sort == field %}
+                            <a href="?{{ query_string }}&sort=-{{ field }}">{{ field|capfirst }} ▲</a>
+                        {% elif request.GET.sort == '-'|add:field %}
+                            <a href="?{{ query_string }}&sort={{ field }}">{{ field|capfirst }} ▼</a>
+                        {% else %}
+                            <a href="?{{ query_string }}&sort={{ field }}">{{ field|capfirst }}</a>
+                        {% endif %}
+                    </th>
                 {% endfor %}
             </tr>
         </thead>
-        <tbody>
+
             {% for item_transaction in item_transactions %}
                 <tr>
                     {% for field in fields %}

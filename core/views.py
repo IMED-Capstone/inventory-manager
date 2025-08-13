@@ -175,8 +175,8 @@ class ItemTransactionView(ListView):
     paginate_by = 25
 
     def get_quarters_list(self) -> list:
-        newest_item_transaction_date = ItemTransaction.objects.all().order_by("-timestamp").first().timestamp
-        oldest_item_transaction_date = ItemTransaction.objects.all().order_by("timestamp").first().timestamp
+        newest_item_transaction_date = ItemTransaction.objects.order_by("-timestamp").first().timestamp
+        oldest_item_transaction_date = ItemTransaction.objects.order_by("timestamp").first().timestamp
 
         quarter_month = ((oldest_item_transaction_date.month - 1) // 3) * 3 + 1
         aligned_start = oldest_item_transaction_date.replace(month=quarter_month, day=1)
@@ -197,7 +197,7 @@ class ItemTransactionView(ListView):
         start_date = end_date - relativedelta(years=1)
         return start_date, end_date
     
-    def get_end_date_for_quarter(self, start_date:datetime.datetime):
+    def get_end_date_for_quarter(self, start_date: datetime.datetime):
         end_date = start_date + relativedelta(months=3)
         end_date = end_date.replace(day=1) - datetime.timedelta(days=1)
         end_date = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
@@ -206,16 +206,18 @@ class ItemTransactionView(ListView):
     def get_dates_from_request(self):
         quarter_str = self.request.GET.get("quarter")
         if quarter_str:
-            start_date = timezone.make_aware(datetime.datetime.combine(datetime.datetime.strptime(quarter_str, "%B %Y"), datetime.time(0,0,0,0)))
+            start_date = timezone.make_aware(
+                datetime.datetime.combine(datetime.datetime.strptime(quarter_str, "%B %Y"), datetime.time.min)
+            )
             end_date = self.get_end_date_for_quarter(start_date)
         else:
             start_date_str = self.request.GET.get("start_date")
             end_date_str = self.request.GET.get("end_date")
 
-            start_date = timezone.make_aware(datetime.datetime.combine(parse_date(start_date_str), datetime.time(0,0,0,0))) if start_date_str else None
-            end_date = timezone.make_aware(datetime.datetime.combine(parse_date(end_date_str), datetime.time(23,59,59,999999))) if end_date_str else None
+            start_date = timezone.make_aware(datetime.datetime.combine(parse_date(start_date_str), datetime.time.min)) if start_date_str else None
+            end_date = timezone.make_aware(datetime.datetime.combine(parse_date(end_date_str), datetime.time.max)) if end_date_str else None
 
-        self.quarter_str = self.request.GET.get("quarter")
+        self.quarter_str = quarter_str
 
         if not start_date or not end_date:
             start_date, end_date = self.get_default_dates()
@@ -226,65 +228,88 @@ class ItemTransactionView(ListView):
         return start_date, end_date
 
     def get_queryset(self, included_fields=None):
-        start_date_str = self.request.GET.get("start_date")
-        end_date_str = self.request.GET.get("end_date")
-
-        current_time = timezone.localtime(timezone.now())
-
-        if not start_date_str:
-            start_date = (current_time - relativedelta(years=1))
-            start_date_str = start_date.strftime("%Y-%m-%d")
-        else:
-            start_date = timezone.make_aware(datetime.datetime.combine(parse_date(start_date_str), datetime.time(0,0,0,0)))
-        if not end_date_str:
-            end_date = current_time
-            end_date_str = end_date.strftime("%Y-%m-%d")
-        else:
-            end_date = timezone.make_aware(datetime.datetime.combine(parse_date(end_date_str), datetime.time(23,59,59,999999)))
-        
-        # To include all items based on the date, start date should start at 12 AM and end date should end at 11:59 PM
-        start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
-        end_date = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
-
+        start_date, end_date = self.get_dates_from_request()
         self.start_date = start_date
         self.end_date = end_date
 
         item_no = self.request.GET.getlist("category[]")
-
-        if any(s.strip() for s in item_no):     # consider a list with only empty strings as false as well
+        if any(s.strip() for s in item_no):
             queryset = ItemTransaction.objects.filter(item__item_no__in=item_no)
         else:
             queryset = ItemTransaction.objects.all()
-        
-        item_transactions = queryset.filter(timestamp__range=[start_date, end_date]).order_by("-timestamp")
-        
-        if not included_fields:
-            return item_transactions
-        else:
+
+        item_transactions = queryset.filter(timestamp__range=[start_date, end_date])
+
+        search_field = self.request.GET.get("search_field")
+        search_term = self.request.GET.get("search_term")
+        valid_fields = [field.name for field in ItemTransaction._meta.fields]
+
+        if search_term:
+            if search_field in valid_fields:
+                item_transactions = item_transactions.filter(**{f"{search_field}__icontains": search_term})
+            else:
+                query = reduce(or_, [Q(**{f"{f}__icontains": search_term}) for f in valid_fields], Q())
+                item_transactions = item_transactions.filter(query)
+
+        sort_param = self.request.GET.get("sort", "id")
+        valid_sort_fields = valid_fields + [f"-{f}" for f in valid_fields]
+        if sort_param not in valid_sort_fields:
+            sort_param = "id"
+
+        item_transactions = item_transactions.order_by(sort_param)
+        self.sort_param = sort_param
+
+        self.items_count = item_transactions.count()
+
+        if included_fields:
             return item_transactions.only(*included_fields)
+        return item_transactions
+
+    def get_paginate_by(self, queryset):
+        per_page = self.request.GET.get("per_page", self.paginate_by)
+        try:
+            return int(per_page)
+        except (ValueError, TypeError):
+            if per_page == "All":
+                return queryset.count() or 1
+            return self.paginate_by
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+
         if not context["item_transactions"]:
             context["message"] = "No item transactions available yet."
         else:
-            lower_date_bound = ItemTransaction.objects.order_by('timestamp').first().timestamp.strftime("%Y-%m-%d")
-            upper_date_bound = (timezone.localtime(timezone.now())).strftime('%Y-%m-%d')
+            lower_date_bound = ItemTransaction.objects.order_by("timestamp").first().timestamp.strftime("%Y-%m-%d")
+            upper_date_bound = timezone.localtime(timezone.now()).strftime("%Y-%m-%d")
             all_fields = [field.name for field in ItemTransaction._meta.fields]
             excluded_fields = []
-            included_fields = [field for field in all_fields if field not in excluded_fields]
+            included_fields = [f for f in all_fields if f not in excluded_fields]
+
             qset = Order.objects.all().order_by("item__descr")
             all_items = {item: descr for item, descr in qset.values_list("item__item", "item__descr")}
-            context['start_date'] = self.start_date.strftime("%Y-%m-%d")
-            context['end_date'] = self.end_date.strftime("%Y-%m-%d")
-            context['lower_date_bound'] = lower_date_bound
-            context['upper_date_bound'] = upper_date_bound
-            context['per_page'] = self.request.GET.get('per_page', self.paginate_by)
-            context['per_page_options'] = [25, 50, 100, 200, "All"]
-            context['items_count'] = self.get_queryset(included_fields).count()
+
+            query_dict = self.request.GET.copy()
+            query_dict.pop("page", None)
+            if "sort" in query_dict:
+                query_dict.pop("sort")
+            context["query_string"] = urlencode(query_dict)
+
+            context["sort"] = getattr(self, "sort_param", "id")
+            context["start_date"] = self.start_date.strftime("%Y-%m-%d")
+            context["end_date"] = self.end_date.strftime("%Y-%m-%d")
+            context["lower_date_bound"] = lower_date_bound
+            context["upper_date_bound"] = upper_date_bound
+            context["search_field"] = self.request.GET.get("search_field", "")
+            context["search_term"] = self.request.GET.get("search_term", "")
+            context["per_page"] = self.request.GET.get("per_page", self.paginate_by)
+            context["per_page_options"] = [25, 50, 100, 200, "All"]
+            context["items_count"] = getattr(self, "items_count", 0)
             context["fields"] = included_fields
             context["all_items"] = all_items
+
         return context
+
 
 class OrderDetailsView(ListView):
     model = Order
