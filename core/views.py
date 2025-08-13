@@ -301,12 +301,12 @@ class OrderDetailsView(ListView):
         if not start_date_str:
             start_date = current_time - relativedelta(years=1)
         else:
-            start_date = timezone.make_aware(datetime.datetime.combine(parse_date(start_date_str), datetime.time(0, 0)))
+            start_date = timezone.make_aware(datetime.datetime.combine(parse_date(start_date_str), datetime.time.min))
 
         if not end_date_str:
             end_date = current_time
         else:
-            end_date = timezone.make_aware(datetime.datetime.combine(parse_date(end_date_str), datetime.time(23, 59, 59, 999999)))
+            end_date = timezone.make_aware(datetime.datetime.combine(parse_date(end_date_str), datetime.time.max))
 
         start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
         end_date = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
@@ -314,7 +314,7 @@ class OrderDetailsView(ListView):
         self.start_date = start_date
         self.end_date = end_date
 
-        orders = queryset.filter(po_date__range=[start_date, end_date]).order_by("-po_date")
+        orders = queryset.filter(po_date__range=[start_date, end_date])
 
         search_term = self.request.GET.get("search_term")
         search_field = self.request.GET.get("search_field")
@@ -337,31 +337,30 @@ class OrderDetailsView(ListView):
                         amount = Decimal(search_term)
                         filters |= Q(**{search_field: amount})
                     except InvalidOperation:
-                        return queryset.none()  # invalid number when targeting a MoneyField
+                        return queryset.none()
             else:
-                # Search text fields
                 filters |= reduce(or_, [
                     Q(**{f"{field}__icontains": search_term}) for field in valid_text_fields
                 ], Q())
-
-                # Search both MoneyFields, only if valid number
                 try:
                     amount = Decimal(search_term)
                     for money_field in money_fields:
                         filters |= Q(**{money_field: amount})
                 except InvalidOperation:
-                    pass  # not numeric, skip numeric matching
+                    pass
 
             orders = orders.filter(filters)
+
+        sort_param = self.request.GET.get("sort", "-po_date")
+        if sort_param.lstrip('-') in [field.name for field in Order._meta.fields]:
+            orders = orders.order_by(sort_param)
+        else:
+            orders = orders.order_by("-po_date")
 
         return orders
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        orders_qs = context.get("orders")
-
-        if not orders_qs:
-            context["message"] = "No orders available yet."
 
         lower_date_bound = Order.objects.order_by('po_date').first().po_date.strftime("%Y-%m-%d")
         upper_date_bound = timezone.localtime(timezone.now()).strftime('%Y-%m-%d')
@@ -369,6 +368,11 @@ class OrderDetailsView(ListView):
         all_fields = [field.name for field in Order._meta.fields]
         excluded_fields = ["id", "price_currency", "total_cost_currency", "item_no", "dbo_vend_name", "expr1010"]
         included_fields = [f for f in all_fields if f not in excluded_fields]
+
+        params = self.request.GET.copy()
+        params.pop('page', None)
+        params.pop('sort', None)
+        context['query_string'] = params.urlencode()
 
         context.update({
             'start_date': self.start_date.strftime("%Y-%m-%d"),
@@ -378,14 +382,12 @@ class OrderDetailsView(ListView):
             'fields': included_fields,
             'per_page': self.request.GET.get('per_page', self.paginate_by),
             'per_page_options': [25, 50, 100, "All"],
-            'search_field': self.request.GET.get("search_field"),
+            'search_field': self.request.GET.get("search_field", ""),
             'orders_count': context["paginator"].count if "paginator" in context else 0,
+            'sort': self.request.GET.get("sort", "-po_date"),
         })
 
-        if self.request.GET.get("search_term"):
-            context["search_term"] = self.request.GET.get("search_term")
-        else:
-            context["search_term"] = ""
+        context["search_term"] = self.request.GET.get("search_term", "")
 
         return context
 
