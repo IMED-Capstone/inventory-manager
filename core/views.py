@@ -73,11 +73,9 @@ class ItemDetailsView(ListView):
     paginate_by = 25
 
     def get_queryset(self):
-        # Get all orders for filtering by date range
         orders_qs = Order.objects.all()
         current_time = timezone.localtime(timezone.now())
 
-        # Parse dates safely
         start_date_str = self.request.GET.get("start_date")
         end_date_str = self.request.GET.get("end_date")
 
@@ -96,14 +94,11 @@ class ItemDetailsView(ListView):
         self.start_date = start_date
         self.end_date = end_date
 
-        # Filter orders by po_date range
         filtered_orders = orders_qs.filter(po_date__range=[start_date, end_date]).order_by("-po_date")
         item_ids = filtered_orders.values_list("item", flat=True).distinct()
 
-        # Get items linked to those orders
         items_qs = Item.objects.filter(id__in=item_ids)
 
-        # Search filters
         search_field = self.request.GET.get("search_field")
         search_term = self.request.GET.get("search_term")
         valid_fields = [field.name for field in Item._meta.fields]
@@ -112,7 +107,6 @@ class ItemDetailsView(ListView):
             if search_field in valid_fields:
                 items_qs = items_qs.filter(**{f"{search_field}__icontains": search_term})
             else:
-                # Search all fields if no valid search_field given
                 query = reduce(or_, [Q(**{f"{f}__icontains": search_term}) for f in valid_fields], Q())
                 items_qs = items_qs.filter(query)
 
@@ -132,7 +126,6 @@ class ItemDetailsView(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        # Build a query dict excluding 'page' and 'sort' (sort handled separately)
         query_dict = self.request.GET.copy()
         query_dict.pop("page", None)
         if "sort" in query_dict:
@@ -151,7 +144,6 @@ class ItemDetailsView(ListView):
         all_fields = [field.name for field in Item._meta.fields]
         context["fields"] = all_fields + ["quantity"]  # add quantity explicitly if you want
 
-        # Pass request to template for URL building convenience
         context["request"] = self.request
 
         if not context["items"]:
@@ -248,9 +240,7 @@ class ItemTransactionView(ListView):
         if search_term:
             query = Q()
 
-            # Specific field search
             if search_field and search_field in valid_fields:
-                # Use exact match for numeric fields, icontains for text fields
                 field_obj = ItemTransaction._meta.get_field(search_field.split("__")[0])
                 if isinstance(field_obj, (IntegerField, AutoField)) and search_term.isdigit():
                     query |= Q(**{search_field: int(search_term)})
@@ -258,7 +248,6 @@ class ItemTransactionView(ListView):
                     query |= Q(**{f"{search_field}__icontains": search_term})
 
             else:
-                # Search across all text fields
                 text_queries = [
                     Q(**{f"{f}__icontains": search_term})
                     for f in valid_fields
@@ -266,7 +255,6 @@ class ItemTransactionView(ListView):
                 ]
                 query |= reduce(or_, text_queries, Q())
 
-                # Numeric field matches if term is a number
                 if search_term.isdigit():
                     numeric_queries = [
                         Q(**{f: int(search_term)})
@@ -275,7 +263,6 @@ class ItemTransactionView(ListView):
                     ]
                     query |= reduce(or_, numeric_queries, Q())
 
-                # Transaction type label match
                 for db_value, label in ItemTransaction.TransactionType.choices:
                     if search_term.lower() in label.lower():
                         query |= Q(transaction_type=db_value)
