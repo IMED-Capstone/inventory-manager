@@ -15,7 +15,7 @@ from django.apps import apps
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.db.models import Count, Sum, F, Q, CharField, TextField
+from django.db.models import Count, Sum, F, Q, CharField, TextField, IntegerField, AutoField
 from django.db.models.functions import TruncMonth, TruncQuarter
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
@@ -30,7 +30,7 @@ from djmoney.money import Money
 from openpyxl.styles import NamedStyle
 
 from .models import Item, Order, ItemTransaction
-from .utils import style_excel_sheet, trunc_datetime, absolute_add_remove_quantity
+from .utils import style_excel_sheet, trunc_datetime, absolute_add_remove_quantity, get_searchable_fields
 
 
 class HomePageView(TemplateView):
@@ -242,14 +242,45 @@ class ItemTransactionView(ListView):
 
         search_field = self.request.GET.get("search_field")
         search_term = self.request.GET.get("search_term")
-        valid_fields = [field.name for field in ItemTransaction._meta.fields]
+
+        valid_fields = get_searchable_fields(ItemTransaction)
 
         if search_term:
-            if search_field in valid_fields:
-                item_transactions = item_transactions.filter(**{f"{search_field}__icontains": search_term})
+            query = Q()
+
+            # Specific field search
+            if search_field and search_field in valid_fields:
+                # Use exact match for numeric fields, icontains for text fields
+                field_obj = ItemTransaction._meta.get_field(search_field.split("__")[0])
+                if isinstance(field_obj, (IntegerField, AutoField)) and search_term.isdigit():
+                    query |= Q(**{search_field: int(search_term)})
+                else:
+                    query |= Q(**{f"{search_field}__icontains": search_term})
+
             else:
-                query = reduce(or_, [Q(**{f"{f}__icontains": search_term}) for f in valid_fields], Q())
-                item_transactions = item_transactions.filter(query)
+                # Search across all text fields
+                text_queries = [
+                    Q(**{f"{f}__icontains": search_term})
+                    for f in valid_fields
+                    if isinstance(ItemTransaction._meta.get_field(f.split("__")[0]), (CharField, TextField))
+                ]
+                query |= reduce(or_, text_queries, Q())
+
+                # Numeric field matches if term is a number
+                if search_term.isdigit():
+                    numeric_queries = [
+                        Q(**{f: int(search_term)})
+                        for f in valid_fields
+                        if isinstance(ItemTransaction._meta.get_field(f.split("__")[0]), (IntegerField, AutoField))
+                    ]
+                    query |= reduce(or_, numeric_queries, Q())
+
+                # Transaction type label match
+                for db_value, label in ItemTransaction.TransactionType.choices:
+                    if search_term.lower() in label.lower():
+                        query |= Q(transaction_type=db_value)
+
+            item_transactions = item_transactions.filter(query)
 
         sort_param = self.request.GET.get("sort", "id")
         valid_sort_fields = valid_fields + [f"-{f}" for f in valid_fields]

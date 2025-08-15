@@ -1,4 +1,5 @@
 import datetime
+from django.db.models import CharField, TextField, ForeignKey, IntegerField, AutoField
 import pandas as pd
 from core.models import Item
 import openpyxl
@@ -142,3 +143,23 @@ def absolute_add_remove_quantity(item_quantity: int, add_remove_mode: str):
         quantity = quantity * -1
     
     return quantity
+
+def get_searchable_fields(model):
+    fields = []
+    for f in model._meta.get_fields():
+        # Direct text fields
+        if isinstance(f, (CharField, TextField)) and not f.is_relation:
+            fields.append(f.name)
+
+        # Direct numeric fields
+        elif isinstance(f, (IntegerField, AutoField)) and not f.is_relation:
+            fields.append(f.name)
+
+        # ForeignKeys -> dive into related model for text fields
+        elif isinstance(f, ForeignKey):
+            related_model = f.related_model
+            for rf in related_model._meta.get_fields():
+                if isinstance(rf, (CharField, TextField)) and not rf.is_relation:
+                    fields.append(f"{f.name}__{rf.name}")
+    
+    return fields
