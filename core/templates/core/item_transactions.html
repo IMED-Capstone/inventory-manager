@@ -18,14 +18,11 @@
     font-size: 1.25rem;
     font-weight: 600;
     color: #343a40;
-    margin-left: 0.5rem;
 }
 
 .form-container {
     max-width: 200rem;
     margin: 0 auto;
-    margin-left: 0.5rem;
-    margin-right: 0.5rem;
 }
 
 .form-label {
@@ -257,23 +254,23 @@
     <h4>Current range:</h4>
     <form method="get" class="form-container">
         <div class="row mb-3">
-            <div class="col-md-5">
+            <div class="col-md-4">
                 <div class="row mb-3">
-                    <div class="col-md-6">
+                    <div class="col-md-4 mb-3">
                         <label for="start" class="form-label">Start Date:</label>
                         <input type="date" name="start_date" id="start" value="{{ start_date }}"
                             min="{{ lower_date_bound }}" max="{{ upper_date_bound }}"
                             class="form-control" aria-describedby="startHelp">
                         <small id="startHelp" class="form-text text-muted">Select start date for the range.</small>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label for="end" class="form-label">End Date:</label>
                         <input type="date" name="end_date" id="end" value="{{ end_date }}"
                             min="{{ lower_date_bound }}" max="{{ upper_date_bound }}"
                             class="form-control" aria-describedby="endHelp">
                         <small id="endHelp" class="form-text text-muted">Select end date for the range.</small>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label for="per_page" class="form-label">Items per page:</label>
                         <select class="form-select" name="per_page" id="per_page" onchange="this.form.submit()" aria-describedby="paginatorHelp">
                             {% for option in per_page_options %}
@@ -282,7 +279,7 @@
                         </select>
                         <small id="paginatorHelp" class="form-text text-muted">Items to display per page.</small>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label for="quarter" class="form-label">Quarter:</label>
                         <select name="quarter" id="quarter" class="form-select" aria-describedby="quarterHelp">
                             <option value="">---</option>
@@ -294,7 +291,7 @@
                         </select>
                         <small id="quarterHelp" class="form-text text-muted">Select a quarter to filter.</small>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label for="search_field" class="form-label">Field:</label>
                         <select name="search_field" id="search_field" class="form-select" aria-describedby="search_field_help">
                             <option value="">All</option>
@@ -306,7 +303,7 @@
                         </select>
                         <small id="search_field_help" class="form-text text-muted">Select a field to filter by.</small>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label for="search_term" class="form-label">Search:</label>
                         <input id="search_term" type="text" name="search_term" value="{{ search_term }}" 
                                     class="form-control" placeholder="query" aria-describedby="search_term_help">
@@ -314,7 +311,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-7">
+            <div class="col-md-8">
                 <label for="category" class="form-label">Item:</label>
                 <select name="category[]" id="category" class="form-select" multiple aria-describedby="categoryHelp">
                     <option value="">All</option>
