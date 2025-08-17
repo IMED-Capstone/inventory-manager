@@ -12,6 +12,7 @@ from operator import or_
 from dateutil.relativedelta import relativedelta
 from decimal import Decimal, InvalidOperation
 from django.apps import apps
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
@@ -30,7 +31,7 @@ from djmoney.money import Money
 from openpyxl.styles import NamedStyle
 
 from .models import Item, Order, ItemTransaction
-from .utils import style_excel_sheet, trunc_datetime, absolute_add_remove_quantity, get_searchable_fields
+from .utils import style_excel_sheet, trunc_datetime, absolute_add_remove_quantity, get_searchable_fields, get_database_status
 
 
 class HomePageView(TemplateView):
@@ -811,3 +812,21 @@ class AddRemoveItemsByBarcodeView(LoginRequiredMixin, View):
             "barcode": request.POST.get("barcode"),
             "item_quantity": request.POST.get("item_quantity")
         })
+
+class SettingsView(TemplateView):
+    template_name = 'core/settings.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        context['app_version'] = '0.0.1'
+        context['ml_model'] = 'ml_model'  # Replace with dynamic model name
+        context['last_ml_run'] = 'timestamp'  # Replace with actual timestamp
+        context['database_status'] = get_database_status()  # Example: Check database connection
+        context['server_uptime'] = 'uptime'  # Replace with actual uptime calculation
+        context['active_users'] = 150  # Replace with actual user count
+        context['debug_mode'] = settings.DEBUG  # Pull from Django settings
+        context['logging_level'] = 'logging_level'  # Replace with actual logging config
+        context['cache_backend'] = 'cache_backend'  # Replace with actual cache backend
+
+        return context

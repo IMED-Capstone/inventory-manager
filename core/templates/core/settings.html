@@ -1,0 +1,122 @@
+{% extends 'core/base.html' %}
+{% load django_bootstrap5 %}
+{% load bootstrap_icons %}
+{% load generic_extras %}
+{% load static %}
+
+{% block title %}Settings{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-2 py-4">
+    <h2 class="display-6 fw-bold mb-4">
+        {% bs_icon 'gear-fill' extra_classes='me-2' size='1.5em' %} Application Settings
+    </h2>
+
+    <div class="card mb-4">
+        <div class="card-header header-information text-white">
+            <h3 class="mb-0">{% bs_icon 'info-circle' extra_classes='me-2' %} General Information</h3>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-4 fw-semibold">Application Version:</div>
+                <div class="col-md-8">{{ app_version }}</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-4 fw-semibold">Current Machine Learning Model:</div>
+                <div class="col-md-8">{{ ml_model }}</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-4 fw-semibold">Date of Last ML Model Run:</div>
+                <div class="col-md-8">{{ last_ml_run }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header header-system text-white">
+            <h3 class="mb-0">{% bs_icon 'server' extra_classes='me-2' %} System Status</h3>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-4 fw-semibold">Database Status:</div>
+                <div class="col-md-8 {% if database_status == 'Connected' %}text-success{% else %}text-danger{% endif %} fw-bold">{{ database_status }}</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-4 fw-semibold">Server Uptime:</div>
+                <div class="col-md-8">{{ server_uptime }}</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-4 fw-semibold">Number of Active Users:</div>
+                <div class="col-md-8">{{ active_users }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header header-configuration text-white">
+            <h3 class="mb-0">{% bs_icon 'wrench' extra_classes='me-2' %} Configuration Details</h3>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-4 fw-semibold">Debug Mode:</div>
+                <div class="col-md-8">{{ debug_mode|yesno:"Enabled,Disabled" }}</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-4 fw-semibold">Logging Level:</div>
+                <div class="col-md-8">{{ logging_level }}</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-4 fw-semibold">Cache Backend:</div>
+                <div class="col-md-8">{{ cache_backend }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    border-radius: 0.375rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.card-header {
+    border-radius: 0.375rem 0.375rem 0 0;
+}
+
+.header-information {
+    background-color: #004085;
+}
+
+.header-system {
+    background-color: #6f42c1;
+}
+
+.header-configuration {
+    background-color: #343a40;
+}
+
+.card-body .row {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #eee;
+}
+
+.card-body .row:last-child {
+    border-bottom: none;
+}
+
+.card-body .fw-semibold {
+    color: #495057;
+}
+
+@media (max-width: 768px) {
+    .card-body .row {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    .card-body .col-md-4,
+    .card-body .col-md-8 {
+        width: 100%;
+    }
+}
+</style>
+{% endblock %}
