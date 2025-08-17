@@ -1,5 +1,6 @@
 {% extends 'core/bootstrap.html' %}
 {% load django_bootstrap5 %}
+{% load bootstrap_icons %}
 {% load generic_extras %}
 
 {% block bootstrap5_content %}
@@ -52,7 +53,9 @@
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="dropdownMenuLink">
                         <li class="nav-item">
-                            <a class="dropdown-item" href="/admin" role="button">Admin Panel</a>
+                            <a class="dropdown-item" href="/admin" role="button">
+                                {% bs_icon 'shield-check' extra_classes='me-2' size='1.5em' %} Admin Panel
+                            </a>
                         </li>
                     </ul>
                 </div>
