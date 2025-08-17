@@ -824,7 +824,7 @@ class SettingsView(TemplateView):
         context['last_ml_run'] = 'timestamp'  # Replace with actual timestamp
         context['database_status'] = get_database_status()  # Example: Check database connection
         context['server_uptime'] = 'uptime'  # Replace with actual uptime calculation
-        context['active_users'] = 150  # Replace with actual user count
+        context['active_users'] = "active_users"  # Replace with actual user count
         context['debug_mode'] = settings.DEBUG  # Pull from Django settings
         context['logging_level'] = 'logging_level'  # Replace with actual logging config
         context['cache_backend'] = 'cache_backend'  # Replace with actual cache backend
