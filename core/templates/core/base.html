@@ -7,7 +7,6 @@
 <link rel="shortcut icon" type="image/png" href="{% static 'core/favicon.png' %}" >
     <div class="container-fluid px-2 py-1">
         <div class="d-flex justify-content-between align-items-center mb-0 flex-wrap">
-            <!-- Left: Title -->
             <div>
                 <h1 class="display-5 fw-bold">
                     <a href="{% url 'home' %}" class="text-decoration-none text-dark">
@@ -45,11 +44,18 @@
             </li>
             <div class="d-flex ms-auto gap-2">
                 <li class="nav-item">
-                    <a class="nav-link btn btn-primary {% if request.resolver_match.url_name == 'manage_inventory' or request.resolver_match.url_name == 'add_remove_items_by_barcode' %}active{% endif %}" href="{% url 'manage_inventory' %}">Manage Inventory</a>
+                    <a class="nav-link btn btn-primary {% if request.resolver_match.url_name == 'manage_inventory' or request.resolver_match.url_name == 'add_remove_itms_by_barcode' %}active{% endif %}" href="{% url 'manage_inventory' %}">Manage Inventory</a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link btn btn-primary" href="/admin" role="button">Admin Panel</a>
-                </li>
+                <div class="dropdown nav-item">
+                    <a class="nav-link btn btn-primary dropdown-toggle {% if request.resolver_match.url_name == 'admin' %}active{% endif %}" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">
+                        Settings
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+                        <li class="nav-item">
+                            <a class="dropdown-item" href="/admin" role="button">Admin Panel</a>
+                        </li>
+                    </ul>
+                </div>
             </div>
         </ul>
 
@@ -59,11 +65,10 @@
     </div>
 
 <style>
-/* General styling for nav-tabs */
 .nav-tabs {
     border-bottom: 2px solid #dee2e6;
     font-size: 1.1rem;
-    width: 100%; /* Ensure nav-tabs take full width */
+    width: 100%;
 }
 
 .nav-tabs .nav-link {
@@ -71,8 +76,8 @@
     padding: 0.75rem 1.5rem;
     border-radius: 0.375rem 0.375rem 0 0;
     transition: all 0.3s ease;
-    flex-grow: 1; /* Allow nav links to stretch */
-    text-align: center; /* Center text for better spacing */
+    flex-grow: 1;
+    text-align: center;
 }
 
 .nav-tabs .nav-link:hover {
@@ -91,13 +96,13 @@
     background-color: #0056b3;
 }
 
-/* Styling for buttons in nav */
 .nav-tabs .nav-item .btn {
     padding: 0.75rem 1.5rem;
     font-weight: 500;
     border-radius: 0.375rem;
     transition: all 0.3s ease;
-    flex-grow: 1; /* Allow buttons to stretch */
+    flex-grow: 1;
+    color: white;
 }
 
 .nav-tabs .nav-item .btn-primary {
@@ -113,9 +118,14 @@
 .nav-tabs .nav-item .btn-primary.active {
     background-color: #1e7e34;
     border-color: #1e7e34;
+    color: white;
 }
 
-/* Responsive adjustments */
+.dropdown-menu {
+    border-radius: 0.375rem;
+    border: 1px solid #dee2e6;
+}
+
 @media (max-width: 768px) {
     .nav-tabs {
         flex-wrap: wrap;
@@ -144,12 +154,11 @@
     }
 }
 
-/* Container and typography */
 .container-fluid {
-    max-width: 99%; /* Set to 99% of horizontal width */
+    max-width: 99%;
     margin-left: auto;
     margin-right: auto;
-    padding-left: 0.5rem; /* Minimal padding to maximize content width */
+    padding-left: 0.5rem;
     padding-right: 0.5rem;
 }
 
@@ -162,12 +171,10 @@ h1.display-5 {
     font-size: 1rem;
 }
 
-/* Smooth transitions for interactive elements */
 a, .nav-link, .btn {
     transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
-/* Ensure header stretches fully */
 .d-flex.justify-content-between {
     width: 100%;
 }
