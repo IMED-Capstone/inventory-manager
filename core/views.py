@@ -842,3 +842,10 @@ class SettingsView(TemplateView):
         context["static_files_dir"] = "static_files_dir"
 
         return context
+
+class AboutView(TemplateView):
+    template_name = "core/about.html"
+
+    def get_context_date(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        return context

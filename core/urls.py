@@ -11,6 +11,7 @@ urlpatterns = [
     path("manage_inventory/", views.ManageInventoryView.as_view(), name="manage_inventory"),
     path("manage_inventory/add_remove/", views.AddRemoveItemsByBarcodeView.as_view(), name="add_remove_items_by_barcode"),
     path("settings", views.SettingsView.as_view(), name="settings"),
+    path("about", views.AboutView.as_view(), name="about"),
     path("pagination", views.PaginationView.as_view(), name="pagination"),
     path("", views.HomePageView.as_view(), name="home"),
     path("data-browser/", include("data_browser.urls")),
