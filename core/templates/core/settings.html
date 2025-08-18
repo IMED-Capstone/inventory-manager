@@ -5,14 +5,14 @@
 {% load static %}
 
 {% block content %}
-<div class="container-fluid px-2 py-4">
+<div class="container-fluid px-2 py-2">
     <h2 class="display-6 fw-bold mb-4">
-        {% bs_icon 'gear-fill' extra_classes='me-2' size='1.5em' %} Application Settings
+        {% bs_icon 'gear-fill' extra_classes='me-2' size='1.2em' %} Application Settings
     </h2>
 
     <div class="card mb-4">
         <div class="card-header header-information text-white">
-            <h3 class="mb-0">{% bs_icon 'info-circle' extra_classes='me-2' %} General Information</h3>
+            <h3 class="mb-0">{% bs_icon 'info-circle' extra_classes='me-1.5' %} Application Information</h3>
         </div>
         <div class="card-body">
             <div class="row mb-3">
@@ -20,10 +20,22 @@
                 <div class="col-md-8">{{ app_version }}</div>
             </div>
             <div class="row mb-3">
+                <div class="col-md-4 fw-semibold">Python Version:</div>
+                <div class="col-md-8">{{ python_version }}</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-4 fw-semibold">Django Version:</div>
+                <div class="col-md-8">{{ django_version }}</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-4 fw-semibold">Environment:</div>
+                <div class="col-md-8">{{ environment }}</div>
+            </div>
+            <div class="row mb-3">
                 <div class="col-md-4 fw-semibold">Current Machine Learning Model:</div>
                 <div class="col-md-8">{{ ml_model }}</div>
             </div>
-            <div class="row mb-3">
+            <div class="row mb-0">
                 <div class="col-md-4 fw-semibold">Date of Last ML Model Run:</div>
                 <div class="col-md-8">{{ last_ml_run }}</div>
             </div>
@@ -31,8 +43,36 @@
     </div>
 
     <div class="card mb-4">
-        <div class="card-header header-system text-white">
-            <h3 class="mb-0">{% bs_icon 'server' extra_classes='me-2' %} System Status</h3>
+        <div class="card-header header-server text-white">
+            <h3 class="mb-0">{% bs_icon 'wrench' extra_classes='me-2' %} Server Environment</h3>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-4 fw-semibold">Host Operating System:</div>
+                <div class="col-md-8">{{ host_os }}</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-4 fw-semibold">Host Name:</div>
+                <div class="col-md-8">{{ host_name }}</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-4 fw-semibold">Host Architecture:</div>
+                <div class="col-md-8">{{ host_architecture }}</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-4 fw-semibold">Web Server:</div>
+                <div class="col-md-8">{{ web_server }}</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-4 fw-semibold">Server Uptime:</div>
+                <div class="col-md-8">{{ server_uptime }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header header-database text-white">
+            <h3 class="mb-0">{% bs_icon 'server' extra_classes='me-2' %} Database Configuration</h3>
         </div>
         <div class="card-body">
             <div class="row mb-3">
@@ -40,12 +80,20 @@
                 <div class="col-md-8 {% if database_status == 'Connected' %}text-success{% else %}text-danger{% endif %} fw-bold">{{ database_status }}</div>
             </div>
             <div class="row mb-3">
-                <div class="col-md-4 fw-semibold">Server Uptime:</div>
-                <div class="col-md-8">{{ server_uptime }}</div>
+                <div class="col-md-4 fw-semibold">Database Engine:</div>
+                <div class="col-md-8">{{ database_engine }}</div>
             </div>
             <div class="row mb-3">
                 <div class="col-md-4 fw-semibold">Number of Active Users:</div>
                 <div class="col-md-8">{{ active_users }}</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-4 fw-semibold">Schema Version:</div>
+                <div class="col-md-8">{{ db_schema }}</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-4 fw-semibold">Cache Backend:</div>
+                <div class="col-md-8">{{ cache_backend }}</div>
             </div>
         </div>
     </div>
@@ -60,16 +108,20 @@
                 <div class="col-md-8">{{ debug_mode|yesno:"Enabled,Disabled" }}</div>
             </div>
             <div class="row mb-3">
+                <div class="col-md-4 fw-semibold">Allowed Hosts:</div>
+                <div class="col-md-8">{{ allowed_hosts }}</div>
+            </div>
+            <div class="row mb-3">
                 <div class="col-md-4 fw-semibold">Logging Level:</div>
                 <div class="col-md-8">{{ logging_level }}</div>
             </div>
             <div class="row mb-3">
-                <div class="col-md-4 fw-semibold">Cache Backend:</div>
-                <div class="col-md-8">{{ cache_backend }}</div>
-            </div>
-            <div class="row mb-3">
                 <div class="col-md-4 fw-semibold">Time Zone:</div>
                 <div class="col-md-8">{{ time_zone }}</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-4 fw-semibold">Static Files:</div>
+                <div class="col-md-8">{{ static_files_dir }}</div>
             </div>
         </div>
     </div>
@@ -89,7 +141,11 @@
     background-color: #004085;
 }
 
-.header-system {
+.header-server {
+    background-color: #004085;
+}
+
+.header-database {
     background-color: #6f42c1;
 }
 

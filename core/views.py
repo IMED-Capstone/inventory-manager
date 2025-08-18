@@ -819,15 +819,26 @@ class SettingsView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        context['app_version'] = '0.0.1'
-        context['ml_model'] = 'ml_model'
-        context['last_ml_run'] = 'timestamp'
-        context['database_status'] = get_database_status()
-        context['server_uptime'] = 'uptime'
-        context['active_users'] = "active_users"
-        context['debug_mode'] = settings.DEBUG
-        context['logging_level'] = 'logging_level'
-        context['cache_backend'] = 'cache_backend'
-        context['time_zone'] = 'time_zone'
+        context["app_version"] = "app_version (let's either set this manually and/or grab git tag corresponding to release)"
+        context["python_version"] = "python_version"
+        context["django_version"] = "django_version"
+        context["environment"] = "environment (should be set to be something like dev, staging, production, etc.)"
+        context["ml_model"] = "ml_model"
+        context["last_ml_run"] = "timestamp"
+        context["host_os"] = "host_os (parse from platform.uname() - get OS name and release)"
+        context["host_name"] = "host_name (parse from platform.uname())"
+        context["host_architecture"] = "host_architecture (parse from platform.uname())"
+        context["database_status"] = get_database_status()
+        context["database_engine"] = "database_engine"
+        context["web_server"] = "web_server (get web server type and version)"
+        context["server_uptime"] = "uptime (implement or use library)"
+        context["active_users"] = "active_users"
+        context["db_schema"] = "db_schema (get the latest applied migrations)"
+        context["cache_backend"] = "cache_backend"
+        context["debug_mode"] = settings.DEBUG
+        context["allowed_hosts"] = "allowed_hosts (get list of ALLOWED_HOSTS)"
+        context["logging_level"] = "logging_level"
+        context["time_zone"] = "time_zone"
+        context["static_files_dir"] = "static_files_dir"
 
         return context
