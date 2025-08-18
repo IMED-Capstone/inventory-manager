@@ -820,13 +820,14 @@ class SettingsView(TemplateView):
         context = super().get_context_data(**kwargs)
         
         context['app_version'] = '0.0.1'
-        context['ml_model'] = 'ml_model'  # Replace with dynamic model name
-        context['last_ml_run'] = 'timestamp'  # Replace with actual timestamp
-        context['database_status'] = get_database_status()  # Example: Check database connection
-        context['server_uptime'] = 'uptime'  # Replace with actual uptime calculation
-        context['active_users'] = "active_users"  # Replace with actual user count
-        context['debug_mode'] = settings.DEBUG  # Pull from Django settings
-        context['logging_level'] = 'logging_level'  # Replace with actual logging config
-        context['cache_backend'] = 'cache_backend'  # Replace with actual cache backend
+        context['ml_model'] = 'ml_model'
+        context['last_ml_run'] = 'timestamp'
+        context['database_status'] = get_database_status()
+        context['server_uptime'] = 'uptime'
+        context['active_users'] = "active_users"
+        context['debug_mode'] = settings.DEBUG
+        context['logging_level'] = 'logging_level'
+        context['cache_backend'] = 'cache_backend'
+        context['time_zone'] = 'time_zone'
 
         return context
