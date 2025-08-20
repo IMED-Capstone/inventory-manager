@@ -15,27 +15,27 @@
             <h3 class="mb-0">{% bs_icon 'info-circle' extra_classes='me-1.5' size='1.2em' %} Application Information</h3>
         </div>
         <div class="card-body">
-            <div class="row mb-3">
+            <div class="row">
                 <div class="col-md-4 fw-semibold">Application Version:</div>
                 <div class="col-md-8">{{ app_version }}</div>
             </div>
-            <div class="row mb-3">
+            <div class="row">
                 <div class="col-md-4 fw-semibold">Python Version:</div>
                 <div class="col-md-8">{{ python_version }}</div>
             </div>
-            <div class="row mb-3">
+            <div class="row">
                 <div class="col-md-4 fw-semibold">Django Version:</div>
                 <div class="col-md-8">{{ django_version }}</div>
             </div>
-            <div class="row mb-3">
+            <div class="row">
                 <div class="col-md-4 fw-semibold">Environment:</div>
                 <div class="col-md-8">{{ environment }}</div>
             </div>
-            <div class="row mb-3">
+            <div class="row">
                 <div class="col-md-4 fw-semibold">Current Machine Learning Model:</div>
                 <div class="col-md-8">{{ ml_model }}</div>
             </div>
-            <div class="row mb-0">
+            <div class="row">
                 <div class="col-md-4 fw-semibold">Date of Last ML Model Run:</div>
                 <div class="col-md-8">{{ last_ml_run }}</div>
             </div>
@@ -47,23 +47,23 @@
             <h3 class="mb-0">{% bs_icon 'hdd-network' extra_classes='me-2' size='1.2em' %} Server Environment</h3>
         </div>
         <div class="card-body">
-            <div class="row mb-3">
+            <div class="row">
                 <div class="col-md-4 fw-semibold">Host Operating System:</div>
                 <div class="col-md-8">{{ host_os }}</div>
             </div>
-            <div class="row mb-3">
+            <div class="row">
                 <div class="col-md-4 fw-semibold">Host Name:</div>
                 <div class="col-md-8">{{ host_name }}</div>
             </div>
-            <div class="row mb-3">
+            <div class="row">
                 <div class="col-md-4 fw-semibold">Host Architecture:</div>
                 <div class="col-md-8">{{ host_architecture }}</div>
             </div>
-            <div class="row mb-3">
+            <div class="row">
                 <div class="col-md-4 fw-semibold">Web Server:</div>
                 <div class="col-md-8">{{ web_server }}</div>
             </div>
-            <div class="row mb-0">
+            <div class="row">
                 <div class="col-md-4 fw-semibold">Server Uptime:</div>
                 <div class="col-md-8">{{ server_uptime }}</div>
             </div>
@@ -75,23 +75,23 @@
             <h3 class="mb-0">{% bs_icon 'server' extra_classes='me-2' size='1.2em' %} Database Configuration</h3>
         </div>
         <div class="card-body">
-            <div class="row mb-3">
+            <div class="row">
                 <div class="col-md-4 fw-semibold">Database Status:</div>
                 <div class="col-md-8 {% if database_status == 'Connected' %}text-success{% else %}text-danger{% endif %} fw-bold">{{ database_status }}</div>
             </div>
-            <div class="row mb-3">
+            <div class="row">
                 <div class="col-md-4 fw-semibold">Database Engine:</div>
                 <div class="col-md-8">{{ database_engine }}</div>
             </div>
-            <div class="row mb-3">
+            <div class="row">
                 <div class="col-md-4 fw-semibold">Number of Active Users:</div>
                 <div class="col-md-8">{{ active_users }}</div>
             </div>
-            <div class="row mb-3">
+            <div class="row">
                 <div class="col-md-4 fw-semibold">Schema Version:</div>
                 <div class="col-md-8">{{ db_schema }}</div>
             </div>
-            <div class="row mb-0">
+            <div class="row">
                 <div class="col-md-4 fw-semibold">Cache Backend:</div>
                 <div class="col-md-8">{{ cache_backend }}</div>
             </div>
@@ -103,23 +103,23 @@
             <h3 class="mb-0">{% bs_icon 'wrench' extra_classes='me-2' size='1.2em' %} Configuration Details</h3>
         </div>
         <div class="card-body">
-            <div class="row mb-3">
+            <div class="row">
                 <div class="col-md-4 fw-semibold">Debug Mode:</div>
                 <div class="col-md-8">{{ debug_mode|yesno:"Enabled,Disabled" }}</div>
             </div>
-            <div class="row mb-3">
+            <div class="row">
                 <div class="col-md-4 fw-semibold">Allowed Hosts:</div>
                 <div class="col-md-8">{{ allowed_hosts }}</div>
             </div>
-            <div class="row mb-3">
+            <div class="row">
                 <div class="col-md-4 fw-semibold">Logging Level:</div>
                 <div class="col-md-8">{{ logging_level }}</div>
             </div>
-            <div class="row mb-3">
+            <div class="row">
                 <div class="col-md-4 fw-semibold">Time Zone:</div>
                 <div class="col-md-8">{{ time_zone }}</div>
             </div>
-            <div class="row mb-0">
+            <div class="row">
                 <div class="col-md-4 fw-semibold">Static Files:</div>
                 <div class="col-md-8">{{ static_files_dir }}</div>
             </div>
@@ -153,13 +153,22 @@
     background-color: #343a40;
 }
 
-.card-body .row {
-    padding: 0.5rem 0;
+.card-body {
+    padding: 0.1rem 0;
     border-bottom: 1px solid #eee;
 }
 
-.card-body .row:last-child {
-    padding-bottom: 0;
+.row {
+    padding-bottom: 0.25rem;
+    margin-top: 0.25rem;
+    margin-left: 0.1rem;
+    border-bottom: 1px solid #eee;
+}
+
+.row:last-child {
+    margin-bottom: 0rem;
+    margin-top: 0.25rem;
+    margin-left: 0.1rem;
     border-bottom: none;
 }
 
@@ -170,7 +179,7 @@
 @media (max-width: 768px) {
     .card-body .row {
         flex-direction: column;
-        gap: 0.5rem;
+        gap: 0.1;
     }
     .card-body .col-md-4,
     .card-body .col-md-8 {
