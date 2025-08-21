@@ -91,7 +91,11 @@
                         </div>
                         <div class="form-text text-danger d-none" id="passwordMismatch">Passwords do not match.</div>
                     </div>
-
+<div class="gap-2 text-left">
+                        <button type="submit" class="btn btn-success save-password-btn" disabled>
+                            {% bs_icon 'floppy' extra_classes='me-2' size='1.2em' %} Save
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -103,7 +107,7 @@
     width: 100%;
 }
 
-.save-profile-btn {
+.save-profile-btn, .save-password-btn {
     width: auto;
     padding-left: 1.5rem;
     padding-right: 1.5rem;
@@ -155,7 +159,7 @@
     const newPassword = document.getElementById('new_password');
     const confirmPassword = document.getElementById('new_password_confirm');
     const passwordMismatch = document.getElementById('passwordMismatch');
-    const submitButton = document.querySelector('.save-profile-btn');
+    const submitButton = document.querySelector('.save-password-btn');
     const capitalLetter = document.getElementById('capitalLetter');
     const number = document.getElementById('number');
     const symbol = document.getElementById('symbol');
