@@ -16,13 +16,31 @@
                     </a>
                 </h1>
             </div>
-            <div class="mt-1 mb-2 mt-md-0">
+            <div class="mt-1 mb-2 mt-md-0 d-flex align-items-center">
                 <div class="fw-semibold text-muted">
                     {% if user.is_authenticated %}
                         Hello, {{ user.get_username }}!
                     {% else %}
                         Hello!
                     {% endif %}
+                </div>
+                <div class="dropdown me-2 notification-dropdown">
+                    <a class="nav-link position-relative" href="#" role="button" id="notificationBell" data-bs-toggle="dropdown" aria-expanded="false">
+                        {% bs_icon 'bell' extra_classes='me-2' size='1.5em' %}
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                            3
+                            <span class="visually-hidden">unread notifications</span>
+                        </span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationBell">
+                        <li class="dropdown-item-text fw-bold">Notifications</li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#">New item added to inventory</a></li>
+                        <li><a class="dropdown-item" href="#">Order #1234 status updated</a></li>
+                        <li><a class="dropdown-item" href="#">Low stock alert for Item XYZ</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-muted" href="#">View all notifications</a></li>
+                    </ul>
                 </div>
             </div>
         </div>
@@ -201,5 +219,15 @@ a, .nav-link, .btn {
     max-height: 0.9em;
     align-items: center;
 }
+
+#notificationBell .badge {
+    font-size: 0.7rem;
+    padding: 0.25em 0.5em;
+}
+
+.notification-dropdown {
+    padding-left: 0.5rem;
+}
+
 </style>
 {% endblock %}
