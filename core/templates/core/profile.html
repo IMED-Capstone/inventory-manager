@@ -75,8 +75,10 @@
                             Password must include:
                             <ul>
                                 <li id="capitalLetter">At least one capital letter</li>
+                                <li id="lowerLetter">At least one lowercase letter</li>
                                 <li id="number">At least one number</li>
                                 <li id="symbol">At least one symbol (e.g., !@#$%)</li>
+                                <li id="characterCount">At least 8 characters</li>
                             </ul>
                         </div>
                     </div>
@@ -158,8 +160,10 @@
     const passwordMismatch = document.getElementById('passwordMismatch');
     const submitButton = document.querySelector('.save-password-btn');
     const capitalLetter = document.getElementById('capitalLetter');
+    const lowerLetter = document.getElementById('lowerLetter');
     const number = document.getElementById('number');
     const symbol = document.getElementById('symbol');
+    const characterCount = document.getElementById('characterCount');
 
     newPassword.addEventListener('input', validatePassword);
     confirmPassword.addEventListener('input', validatePassword);
@@ -168,17 +172,21 @@
         const password = newPassword.value;
 
         const hasCapital = /[A-Z]/.test(password);
+        const hasLower = /[a-z]/.test(password);
         const hasNumber = /[0-9]/.test(password);
         const hasSymbol = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+        const hasMinimumCharacters = password.length >= 8;
 
         capitalLetter.classList.toggle('valid', hasCapital);
+        lowerLetter.classList.toggle('valid', hasLower);
         number.classList.toggle('valid', hasNumber);
         symbol.classList.toggle('valid', hasSymbol);
+        characterCount.classList.toggle('valid', hasMinimumCharacters);
 
         const passwordsMatch = password === confirmPassword.value && password !== '';
         passwordMismatch.classList.toggle('d-none', passwordsMatch || confirmPassword.value === '');
 
-        submitButton.disabled = !(hasCapital && hasNumber && hasSymbol && passwordsMatch);
+        submitButton.disabled = !(hasCapital && hasLower && hasNumber && hasSymbol && hasMinimumCharacters && passwordsMatch);
     }
 });
 
