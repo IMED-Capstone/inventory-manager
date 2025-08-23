@@ -12,6 +12,7 @@ from operator import or_
 from dateutil.relativedelta import relativedelta
 from decimal import Decimal, InvalidOperation
 from django.apps import apps
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
@@ -30,7 +31,7 @@ from djmoney.money import Money
 from openpyxl.styles import NamedStyle
 
 from .models import Item, Order, ItemTransaction
-from .utils import style_excel_sheet, trunc_datetime, absolute_add_remove_quantity, get_searchable_fields
+from .utils import style_excel_sheet, trunc_datetime, absolute_add_remove_quantity, get_searchable_fields, get_database_status
 
 
 class HomePageView(TemplateView):
@@ -811,3 +812,47 @@ class AddRemoveItemsByBarcodeView(LoginRequiredMixin, View):
             "barcode": request.POST.get("barcode"),
             "item_quantity": request.POST.get("item_quantity")
         })
+
+class SettingsView(TemplateView):
+    template_name = 'core/settings.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        context["app_version"] = "app_version (let's either set this manually and/or grab git tag corresponding to release)"
+        context["python_version"] = "python_version"
+        context["django_version"] = "django_version"
+        context["environment"] = "environment (should be set to be something like dev, staging, production, etc.)"
+        context["ml_model"] = "ml_model"
+        context["last_ml_run"] = "timestamp"
+        context["host_os"] = "host_os (parse from platform.uname() - get OS name and release)"
+        context["host_name"] = "host_name (parse from platform.uname())"
+        context["host_architecture"] = "host_architecture (parse from platform.uname())"
+        context["database_status"] = get_database_status()
+        context["database_engine"] = "database_engine"
+        context["web_server"] = "web_server (get web server type and version)"
+        context["server_uptime"] = "uptime (implement or use library)"
+        context["active_users"] = "active_users"
+        context["db_schema"] = "db_schema (get the latest applied migrations)"
+        context["cache_backend"] = "cache_backend"
+        context["debug_mode"] = settings.DEBUG
+        context["allowed_hosts"] = "allowed_hosts (get list of ALLOWED_HOSTS)"
+        context["logging_level"] = "logging_level"
+        context["time_zone"] = "time_zone"
+        context["static_files_dir"] = "static_files_dir"
+
+        return context
+
+class AboutView(TemplateView):
+    template_name = "core/about.html"
+
+    def get_context_date(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        return context
+
+class ProfileView(TemplateView):
+    template_name = "core/profile.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        return context

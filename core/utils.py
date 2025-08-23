@@ -1,4 +1,9 @@
 import datetime
+import os
+import sqlite3
+from django.conf import settings
+from django.core.cache import cache
+from django.db import connection, OperationalError
 from django.db.models import CharField, TextField, ForeignKey, IntegerField, AutoField
 import pandas as pd
 from core.models import Item
@@ -163,3 +168,28 @@ def get_searchable_fields(model):
                     fields.append(f"{f.name}__{rf.name}")
     
     return fields
+
+def get_database_status():
+    status = cache.get('database_status')
+    if status is None:
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute('SELECT 1')
+                cursor.fetchone()
+            db_file = settings.DATABASES['default']['NAME']
+            if not os.path.exists(db_file):
+                status = "Disconnected: Database file not found"
+            elif not os.access(db_file, os.R_OK | os.W_OK):
+                status = "Disconnected: Insufficient permissions for database file"
+            else:
+                with sqlite3.connect(db_file) as conn:
+                    cursor = conn.cursor()
+                    cursor.execute('PRAGMA integrity_check')
+                    result = cursor.fetchone()
+                    status = "Connected" if result[0] == 'ok' else f"Disconnected: Database integrity check failed ({result[0]})"
+        except OperationalError as e:
+            status = f"Disconnected: Database error ({str(e)})"
+        except Exception as e:
+            status = f"Disconnected: Unexpected error ({str(e)})"
+        cache.set('database_status', status, timeout=60)  # Cache for 60 seconds
+    return status
