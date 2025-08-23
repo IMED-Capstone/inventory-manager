@@ -18,14 +18,11 @@
     font-size: 1.25rem;
     font-weight: 600;
     color: #343a40;
-    margin-left: 0.5rem;
 }
 
 .form-container {
     max-width: 200rem;
     margin: 0 auto;
-    margin-left: 0.5rem;
-    margin-right: 0.5rem;
 }
 
 .form-label {
@@ -38,7 +35,6 @@
     border-radius: 6px;
     border: 1px solid #ced4da;
     transition: border-color 0.3s ease;
-    margin-bottom: 0.75rem;
 }
 
 .form-control:focus, .form-select:focus {
@@ -241,31 +237,49 @@
         font-size: 10px;
     }
 }
+
+.no-item-transactions {
+    text-align: center;
+    font-size: 1rem;
+    color: #6c757d;
+    padding: 2rem;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-top: 1rem;
+}
 </style>
 
 <div id="DateHeader">
     <h4>Current range:</h4>
     <form method="get" class="form-container">
         <div class="row mb-3">
-            <div class="col-md-5">
+            <div class="col-md-4">
                 <div class="row mb-3">
-                    <div class="col-md-6">
+                    <div class="col-md-4 mb-3">
                         <label for="start" class="form-label">Start Date:</label>
                         <input type="date" name="start_date" id="start" value="{{ start_date }}"
                             min="{{ lower_date_bound }}" max="{{ upper_date_bound }}"
                             class="form-control" aria-describedby="startHelp">
                         <small id="startHelp" class="form-text text-muted">Select start date for the range.</small>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label for="end" class="form-label">End Date:</label>
                         <input type="date" name="end_date" id="end" value="{{ end_date }}"
                             min="{{ lower_date_bound }}" max="{{ upper_date_bound }}"
                             class="form-control" aria-describedby="endHelp">
                         <small id="endHelp" class="form-text text-muted">Select end date for the range.</small>
                     </div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
+                        <label for="per_page" class="form-label">Items per page:</label>
+                        <select class="form-select" name="per_page" id="per_page" onchange="this.form.submit()" aria-describedby="paginatorHelp">
+                            {% for option in per_page_options %}
+                                <option value="{{ option }}" {% if per_page|stringformat:"s" == option|stringformat:"s" %}selected{% endif %}>{{ option }}</option>
+                            {% endfor %}
+                        </select>
+                        <small id="paginatorHelp" class="form-text text-muted">Items to display per page.</small>
+                    </div>
+                    <div class="col-md-4">
                         <label for="quarter" class="form-label">Quarter:</label>
                         <select name="quarter" id="quarter" class="form-select" aria-describedby="quarterHelp">
                             <option value="">---</option>
@@ -277,18 +291,27 @@
                         </select>
                         <small id="quarterHelp" class="form-text text-muted">Select a quarter to filter.</small>
                     </div>
-                    <div class="col-md-6">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" value="1" id="group_by_quarter" checked aria-describedby="groupByQuarterHelp">
-                            <label class="form-check-label" for="group_by_quarter">
-                                Group by Quarter
-                            </label>
-                        </div>
-                        <small id="groupByQuarterHelp" class="form-text text-muted">Toggle to show/hide quarterly chart.</small>
+                    <div class="col-md-4">
+                        <label for="search_field" class="form-label">Field:</label>
+                        <select name="search_field" id="search_field" class="form-select" aria-describedby="search_field_help">
+                            <option value="">All</option>
+                            {% for field in fields %}
+                                <option value="{{ field }}" {% if field == search_field %}selected{% endif %}>
+                                    {{ field }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <small id="search_field_help" class="form-text text-muted">Select a field to filter by.</small>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="search_term" class="form-label">Search:</label>
+                        <input id="search_term" type="text" name="search_term" value="{{ search_term }}" 
+                                    class="form-control" placeholder="query" aria-describedby="search_term_help">
+                        <small id="search_term_help" class="form-text text-muted">Enter text to search.</small>
                     </div>
                 </div>
             </div>
-            <div class="col-md-7">
+            <div class="col-md-8">
                 <label for="category" class="form-label">Item:</label>
                 <select name="category[]" id="category" class="form-select" multiple aria-describedby="categoryHelp">
                     <option value="">All</option>
@@ -302,7 +325,7 @@
             </div>
         </div>
         <div class="row mb-3 mt-3">
-            <div class="col-md-7 d-flex gap-2">
+            <div class="col-md-3 d-flex gap-2">
                 <button type="submit" class="btn btn-primary w-50" id="filter-button">Filter</button>
                 <a href="{% url 'export-orders' %}?start_date={{ start_date }}&end_date={{ end_date }}" class="btn btn-success w-50">Export to Excel</a>
                 <a href="{% url 'itemtransaction-details' %}" class="btn btn-danger w-50" id="reset-button">Reset Dates</a>
@@ -311,97 +334,114 @@
     </form>
 </div>
 
-{% if is_paginated %}
-<nav aria-label="Pagination">
-    <div class="container d-flex flex-column align-items-center">
-        <ul class="pagination justify-content-center mb-1">
-            {% if page_obj.has_previous %}
-                <li class="page-item">
-                    <a class="page-link" href="?page=1&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}" aria-label="First page">First</a>
-                </li>
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}" aria-label="Previous page">Previous</a>
-                </li>
-            {% endif %}
 
-            <li class="page-item disabled" aria-current="page">
-                <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
-            </li>
+{% if item_transactions %}
 
-            {% if page_obj.has_next %}
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.next_page_number }}&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}" aria-label="Next page">Next</a>
+    {% if is_paginated %}
+    <nav aria-label="Pagination">
+        <div class="container d-flex flex-column align-items-center">
+            <ul class="pagination justify-content-center mb-1">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}" aria-label="First page">First</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}" aria-label="Previous page">Previous</a>
+                    </li>
+                {% endif %}
+
+                <li class="page-item disabled" aria-current="page">
+                    <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
                 </li>
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}" aria-label="Last page">Last</a>
-                </li>
-            {% endif %}
-        </ul>
-        <div class="text-muted small">
-            Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ items_count }} total items
+
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}" aria-label="Next page">Next</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}" aria-label="Last page">Last</a>
+                    </li>
+                {% endif %}
+            </ul>
+            <div class="text-muted small">
+                Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ items_count }} total items
+            </div>
         </div>
-    </div>
-</nav>
-{% endif %}
+    </nav>
+    {% endif %}
 
-<table class="table table-striped table-bordered table-sm">
-    <thead class="table-light">
-        <tr>
-            {% for field in fields %}
-                <th>{{ field }}</th>
-            {% endfor %}
-        </tr>
-    </thead>
-    <tbody>
-        {% for item_transaction in object_list %}
+
+
+    <table class="table table-striped table-bordered table-sm">
+        <thead class="table-light">
             <tr>
                 {% for field in fields %}
-                    {% with value=item_transaction|get_field_value:field %}
-                        <td>{{ value }}</td>
-                    {% endwith %}
+                    <th>
+                        {% if request.GET.sort == field %}
+                            <a href="?{{ query_string }}&sort=-{{ field }}">{{ field|capfirst }} ▲</a>
+                        {% elif request.GET.sort == '-'|add:field %}
+                            <a href="?{{ query_string }}&sort={{ field }}">{{ field|capfirst }} ▼</a>
+                        {% else %}
+                            <a href="?{{ query_string }}&sort={{ field }}">{{ field|capfirst }}</a>
+                        {% endif %}
+                    </th>
                 {% endfor %}
             </tr>
-        {% empty %}
-            <tr>
-                <td colspan="{{ fields|length }}" class="text-center text-muted py-4">
-                    No items found. Try adjusting the date range or filters.
-                </td>
-            </tr>
-        {% endfor %}
-    </tbody>
-</table>
+        </thead>
 
-{% if is_paginated %}
-<nav aria-label="Pagination">
-    <div class="container d-flex flex-column align-items-center">
-        <ul class="pagination justify-content-center mb-1">
-            {% if page_obj.has_previous %}
-                <li class="page-item">
-                    <a class="page-link" href="?page=1&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}" aria-label="First page">First</a>
-                </li>
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}" aria-label="Previous page">Previous</a>
-                </li>
-            {% endif %}
+            {% for item_transaction in item_transactions %}
+                <tr>
+                    {% for field in fields %}
+                        {% with value=item_transaction|get_field_value:field %}
+                            <td>{{ value }}</td>
+                        {% endwith %}
+                    {% endfor %}
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="{{ fields|length }}" class="text-center text-muted py-4">
+                        No items found. Try adjusting the date range or filters.
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 
-            <li class="page-item disabled" aria-current="page">
-                <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
-            </li>
+    {% if is_paginated %}
+    <nav aria-label="Pagination">
+        <div class="container d-flex flex-column align-items-center">
+            <ul class="pagination justify-content-center mb-1">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}" aria-label="First page">First</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}" aria-label="Previous page">Previous</a>
+                    </li>
+                {% endif %}
 
-            {% if page_obj.has_next %}
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.next_page_number }}&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}" aria-label="Next page">Next</a>
+                <li class="page-item disabled" aria-current="page">
+                    <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
                 </li>
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}" aria-label="Last page">Last</a>
-                </li>
-            {% endif %}
-        </ul>
-        <div class="text-muted small">
-            Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ items_count }} total items
+
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}" aria-label="Next page">Next</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}" aria-label="Last page">Last</a>
+                    </li>
+                {% endif %}
+            </ul>
+            <div class="text-muted small">
+                Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ items_count }} total items
+            </div>
         </div>
-    </div>
-</nav>
+    </nav>
+    {% endif %}
+
+{% else %}
+    <p class="no-item-transactions">{{ message|default:"No items found." }}</p>
 {% endif %}
 
 {% endblock %}

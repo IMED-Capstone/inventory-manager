@@ -1,0 +1,211 @@
+{% extends 'core/base.html' %}
+{% load django_bootstrap5 %}
+{% load bootstrap_icons %}
+{% load generic_extras %}
+{% load static %}
+
+
+{% block content %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+<div class="container-fluid px-2 py-2">
+    <h2 class="display-6 fw-bold mb-4">
+        {% bs_icon 'person-circle' extra_classes='me-2' size='1.2em' %} Manage Profile
+    </h2>
+</div>
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-4">
+        <div class="card shadow-sm user-settings-card">
+            <div class="card-body">
+                <h4 class="card-title mb-4 text-center">Profile Settings</h4>
+                
+                <form method="POST" action="#">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control username-field" id="username" name="username" value="{{ user.username }}" onkeydown="return false;" readonly>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="first_name" class="form-label">First Name</label>
+                        <input type="text" class="form-control" id="first_name" name="first_name" value="{{ user.first_name }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="last_name" class="form-label">Last Name</label>
+                        <input type="text" class="form-control" id="last_name" name="last_name" value="{{ user.last_name }}">
+                    </div>
+                    
+                    <div class="gap-2 text-left">
+                        <button type="submit" class="btn btn-success save-profile-btn">
+                            {% bs_icon 'floppy' extra_classes='me-2' size='1.2em' %} Save
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-lg-4">
+        <div class="card shadow-sm user-settings-card">
+            <div class="card-body">
+                <h4 class="card-title mb-4 text-center">Password Settings</h4>
+                
+                <form method="POST" action="#" id="passwordForm">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="current_password" class="form-label">Current Password</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="current_password" name="current_password" required>
+                            <button type="button" class="btn btn-outline-secondary toggle-password" data-target="current_password">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="new_password" class="form-label">New Password</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="new_password" name="new_password" required>
+                            <button type="button" class="btn btn-outline-secondary toggle-password" data-target="new_password">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        <div class="form-text mt-2" id="passwordRequirements">
+                            Password must include:
+                            <ul>
+                                <li id="capitalLetter">At least one capital letter</li>
+                                <li id="lowerLetter">At least one lowercase letter</li>
+                                <li id="number">At least one number</li>
+                                <li id="symbol">At least one symbol (e.g., !@#$%)</li>
+                                <li id="characterCount">At least 8 characters</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="new_password_confirm" class="form-label">Re-enter New Password</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="new_password_confirm" name="new_password_confirm" required>
+                            <button type="button" class="btn btn-outline-secondary toggle-password" data-target="new_password_confirm">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        <div class="form-text text-danger d-none" id="passwordMismatch">Passwords do not match.</div>
+                    </div>
+<div class="gap-2 text-left">
+                        <button type="submit" class="btn btn-success save-password-btn" disabled>
+                            {% bs_icon 'floppy' extra_classes='me-2' size='1.2em' %} Save
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.user-settings-card {
+    width: 100%;
+}
+
+.save-profile-btn, .save-password-btn {
+    width: auto;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+}
+
+.username-field {
+    user-select: text;
+    pointer-events: auto;
+    cursor: default;
+    background-color: #f8f9fa;
+    caret-color: transparent;
+}
+
+.username-field:focus {
+    outline: none;
+    box-shadow: none;
+    border-color: #ced4da;
+    background-color: #f8f9fa;
+    caret-color: transparent;
+}
+
+#passwordRequirements li.valid {
+    color: green;
+    text-decoration: line-through;
+}
+
+.input-group .toggle-password {
+    padding: 0 0.75rem;
+    border-color: #ced4da;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: inherit;
+}
+
+.input-group .toggle-password:hover,
+.input-group .toggle-password:focus {
+    background: transparent;
+}
+
+
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+    const newPassword = document.getElementById('new_password');
+    const confirmPassword = document.getElementById('new_password_confirm');
+    const passwordMismatch = document.getElementById('passwordMismatch');
+    const submitButton = document.querySelector('.save-password-btn');
+    const capitalLetter = document.getElementById('capitalLetter');
+    const lowerLetter = document.getElementById('lowerLetter');
+    const number = document.getElementById('number');
+    const symbol = document.getElementById('symbol');
+    const characterCount = document.getElementById('characterCount');
+
+    newPassword.addEventListener('input', validatePassword);
+    confirmPassword.addEventListener('input', validatePassword);
+
+    function validatePassword() {
+        const password = newPassword.value;
+
+        const hasCapital = /[A-Z]/.test(password);
+        const hasLower = /[a-z]/.test(password);
+        const hasNumber = /[0-9]/.test(password);
+        const hasSymbol = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+        const hasMinimumCharacters = password.length >= 8;
+
+        capitalLetter.classList.toggle('valid', hasCapital);
+        lowerLetter.classList.toggle('valid', hasLower);
+        number.classList.toggle('valid', hasNumber);
+        symbol.classList.toggle('valid', hasSymbol);
+        characterCount.classList.toggle('valid', hasMinimumCharacters);
+
+        const passwordsMatch = password === confirmPassword.value && password !== '';
+        passwordMismatch.classList.toggle('d-none', passwordsMatch || confirmPassword.value === '');
+
+        submitButton.disabled = !(hasCapital && hasLower && hasNumber && hasSymbol && hasMinimumCharacters && passwordsMatch);
+    }
+});
+
+document.querySelectorAll('.toggle-password').forEach(button => {
+        button.addEventListener('click', () => {
+            const targetId = button.getAttribute('data-target');
+            const input = document.getElementById(targetId);
+            const icon = button.querySelector('.bi');
+
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('bi-eye');
+                icon.classList.add('bi-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('bi-eye-slash');
+                icon.classList.add('bi-eye');
+            }
+        });
+    });
+</script>
+{% endblock %}
