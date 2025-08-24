@@ -1,4 +1,6 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.0/FileSaver.min.js" integrity="sha512-csNcFYJniKjJxRWRV1R7fvnXrycHP6qDR21mgz1ZP55xY5d+aHLfo9/FcGDQLfn2IfngbAHd8LdfsagcCqgTcQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
 {% extends 'core/base.html' %}
 {% load django_bootstrap5 %}
@@ -224,10 +226,11 @@
             </div>
         </div>
         <div class="row mb-3 mt-3">
-            <div class="col-md-3 d-flex gap-2">
+            <div class="col-md-4 d-flex gap-2">
                 <button type="submit" class="btn btn-primary w-50" id="filter-button">Filter</button>
                 <a href="{% url 'export-orders' %}?start_date={{ start_date }}&end_date={{ end_date }}" class="btn btn-success w-50">Export to Excel</a>
                 <a href="/orders_advanced" class="btn btn-danger w-50" id="reset-button">Reset Dates</a>
+                <button type="button" class="btn btn-info w-50" id="download-graphs-button" onclick="saveGraphs()">Save Graphs</button>
             </div>
         </div>
     </form>
@@ -652,6 +655,22 @@
             }
         });
     });
+
+    function saveGraphs() {
+        var zip = new JSZip();
+        var ordersByMonthImg = ordersByMonthChart.toBase64Image().replace(/^data:image\/(png|jpg);base64,/, "");;
+        var ordersByQuarterImg = ordersByQuarterChart.toBase64Image().replace(/^data:image\/(png|jpg);base64,/, "");;
+        var ordersByMfrImg = ordersByMfrChart.toBase64Image().replace(/^data:image\/(png|jpg);base64,/, "");;
+        var commonlyOrderedItemsImg = commonlyOrderedItemsChart.toBase64Image().replace(/^data:image\/(png|jpg);base64,/, "");;
+        zip.file("orders_by_month.png", ordersByMonthImg, {base64: true});
+        zip.file("orders_by_quarter.png", ordersByQuarterImg, {base64: true});
+        zip.file("orders_by_mfr.png", ordersByMfrImg, {base64: true});
+        zip.file("commonly_ordered_items.png", commonlyOrderedItemsImg, {base64: true});
+        zip.generateAsync({type:"blob"})
+            .then(function(content) {
+                saveAs(content, "graphs.zip");
+            });
+    }
 </script>
 
 {% endblock %}
