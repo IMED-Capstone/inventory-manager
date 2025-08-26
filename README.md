@@ -71,11 +71,39 @@ Django application for managing inventory in the UIC IR department.
     - Holds the logs for each transaction made for an order (a transaction ledger).
     - Information stored in a DB, where each transaction is logged as a separate record (row).
     - unique ID in the DB is for the specific transaction
-    - views for orders and graphs
-        - basic list view available at `127.0.0.1:8000/orders/`
-        - graph views available at `127.0.0.1:8000/orders_advanced/`
-- Inventory (name TBD)
-    - maintains par levels for each unique item inventory should be maintained for
-    - provide alerts for when levels are approaching par level or fall under par level
-    - unique ID would be for the item number rather than the transaction
-    - view for inventory levels over time (and graphs for utilization)
+    - views for items/orders and graphs
+        - basic list view available at `<base-url>/orders/`
+        - graph views available at `<base-url>/orders_advanced/`
+        - list view of item transactions available at `<base-url>/item-transactions/`
+    - inventory for a specific item can be updated at
+        - `<base-url>/manage_inventory/`
+    - various settings and information are available at
+        - `<base-url>/settings/` (general application and deployment settings)
+        - `<base-url>/profile/` (will support updating profile settings)
+        - `<base-url>/about/` (information about the application)
+## Project Roadmap
+- maintains par levels for each unique item inventory should be maintained for
+- provide alerts for when levels are approaching par level or fall under par level
+- unique ID would be for the item number rather than the transaction
+- view for inventory levels over time (and graphs for utilization)
+
+## Documentation
+Sphinx documentation has been set up for this application. To generate:
+* Enter the `docs` folder
+    ```
+    cd docs/
+    ```
+
+* Generate HTML documentation
+    ```
+    make html
+    ```
+
+    * **Note**: if on Windows (and using Powershell), be sure to include the extension (`.\make.bat html`)
+
+* Navigate to the output folder
+    ```
+    cd _build/html
+    ```
+
+* Open the main page at `index.html`.
