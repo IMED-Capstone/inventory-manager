@@ -3,13 +3,13 @@ Defines URLs used across the Core app.
 
 The following URL patterns are defined:
 
-* **items/**: Displays details for items (item-details).
-* **orders/**: Displays details for orders (order-details).
-* **item-transactions/**: Handles item transaction details (itemtransaction-details).
-* **orders/export**: Exports order data to Excel (export-orders).
-* **orders_advanced/**: Advanced order details view (order-details-advanced).
+* **items/**: Displays details for :class:`Items <core.models.Item>` (item-details).
+* **orders/**: Displays details for :class:`Orders <core.models.Order>` (order-details).
+* **item-transactions/**: Handles :class:`~core.models.ItemTransaction` details (itemtransaction-details).
+* **orders/export**: Exports :class:`~core.models.Order` data to Excel (export-orders).
+* **orders_advanced/**: Advanced :class:`~core.models.Order` details view (order-details-advanced).
 * **manage_inventory/**: Manages inventory (manage_inventory).
-* **manage_inventory/add_remove/**: Adds or removes items by barcode (add_remove_items_by_barcode).
+* **manage_inventory/add_remove/**: Adds or removes :class:`Items <core.models.Item>` by barcode (add_remove_items_by_barcode).
 * **settings**: User settings page (settings).
 * **about**: About page (about).
 * **profile**: User profile page (profile).

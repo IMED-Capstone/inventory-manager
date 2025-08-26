@@ -12,9 +12,9 @@ class ExcelUploadForm(forms.Form):
 
 class AddRemoveItemsByBarcodeForm(forms.Form):
     """
-    A form used to add or remove Items by a barcode-provided unique ID.
+    A form used to add or remove :class:`Items <core.models.Item>` by a barcode-provided unique ID.
     Supports add and remove mode options, as defined by `add_remove`.
-    The minimum quantity of an `Item` for any given transaction is 1 (therefore assumes whole items are registered per-transaction for any transaction type).
+    The minimum quantity of an :class:`~core.models.Item` for any given transaction is 1 (therefore assumes whole items are registered per-transaction for any transaction type).
     """
 
     barcode = forms.CharField(widget=forms.TextInput(attrs={"disabled": "disabled"}))
