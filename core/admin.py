@@ -1,3 +1,5 @@
+"""Configures models for display and define forms used in the Admin view of the `Core` app."""
+
 import pandas as pd
 from django.contrib import admin
 from django.http import HttpResponseRedirect
@@ -5,7 +7,7 @@ from django.shortcuts import render
 from django.urls import path, reverse
 
 from .forms import ExcelUploadForm
-from .models import Order, Item
+from .models import Item, Order
 from .utils import dict_from_excel_row
 
 
@@ -20,10 +22,14 @@ class OrderAdmin(admin.ModelAdmin):
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
-            path("import-excel/", self.admin_site.admin_view(self.import_excel), name="import_excel"),
+            path(
+                "import-excel/",
+                self.admin_site.admin_view(self.import_excel),
+                name="import_excel",
+            ),
         ]
         return custom_urls + urls
-    
+
     def import_excel(self, request):
         """Defines form for uploading an Excel document containing transaction ledger data."""
         if request.method == "POST":
@@ -37,21 +43,24 @@ class OrderAdmin(admin.ModelAdmin):
                 return HttpResponseRedirect("../")
         else:
             form = ExcelUploadForm()
-        
 
-        return render(request, "admin/import_excel.html", {"form": form, "title": "Import Excel"})
-    
+        return render(
+            request, "admin/import_excel.html", {"form": form, "title": "Import Excel"}
+        )
+
     # Select fields to display on the admin panel
-    list_display = ['item_no', 'descr', 'po_date', 'rcv_date']
+    list_display = ["item_no", "descr", "po_date", "rcv_date"]
 
     def descr(self, obj):
         return obj.item.descr
-    
+
     def item_no(self, obj):
         return obj.item.item_no
 
+
 class ItemAdmin(admin.ModelAdmin):
-    list_display = ['item', 'mfr', 'descr', 'par_level']
+    list_display = ["item", "mfr", "descr", "par_level"]
+
 
 # Register your models here.
 admin.site.register(Order, OrderAdmin)
