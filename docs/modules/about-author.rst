@@ -1,5 +1,5 @@
 ############
-All about me
+About authors
 ############
 
-Test about page
+Arvind Draffen, Adriana Ene, Nathan Kumar
