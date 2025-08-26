@@ -1,11 +1,11 @@
-"""Defines models used across the `Core` app."""
+"""Defines models used across the Core app."""
 
 from django.db import models
 from djmoney.models.fields import MoneyField
 
 
 class Item(models.Model):
-    """Defines an `Item` model representing an individual item in inventory."""
+    """Defines an Item model representing an individual item in inventory."""
     item=models.CharField('ITEM', max_length=200)
     item_no=models.CharField('ITEM_NO', max_length=200)
     mfr=models.CharField('MFR', max_length=200)
@@ -20,20 +20,20 @@ class Item(models.Model):
         Dynamically calculates the quantity of a given item based on its transaction history.
 
         Returns:
-            int: the number of `Item`s in inventory, as calculated from its transaction history.
+            int: the number of Items in inventory, as calculated from its transaction history.
         """
         return self.transactions.aggregate(total=models.Sum('change'))["total"] or 0
 
     def __str__(self):
         """
-        Defines the string representation of the `Item` (useful in the Admin view, but also other places where the string representation should be meaningful).
-        In this case, is defined as the `item` field, which represents an item number.
+        Defines the string representation of the Item (useful in the Admin view, but also other places where the string representation should be meaningful).
+        In this case, is defined as the item field, which represents an item number.
         """
         return self.item
 
 class Order(models.Model):
     """
-    Defines an `Order` model representing an order for an item in inventory.
+    Defines an Order model representing an order for an item in inventory.
     """
     item = models.ForeignKey(Item, on_delete=models.PROTECT)
     vendor=models.CharField('VENDOR', max_length=200)
@@ -53,14 +53,14 @@ class Order(models.Model):
 
     def __str__(self):
         """
-        Defines the string representation of the `Order` (useful in the Admin view, but also other places where the string representation should be meaningful).
+        Defines the string representation of the Order (useful in the Admin view, but also other places where the string representation should be meaningful).
         In this case, is defined as the item description field.
         """
         return self.item.descr
 
 class ItemTransaction(models.Model):
     """
-    Defines an `ItemTransaction` model representing an update to the quantity of an `Item`'s inventory count.
+    Defines an ItemTransaction model representing an update to the quantity of an Item's inventory count.
     TODO: support recording the user submitting the transaction
     """
     class TransactionType(models.TextChoices):
@@ -78,20 +78,20 @@ class ItemTransaction(models.Model):
         Gets the type of transaction
 
         Returns:
-            TransactionType: The `TransactionType` corresponding to the string representation stored in `transaction_type`.
+            TransactionType: The TransactionType corresponding to the string representation stored in transaction_type.
         """
         return self.TransactionType(self.transaction_type)
     
     def __str__(self):
         """
-        Defines the string representation of the `Order` (useful in the Admin view, but also other places where the string representation should be meaningful).
+        Defines the string representation of the Order (useful in the Admin view, but also other places where the string representation should be meaningful).
         In this case, is defined as the a string in the following format: {<transaction date> - <item name> (<quantity change>)}.
         """
         return f"{self.timestamp.date()} - {self.item.name} ({self.change})"
 
 class ParLevelTransaction(models.Model):
     """
-    Defines a `ParLevelTransaction` model used for updating the par level of an `Item`.
+    Defines a ParLevelTransaction model used for updating the par level of an Item.
     TODO: implement this in the backend
     """
     item = models.ForeignKey(Item, on_delete=models.PROTECT, related_name="par_changes")

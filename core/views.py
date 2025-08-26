@@ -39,7 +39,7 @@ from .utils import style_excel_sheet, trunc_datetime, absolute_add_remove_quanti
 
 
 class HomePageView(TemplateView):
-    """Defines the view for the homepage/starting page of the `Core` app."""
+    """Defines the view for the homepage/starting page of the Core app."""
     template_name = "core/home.html"
 
     def get_context_data(self, **kwargs):
@@ -73,7 +73,7 @@ class PaginationView(TemplateView):
         return context
 
 class ItemDetailsView(ListView):
-    """Defines the view for the Item Details View, used for displaying tabulated data of all `Item`s."""
+    """Defines the view for the Item Details View, used for displaying tabulated data of all Items."""
     model = Item
     template_name = "core/item_details.html"
     context_object_name = "items"
@@ -81,7 +81,7 @@ class ItemDetailsView(ListView):
 
     def get_queryset(self):
         """
-        Retrieves all `Item`s to display.
+        Retrieves all Items to display.
         Filterable by date and field and/or string queries, and provides ascending and descending sorting by any field.
         """
         orders_qs = Order.objects.all()
@@ -165,13 +165,13 @@ class ItemDetailsView(ListView):
 
     def get_paginate_by(self, queryset) -> int:
         """
-        Manages the number of `Item`s by which to paginate by.
+        Manages the number of Items by which to paginate by.
 
         Args:
             queryset (_type_): the queryset to paginate
 
         Returns:
-            int: The number of items to display per page of paginated `ItemTransaction`s.
+            int: The number of items to display per page of paginated ItemTransactions.
         """
         per_page = self.request.GET.get("per_page", self.paginate_by)
         try:
@@ -182,7 +182,7 @@ class ItemDetailsView(ListView):
             return self.paginate_by
 
 class ItemTransactionView(ListView):
-    """Defines the view for the Item Transaction View, used for displaying tabulated data of all `ItemTransaction`s."""
+    """Defines the view for the Item Transaction View, used for displaying tabulated data of all ItemTransactions."""
     model = ItemTransaction
     template_name = "core/item_transactions.html"
     context_object_name = "item_transactions"
@@ -241,7 +241,7 @@ class ItemTransactionView(ListView):
     def get_dates_from_request(self) -> Tuple[datetime.datetime, datetime.datetime]:
         """
         Retrieves the user-submitted start date and end date from the request.
-        If either the start date or end date is not provided, gets the default dates as defined by `get_default_dates().`
+        If either the start date or end date is not provided, gets the default dates as defined by get_default_dates().
         The start date will be set to begin at midnight, and the end date will be set to end at 11:59 PM (23:59).
 
         Returns:
@@ -272,7 +272,7 @@ class ItemTransactionView(ListView):
 
     def get_queryset(self, included_fields: Optional[List[str]]=None):
         """
-        Retrieves the `ItemTransaction`s to display.
+        Retrieves the ItemTransactions to display.
         Filterable by date and field and/or string queries, and provides ascending and descending sorting by any field.
         Also supports limiting the output to certain fields.
 
@@ -280,7 +280,7 @@ class ItemTransactionView(ListView):
             included_fields (Optional[List[str]], optional): field names to include, if only certain fields are desired for display. Defaults to None.
 
         Returns:
-            The resulting queryset of `ItemTransaction`s after all desired filtering is applied.
+            The resulting queryset of ItemTransactions after all desired filtering is applied.
         """
         start_date, end_date = self.get_dates_from_request()
         self.start_date = start_date
@@ -347,13 +347,13 @@ class ItemTransactionView(ListView):
 
     def get_paginate_by(self, queryset) -> int:
         """
-        Manages the number of `ItemTransaction`s by which to paginate by.
+        Manages the number of ItemTransactions by which to paginate by.
 
         Args:
             queryset (_type_): the queryset to paginate
 
         Returns:
-            int: The number of items to display per page of paginated `ItemTransaction`s.
+            int: The number of items to display per page of paginated ItemTransactions.
         """
         per_page = self.request.GET.get("per_page", self.paginate_by)
         try:
@@ -402,7 +402,7 @@ class ItemTransactionView(ListView):
 
 
 class OrderDetailsView(ListView):
-    """Defines the view for the Order Details view, used for displaying tabulated data of all `Order`s."""
+    """Defines the view for the Order Details view, used for displaying tabulated data of all Orders."""
     model = Order
     template_name = "core/order_details.html"
     context_object_name = "orders"
@@ -410,7 +410,7 @@ class OrderDetailsView(ListView):
 
     def get_queryset(self):
         """
-        Retrieves all `Item`s to display.
+        Retrieves all Items to display.
         Filterable by date and field and/or string queries, and provides ascending and descending sorting by any field.
         """
         queryset = super().get_queryset()
@@ -514,13 +514,13 @@ class OrderDetailsView(ListView):
 
     def get_paginate_by(self, queryset) -> int:
         """
-        Manages the number of `Order`s by which to paginate by.
+        Manages the number of Orders by which to paginate by.
 
         Args:
             queryset (_type_): the queryset to paginate
 
         Returns:
-            int: The number of items to display per page of paginated `Order`s.
+            int: The number of items to display per page of paginated Orders.
         """
         per_page = self.request.GET.get('per_page', 25)
         try:
@@ -619,7 +619,7 @@ class OrderDetailsAdvancedView(TemplateView):
 
     def get_quarters_list(self) -> list[str]:
         """
-        Get the list of quarters across all `Order`s in the database
+        Get the list of quarters across all Orders in the database
 
         Returns:
             list[str]: The list of quarters, with each quarter in the format <'Month YYYY'>.
@@ -670,7 +670,7 @@ class OrderDetailsAdvancedView(TemplateView):
     def get_dates_from_request(self) -> Tuple[datetime.datetime, datetime.datetime]:
         """
         Retrieves the user-submitted start date and end date from the request.
-        If either the start date or end date is not provided, gets the default dates as defined by `get_default_dates().`
+        If either the start date or end date is not provided, gets the default dates as defined by get_default_dates().
         The start date will be set to begin at midnight, and the end date will be set to end at 11:59 PM (23:59).
 
         Returns:
@@ -868,7 +868,7 @@ class ManageInventoryView(LoginRequiredMixin, TemplateView):
     """
     Defines the view for the Manage Inventory View.
     Will validate whether the ID for the item exists in the DB, and will offer to redirect to adding a new item if it does not exist.
-    Uses the same template as `AddRemoveItemsByBarcodeView`.
+    Uses the same template as AddRemoveItemsByBarcodeView.
     """
     template_name = "core/manage_inventory.html"
     login_url = reverse_lazy("admin:login")
@@ -902,8 +902,8 @@ class ManageInventoryView(LoginRequiredMixin, TemplateView):
 
 class AddRemoveItemsByBarcodeView(LoginRequiredMixin, View):
     """
-    Defines the view for the Add/Remove Items by Barcode View, used for adding/removing `Item`s from inventory by unique ID.
-    Uses the same template as `ManageInventoryView`.
+    Defines the view for the Add/Remove Items by Barcode View, used for adding/removing Items from inventory by unique ID.
+    Uses the same template as ManageInventoryView.
     """
     template_name = "core/manage_inventory.html"
     login_url = reverse_lazy("admin:login")
@@ -953,7 +953,7 @@ class AddRemoveItemsByBarcodeView(LoginRequiredMixin, View):
 
 class SettingsView(TemplateView):
     """
-    Defines the Settings View, used for displaying the current settings of the `Core` app.
+    Defines the Settings View, used for displaying the current settings of the Core app.
     Currently only for displaying settings, will possibly support modifying settings in the future.
     """
     template_name = 'core/settings.html'
