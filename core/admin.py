@@ -1,3 +1,5 @@
+"""Configures models for display and define forms used in the Admin view of the `Core` app."""
+
 import pandas as pd
 from django.contrib import admin
 from django.http import HttpResponseRedirect

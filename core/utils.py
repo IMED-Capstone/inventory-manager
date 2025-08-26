@@ -1,3 +1,5 @@
+"""Provides various utility functions used across the `Core` app."""
+
 import datetime
 import os
 import sqlite3
@@ -142,14 +144,34 @@ def style_excel_sheet(sheet, type, field, i, currency_style):
     
     sheet.column_dimensions[col_letter].width = (max_length + 2)
 
-def absolute_add_remove_quantity(item_quantity: int, add_remove_mode: str):
+def absolute_add_remove_quantity(item_quantity: int, add_remove_mode: str) -> int:
+    """
+    Return the integer quantity (positive or negative) from a given quantity and transaction mode.
+
+    Args:
+        item_quantity (int): The integer quantity of the item
+        add_remove_mode (str): Representation of the transaction type (whether adding/removing).
+
+    Returns:
+        int: The integer quantity of the item being updated in inventory (positive for adding and negative for removing).
+    """
     quantity = abs(item_quantity)
     if add_remove_mode.lower() == "out":
         quantity = quantity * -1
     
     return quantity
 
-def get_searchable_fields(model):
+def get_searchable_fields(model) -> list:
+    """
+    Returns a list of searchable fields for a given model.
+    Includes text fields, numerical fields, and text fields that are foreign keys.
+
+    Args:
+        model (_type_): The Django model to consider.
+
+    Returns:
+        list: The list of names of fields that are searchable for the model.
+    """
     fields = []
     for f in model._meta.get_fields():
         # Direct text fields
@@ -169,7 +191,13 @@ def get_searchable_fields(model):
     
     return fields
 
-def get_database_status():
+def get_database_status() -> str:
+    """
+    Gets the database status as a string.
+
+    Returns:
+        str: String representation of the database status
+    """
     status = cache.get('database_status')
     if status is None:
         try:

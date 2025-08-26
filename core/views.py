@@ -1,3 +1,5 @@
+"""Defines views that provide data for display on templates."""
+
 import datetime
 import json
 import zoneinfo
@@ -15,6 +17,7 @@ from django.apps import apps
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.handlers.wsgi import WSGIRequest
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Count, Sum, F, Q, CharField, TextField, IntegerField, AutoField
 from django.db.models.functions import TruncMonth, TruncQuarter
@@ -29,12 +32,14 @@ from django.views.generic import ListView
 from django.views.generic.base import TemplateView
 from djmoney.money import Money
 from openpyxl.styles import NamedStyle
+from typing import List, Optional, Tuple
 
 from .models import Item, Order, ItemTransaction
 from .utils import style_excel_sheet, trunc_datetime, absolute_add_remove_quantity, get_searchable_fields, get_database_status
 
 
 class HomePageView(TemplateView):
+    """Defines the view for the homepage/starting page of the `Core` app."""
     template_name = "core/home.html"
 
     def get_context_data(self, **kwargs):
@@ -68,12 +73,17 @@ class PaginationView(TemplateView):
         return context
 
 class ItemDetailsView(ListView):
+    """Defines the view for the Item Details View, used for displaying tabulated data of all `Item`s."""
     model = Item
     template_name = "core/item_details.html"
     context_object_name = "items"
     paginate_by = 25
 
     def get_queryset(self):
+        """
+        Retrieves all `Item`s to display.
+        Filterable by date and field and/or string queries, and provides ascending and descending sorting by any field.
+        """
         orders_qs = Order.objects.all()
         current_time = timezone.localtime(timezone.now())
 
@@ -125,6 +135,7 @@ class ItemDetailsView(ListView):
         return items_qs
 
     def get_context_data(self, **kwargs):
+        """Populates data for the template."""
         context = super().get_context_data(**kwargs)
 
         query_dict = self.request.GET.copy()
@@ -152,7 +163,16 @@ class ItemDetailsView(ListView):
 
         return context
 
-    def get_paginate_by(self, queryset):
+    def get_paginate_by(self, queryset) -> int:
+        """
+        Manages the number of `Item`s by which to paginate by.
+
+        Args:
+            queryset (_type_): the queryset to paginate
+
+        Returns:
+            int: The number of items to display per page of paginated `ItemTransaction`s.
+        """
         per_page = self.request.GET.get("per_page", self.paginate_by)
         try:
             return int(per_page)
@@ -162,12 +182,19 @@ class ItemDetailsView(ListView):
             return self.paginate_by
 
 class ItemTransactionView(ListView):
+    """Defines the view for the Item Transaction View, used for displaying tabulated data of all `ItemTransaction`s."""
     model = ItemTransaction
     template_name = "core/item_transactions.html"
     context_object_name = "item_transactions"
     paginate_by = 25
 
-    def get_quarters_list(self) -> list:
+    def get_quarters_list(self) -> list[str]:
+        """
+        Get the list of quarters across all ItemTransactions in the database
+
+        Returns:
+            list[str]: The list of quarters, with each quarter in the format <'Month YYYY'>.
+        """
         newest_item_transaction_date = ItemTransaction.objects.order_by("-timestamp").first().timestamp
         oldest_item_transaction_date = ItemTransaction.objects.order_by("timestamp").first().timestamp
 
@@ -185,18 +212,41 @@ class ItemTransactionView(ListView):
             for i in range(0, months_diff + 1, 3)
         ]
     
-    def get_default_dates(self):
+    def get_default_dates(self) -> Tuple[datetime.datetime, datetime.datetime]:
+        """
+        Provides the default dates to filter by for the view, which are the current date and 1 year in the past.
+
+        Returns:
+            Tuple[datetime.datetime, datetime.datetime]: tuple with the start date and end date (start_date, end_date)
+        """
         end_date = timezone.localtime(timezone.now())
         start_date = end_date - relativedelta(years=1)
         return start_date, end_date
     
-    def get_end_date_for_quarter(self, start_date: datetime.datetime):
+    def get_end_date_for_quarter(self, start_date: datetime.datetime) -> datetime.datetime:
+        """
+        Gets the end date for a given quarter, based on the start date.
+
+        Args:
+            start_date (datetime.datetime): The starting date of a quarter.
+
+        Returns:
+            datetime.datetime: The end date of the quarter based on the provided start date.
+        """
         end_date = start_date + relativedelta(months=3)
         end_date = end_date.replace(day=1) - datetime.timedelta(days=1)
         end_date = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
         return end_date
     
-    def get_dates_from_request(self):
+    def get_dates_from_request(self) -> Tuple[datetime.datetime, datetime.datetime]:
+        """
+        Retrieves the user-submitted start date and end date from the request.
+        If either the start date or end date is not provided, gets the default dates as defined by `get_default_dates().`
+        The start date will be set to begin at midnight, and the end date will be set to end at 11:59 PM (23:59).
+
+        Returns:
+            Tuple[datetime.datetime, datetime.datetime]: tuple with the start date and end date (start_date, end_date).
+        """
         quarter_str = self.request.GET.get("quarter")
         if quarter_str:
             start_date = timezone.make_aware(
@@ -220,7 +270,18 @@ class ItemTransactionView(ListView):
         
         return start_date, end_date
 
-    def get_queryset(self, included_fields=None):
+    def get_queryset(self, included_fields: Optional[List[str]]=None):
+        """
+        Retrieves the `ItemTransaction`s to display.
+        Filterable by date and field and/or string queries, and provides ascending and descending sorting by any field.
+        Also supports limiting the output to certain fields.
+
+        Args:
+            included_fields (Optional[List[str]], optional): field names to include, if only certain fields are desired for display. Defaults to None.
+
+        Returns:
+            The resulting queryset of `ItemTransaction`s after all desired filtering is applied.
+        """
         start_date, end_date = self.get_dates_from_request()
         self.start_date = start_date
         self.end_date = end_date
@@ -284,7 +345,16 @@ class ItemTransactionView(ListView):
             return item_transactions.only(*included_fields)
         return item_transactions
 
-    def get_paginate_by(self, queryset):
+    def get_paginate_by(self, queryset) -> int:
+        """
+        Manages the number of `ItemTransaction`s by which to paginate by.
+
+        Args:
+            queryset (_type_): the queryset to paginate
+
+        Returns:
+            int: The number of items to display per page of paginated `ItemTransaction`s.
+        """
         per_page = self.request.GET.get("per_page", self.paginate_by)
         try:
             return int(per_page)
@@ -294,6 +364,7 @@ class ItemTransactionView(ListView):
             return self.paginate_by
 
     def get_context_data(self, **kwargs):
+        """Populates data for the template."""
         context = super().get_context_data(**kwargs)
 
         if not context["item_transactions"]:
@@ -331,12 +402,17 @@ class ItemTransactionView(ListView):
 
 
 class OrderDetailsView(ListView):
+    """Defines the view for the Order Details view, used for displaying tabulated data of all `Order`s."""
     model = Order
     template_name = "core/order_details.html"
     context_object_name = "orders"
     paginate_by = 25
 
     def get_queryset(self):
+        """
+        Retrieves all `Item`s to display.
+        Filterable by date and field and/or string queries, and provides ascending and descending sorting by any field.
+        """
         queryset = super().get_queryset()
         current_time = timezone.localtime(timezone.now())
         start_date_str = self.request.GET.get("start_date")
@@ -404,6 +480,7 @@ class OrderDetailsView(ListView):
         return orders
 
     def get_context_data(self, **kwargs):
+        """Populates data for the template."""
         context = super().get_context_data(**kwargs)
 
         lower_date_bound = Order.objects.order_by('po_date').first().po_date.strftime("%Y-%m-%d")
@@ -435,7 +512,16 @@ class OrderDetailsView(ListView):
 
         return context
 
-    def get_paginate_by(self, queryset):
+    def get_paginate_by(self, queryset) -> int:
+        """
+        Manages the number of `Order`s by which to paginate by.
+
+        Args:
+            queryset (_type_): the queryset to paginate
+
+        Returns:
+            int: The number of items to display per page of paginated `Order`s.
+        """
         per_page = self.request.GET.get('per_page', 25)
         try:
             return int(per_page)
@@ -445,8 +531,17 @@ class OrderDetailsView(ListView):
                 return count if count > 0 else 1
             return 25
 
-def export_to_excel(request):
-    """Export selected date range transaction data to an Excel file."""
+def export_to_excel(request: WSGIRequest) -> HttpResponse:
+    """
+    Export selected date range transaction data to an Excel file.
+    This sheet is formatted to match the output provided by UIH materials management.
+
+    Args:
+        request (WSGIRequest): the request used to generate the Excel sheet, providing the start and end dates.
+
+    Returns:
+        HttpResponse: contains the Excel sheet of orders
+    """
     workbook = openpyxl.Workbook()
     sheet = workbook.active
 
@@ -522,7 +617,13 @@ class OrderDetailsAdvancedView(TemplateView):
     """Provides graphs/visualizations of orders, selectable by date range."""
     template_name = "core/order_details_advanced.html"
 
-    def get_quarters_list(self) -> list:
+    def get_quarters_list(self) -> list[str]:
+        """
+        Get the list of quarters across all `Order`s in the database
+
+        Returns:
+            list[str]: The list of quarters, with each quarter in the format <'Month YYYY'>.
+        """
         newest_order_date = Order.objects.all().order_by("-po_date").first().po_date
         oldest_order_date = Order.objects.all().order_by("po_date").first().po_date
 
@@ -540,18 +641,41 @@ class OrderDetailsAdvancedView(TemplateView):
             for i in range(0, months_diff + 1, 3)
         ]
 
-    def get_default_dates(self):
+    def get_default_dates(self) -> Tuple[datetime.datetime, datetime.datetime]:
+        """
+        Provides the default dates to filter by for the view, which are the current date and 1 year in the past.
+
+        Returns:
+            Tuple[datetime.datetime, datetime.datetime]: tuple with the start date and end date (start_date, end_date)
+        """
         end_date = timezone.localtime(timezone.now())
         start_date = end_date - relativedelta(years=1)
         return start_date, end_date
     
-    def get_end_date_for_quarter(self, start_date:datetime.datetime):
+    def get_end_date_for_quarter(self, start_date:datetime.datetime) -> datetime.datetime:
+        """
+        Gets the end date for a given quarter, based on the start date.
+
+        Args:
+            start_date (datetime.datetime): The starting date of a quarter.
+
+        Returns:
+            datetime.datetime: The end date of the quarter based on the provided start date.
+        """
         end_date = start_date + relativedelta(months=3)
         end_date = end_date.replace(day=1) - datetime.timedelta(days=1)
         end_date = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
         return end_date
 
-    def get_dates_from_request(self):
+    def get_dates_from_request(self) -> Tuple[datetime.datetime, datetime.datetime]:
+        """
+        Retrieves the user-submitted start date and end date from the request.
+        If either the start date or end date is not provided, gets the default dates as defined by `get_default_dates().`
+        The start date will be set to begin at midnight, and the end date will be set to end at 11:59 PM (23:59).
+
+        Returns:
+            Tuple[datetime.datetime, datetime.datetime]: tuple with the start date and end date (start_date, end_date).
+        """
         quarter_str = self.request.GET.get("quarter")
         if quarter_str:
             start_date = timezone.make_aware(datetime.datetime.combine(datetime.datetime.strptime(quarter_str, "%B %Y"), datetime.time(0,0,0,0)))
@@ -574,6 +698,7 @@ class OrderDetailsAdvancedView(TemplateView):
         return start_date, end_date
     
     def get_context_data(self, **kwargs):
+        """Populates data for the template."""
         context = super().get_context_data(**kwargs)
         queryset = Order.objects.all()
         if not queryset.exists():
@@ -714,6 +839,7 @@ class OrderDetailsAdvancedView(TemplateView):
         return context
 
     def dispatch(self, request, *args, **kwargs):
+        """Ensures that URL start date and end date parameters match the selected quarter."""
         if request.method == "GET":
             quarter_str = self.request.GET.get("quarter")
             if quarter_str:
@@ -739,10 +865,16 @@ class OrderDetailsAdvancedView(TemplateView):
         return super().dispatch(request, *args, **kwargs)
 
 class ManageInventoryView(LoginRequiredMixin, TemplateView):
+    """
+    Defines the view for the Manage Inventory View.
+    Will validate whether the ID for the item exists in the DB, and will offer to redirect to adding a new item if it does not exist.
+    Uses the same template as `AddRemoveItemsByBarcodeView`.
+    """
     template_name = "core/manage_inventory.html"
     login_url = reverse_lazy("admin:login")
 
     def get_context_data(self, **kwargs):
+        """Populates data for the template."""
         context = super().get_context_data(**kwargs)
         initial_data = {}
         if self.request.method == "GET":
@@ -769,10 +901,15 @@ class ManageInventoryView(LoginRequiredMixin, TemplateView):
 
 
 class AddRemoveItemsByBarcodeView(LoginRequiredMixin, View):
+    """
+    Defines the view for the Add/Remove Items by Barcode View, used for adding/removing `Item`s from inventory by unique ID.
+    Uses the same template as `ManageInventoryView`.
+    """
     template_name = "core/manage_inventory.html"
     login_url = reverse_lazy("admin:login")
 
     def get(self, request):
+        """Updates form contents."""
         form = AddRemoveItemsByBarcodeForm(data=request.GET)
 
         if form.is_valid():
@@ -790,6 +927,7 @@ class AddRemoveItemsByBarcodeView(LoginRequiredMixin, View):
         return render(request, self.template_name, context)
 
     def post(self, request):
+        """Updates the backend with the new item quantity."""
         form = AddRemoveItemsByBarcodeForm(request.POST)
         if form.is_valid():
             barcode = form.cleaned_data["barcode"]
@@ -814,9 +952,14 @@ class AddRemoveItemsByBarcodeView(LoginRequiredMixin, View):
         })
 
 class SettingsView(TemplateView):
+    """
+    Defines the Settings View, used for displaying the current settings of the `Core` app.
+    Currently only for displaying settings, will possibly support modifying settings in the future.
+    """
     template_name = 'core/settings.html'
 
     def get_context_data(self, **kwargs):
+        """Populates data for the template."""
         context = super().get_context_data(**kwargs)
         
         context["app_version"] = "app_version (let's either set this manually and/or grab git tag corresponding to release)"
@@ -844,15 +987,19 @@ class SettingsView(TemplateView):
         return context
 
 class AboutView(TemplateView):
+    """Defines the About View, which displays general information about the project."""
     template_name = "core/about.html"
 
     def get_context_date(self, **kwargs):
+        """Populates data for the template."""
         context = super().get_context_data(**kwargs)
         return context
 
 class ProfileView(TemplateView):
+    """Defines the Profile View, used for displaying and updating settings for the specific User profile."""
     template_name = "core/profile.html"
 
     def get_context_data(self, **kwargs):
+        """Populates data for the template."""
         context = super().get_context_data(**kwargs)
         return context

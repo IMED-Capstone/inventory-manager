@@ -1,3 +1,5 @@
+"""Defines URLs used across the `Core` app."""
+
 from django.urls import path, include
 
 from . import views
