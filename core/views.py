@@ -89,7 +89,7 @@ class PaginationView(TemplateView):
 
 
 class ItemDetailsView(ListView):
-    """Defines the view for the Item Details View, used for displaying tabulated data of all Items."""
+    """Defines the view for the :class:`~core.models.Item` Details View, used for displaying tabulated data of all :class:`Items <core.models.Item>`."""
 
     model = Item
     template_name = "core/item_details.html"
@@ -98,7 +98,7 @@ class ItemDetailsView(ListView):
 
     def get_queryset(self):
         """
-        Retrieves all Items to display.
+        Retrieves all :class:`Items <core.models.Item>` to display.
         Filterable by date and field and/or string queries, and provides ascending and descending sorting by any field.
         """
         orders_qs = Order.objects.all()
@@ -210,13 +210,13 @@ class ItemDetailsView(ListView):
 
     def get_paginate_by(self, queryset) -> int:
         """
-        Manages the number of Items by which to paginate by.
+        Manages the number of :class:`Items <core.models.Item>` by which to paginate by.
 
         Args:
             queryset (_type_): the queryset to paginate
 
         Returns:
-            int: The number of items to display per page of paginated ItemTransactions.
+            int: The number of :class:`Items <core.models.Item>` to display per page of paginated :class:`Items <core.models.Item>`.
         """
         per_page = self.request.GET.get("per_page", self.paginate_by)
         try:
@@ -228,7 +228,7 @@ class ItemDetailsView(ListView):
 
 
 class ItemTransactionView(ListView):
-    """Defines the view for the Item Transaction View, used for displaying tabulated data of all ItemTransactions."""
+    """Defines the view for the Item Transaction View, used for displaying tabulated data of all :class:`ItemTransactions <core.models.ItemTransaction>`."""
 
     model = ItemTransaction
     template_name = "core/item_transactions.html"
@@ -237,7 +237,7 @@ class ItemTransactionView(ListView):
 
     def get_quarters_list(self) -> list[str]:
         """
-        Get the list of quarters across all ItemTransactions in the database
+        Get the list of quarters across all :class:`ItemTransactions <core.models.ItemTransaction>` in the database.
 
         Returns:
             list[str]: The list of quarters, with each quarter in the format <'Month YYYY'>.
@@ -283,10 +283,10 @@ class ItemTransactionView(ListView):
         Gets the end date for a given quarter, based on the start date.
 
         Args:
-            start_date (datetime.datetime): The starting date of a quarter.
+            start_date (:class:`~datetime.datetime`): The starting :class:`~datetime.datetime` of a quarter.
 
         Returns:
-            datetime.datetime: The end date of the quarter based on the provided start date.
+            :class:`~datetime.datetime`: The end :class:`~datetime.datetime` of the quarter based on the provided start :class:`~datetime.datetime`.
         """
         end_date = start_date + relativedelta(months=3)
         end_date = end_date.replace(day=1) - datetime.timedelta(days=1)
@@ -295,12 +295,12 @@ class ItemTransactionView(ListView):
 
     def get_dates_from_request(self) -> Tuple[datetime.datetime, datetime.datetime]:
         """
-        Retrieves the user-submitted start date and end date from the request.
-        If either the start date or end date is not provided, gets the default dates as defined by get_default_dates().
-        The start date will be set to begin at midnight, and the end date will be set to end at 11:59 PM (23:59).
+        Retrieves the user-submitted start :class:`~datetime.datetime` and end :class:`~datetime.datetime` from the request.
+        If either the start :class:`~datetime.datetime` or end :class:`~datetime.datetime` is not provided, gets the default  :class:`dates <datetime.datetime>` as defined by get_default_dates().
+        The start :class:`~datetime.datetime` will be set to begin at midnight, and the :class:`~datetime.datetime` date will be set to end at 11:59 PM (23:59).
 
         Returns:
-            Tuple[datetime.datetime, datetime.datetime]: tuple with the start date and end date (start_date, end_date).
+            Tuple[:class:`~datetime.datetime`, :class:`~datetime.datetime`]: tuple with the start :class:`~datetime.datetime` and end :class:`~datetime.datetime` (start_date, end_date).
         """
         quarter_str = self.request.GET.get("quarter")
         if quarter_str:
@@ -345,7 +345,7 @@ class ItemTransactionView(ListView):
 
     def get_queryset(self, included_fields: Optional[List[str]] = None):
         """
-        Retrieves the ItemTransactions to display.
+        Retrieves the :class:`ItemTransactions <core.models.ItemTransaction>` to display.
         Filterable by date and field and/or string queries, and provides ascending and descending sorting by any field.
         Also supports limiting the output to certain fields.
 
@@ -353,7 +353,7 @@ class ItemTransactionView(ListView):
             included_fields (Optional[List[str]], optional): field names to include, if only certain fields are desired for display. Defaults to None.
 
         Returns:
-            The resulting queryset of ItemTransactions after all desired filtering is applied.
+            The resulting queryset of :class:`ItemTransactions <core.models.ItemTransaction>` after all desired filtering is applied.
         """
         start_date, end_date = self.get_dates_from_request()
         self.start_date = start_date
@@ -429,13 +429,13 @@ class ItemTransactionView(ListView):
 
     def get_paginate_by(self, queryset) -> int:
         """
-        Manages the number of ItemTransactions by which to paginate by.
+        Manages the number of :class:`ItemTransactions <core.models.ItemTransaction>` by which to paginate by.
 
         Args:
             queryset (_type_): the queryset to paginate
 
         Returns:
-            int: The number of items to display per page of paginated ItemTransactions.
+            int: The number of items to display per page of paginated :class:`ItemTransactions <core.models.ItemTransaction>`.
         """
         per_page = self.request.GET.get("per_page", self.paginate_by)
         try:
@@ -491,7 +491,7 @@ class ItemTransactionView(ListView):
 
 
 class OrderDetailsView(ListView):
-    """Defines the view for the Order Details view, used for displaying tabulated data of all Orders."""
+    """Defines the view for the :class:`~core.models.Order` Details view, used for displaying tabulated data of all :class:`Orders <core.models.Order>`."""
 
     model = Order
     template_name = "core/order_details.html"
@@ -500,7 +500,7 @@ class OrderDetailsView(ListView):
 
     def get_queryset(self):
         """
-        Retrieves all Items to display.
+        Retrieves all :class:`Orders <core.models.Order>` to display.
         Filterable by date and field and/or string queries, and provides ascending and descending sorting by any field.
         """
         queryset = super().get_queryset()
@@ -627,7 +627,7 @@ class OrderDetailsView(ListView):
 
     def get_paginate_by(self, queryset) -> int:
         """
-        Manages the number of Orders by which to paginate by.
+        Manages the number of :class:`Orders <core.models.Order>` by which to paginate by.
 
         Args:
             queryset (_type_): the queryset to paginate
@@ -771,13 +771,13 @@ def export_to_excel(request: WSGIRequest) -> HttpResponse:
 
 
 class OrderDetailsAdvancedView(TemplateView):
-    """Provides graphs/visualizations of orders, selectable by date range."""
+    """Provides graphs/visualizations of :class:`Orders <core.models.Order>`, selectable by date range."""
 
     template_name = "core/order_details_advanced.html"
 
     def get_quarters_list(self) -> list[str]:
         """
-        Get the list of quarters across all Orders in the database
+        Get the list of quarters across all :class:`Orders <core.models.Order>` in the database
 
         Returns:
             list[str]: The list of quarters, with each quarter in the format <'Month YYYY'>.
@@ -1118,8 +1118,8 @@ class OrderDetailsAdvancedView(TemplateView):
 class ManageInventoryView(LoginRequiredMixin, TemplateView):
     """
     Defines the view for the Manage Inventory View.
-    Will validate whether the ID for the item exists in the DB, and will offer to redirect to adding a new item if it does not exist.
-    Uses the same template as AddRemoveItemsByBarcodeView.
+    Will validate whether the ID for the  :class:`~core.models.Item` exists in the DB, and will offer to redirect to adding a new  :class:`~core.models.Item` if it does not exist.
+    Uses the same template as  :class:`~core.views.AddRemoveItemsByBarcodeView`.
     """
 
     template_name = "core/manage_inventory.html"
@@ -1154,8 +1154,8 @@ class ManageInventoryView(LoginRequiredMixin, TemplateView):
 
 class AddRemoveItemsByBarcodeView(LoginRequiredMixin, View):
     """
-    Defines the view for the Add/Remove Items by Barcode View, used for adding/removing Items from inventory by unique ID.
-    Uses the same template as ManageInventoryView.
+    Defines the view for the Add/Remove Items by Barcode View, used for adding/removing :class:`Items <core.models.Item>` from inventory by unique ID.
+    Uses the same template as :class:`~core.views.ManageInventoryView`.
     """
 
     template_name = "core/manage_inventory.html"
@@ -1180,7 +1180,7 @@ class AddRemoveItemsByBarcodeView(LoginRequiredMixin, View):
         return render(request, self.template_name, context)
 
     def post(self, request):
-        """Updates the backend with the new item quantity."""
+        """Updates the backend with the new :class:`~core.models.Item` quantity."""
         form = AddRemoveItemsByBarcodeForm(request.POST)
         if form.is_valid():
             barcode = form.cleaned_data["barcode"]
