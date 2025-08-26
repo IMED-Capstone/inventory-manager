@@ -18,7 +18,7 @@ The following URL patterns are defined:
 * **data-browser/**: Includes URLs from the `data_browser` app.
 """
 
-from django.urls import path, include
+from django.urls import include, path
 
 from . import views
 
