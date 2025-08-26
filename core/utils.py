@@ -18,13 +18,13 @@ from core.models import Item
 
 # Adapted from https://stackoverflow.com/a/48457168
 def trunc_datetime(date: datetime.datetime):
-    """Zeroes out the hour, minute, second, and microsecond elements of a datetime object for ease of comparison of dates alone.
+    """Zeroes out the hour, minute, second, and microsecond elements of a :class:`~datetime.datetime` object for ease of comparison of dates alone.
 
     Args:
-        date (datetime.datetime): The datetime to truncate.
+        date (:class:`~datetime.datetime`): The :mod:`datetime` object to truncate.
 
     Returns:
-        datetime.datetime: The truncated datetime.
+        :class:`~datetime.datetime`: The truncated :class:`~datetime.datetime` object.
     """
     return date.replace(hour=0, minute=0, second=0, microsecond=0)
 
@@ -123,11 +123,11 @@ def style_excel_sheet(sheet, type, field, i, currency_style):
     """Styles the exported Excel sheet to match the original style received to use for importing.
 
     Args:
-        sheet (_type_): The openpyxl active sheet
+        sheet (_type_): The active :class:`~openpyxl.worksheet.worksheet.Worksheet` to style.
         type (_type_): The model type by which to check field names against
         field (_type_): The current field to format the corresponding Excel column for.
-        i (_type_): The current column index of the sheet
-        currency_style (_type_): The openpyxl named style to use for formatting currency.
+        i (_type_): The current column index of the :class:`~openpyxl.worksheet.worksheet.Worksheet`.
+        currency_style (_type_): The :mod:`openpyxl` :class:`~openpyxl.styles.named_styles.NamedStyle` to use for formatting currency.
     """
     col_letter = openpyxl.utils.get_column_letter(i)
     if isinstance(getattr(type, field.name), MoneyFieldProxy):
@@ -166,11 +166,11 @@ def absolute_add_remove_quantity(item_quantity: int, add_remove_mode: str) -> in
     Return the integer quantity (positive or negative) from a given quantity and transaction mode.
 
     Args:
-        item_quantity (int): The integer quantity of the item
+        item_quantity (int): The integer quantity of the :class:`~core.models.Item`
         add_remove_mode (str): Representation of the transaction type (whether adding/removing).
 
     Returns:
-        int: The integer quantity of the item being updated in inventory (positive for adding and negative for removing).
+        int: The integer quantity of the :class:`~core.models.Item` being updated in inventory (positive for adding and negative for removing).
     """
     quantity = abs(item_quantity)
     if add_remove_mode.lower() == "out":
