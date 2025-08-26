@@ -15,6 +15,10 @@ documentation for details.
    :maxdepth: 2
    :caption: Contents:
 
-   modules/about-author.rst
    modules/models.rst
    modules/views.rst
+   modules/admin.rst
+   modules/forms.rst
+   modules/urls.rst
+   modules/utils.rst
+   modules/about-author.rst

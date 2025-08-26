@@ -1,4 +1,22 @@
-"""Defines URLs used across the `Core` app."""
+"""
+Defines URLs used across the Core app.
+
+The following URL patterns are defined:
+
+* **items/**: Displays details for items (item-details).
+* **orders/**: Displays details for orders (order-details).
+* **item-transactions/**: Handles item transaction details (itemtransaction-details).
+* **orders/export**: Exports order data to Excel (export-orders).
+* **orders_advanced/**: Advanced order details view (order-details-advanced).
+* **manage_inventory/**: Manages inventory (manage_inventory).
+* **manage_inventory/add_remove/**: Adds or removes items by barcode (add_remove_items_by_barcode).
+* **settings**: User settings page (settings).
+* **about**: About page (about).
+* **profile**: User profile page (profile).
+* **pagination**: Pagination settings (pagination).
+* **/**: Home page (home).
+* **data-browser/**: Includes URLs from the `data_browser` app.
+"""
 
 from django.urls import path, include
 
