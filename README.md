@@ -52,10 +52,15 @@ Django application for managing inventory in the UIC IR department.
         * Ensure Docker and docker compose are installed (note: Windows requires installation of Docker Desktop, which includes Docker engine and docker compose)
         * Build and run the docker container. Navigate to the root level directory of the project and enter the following commands:
             ```
-            docker build
-            docker compose up -d
+            docker compose up -d --build
             ```
             * The `-d` flag runs in detached mode in the background. To see output on the terminal, simply remove `-d` from the `up` command.
+            * If running an existing image, can run without the `build` flag:
+                ```
+                docker compose up -d
+                ```
+        
+        * To optionally build container with Sphinx documentation, refer to the [Documentation](#documentation) section below.
     
 * Navigate in browser to `127.0.0.1:8000`
 
@@ -88,22 +93,31 @@ Django application for managing inventory in the UIC IR department.
 - view for inventory levels over time (and graphs for utilization)
 
 ## Documentation
-Sphinx documentation has been set up for this application. To generate:
-* Enter the `docs` folder
-    ```
-    cd docs/
-    ```
+Sphinx documentation has been set up for Inventory Manager. To generate:
+* Directly on PC
+    * Enter the `docs` folder
+        ```
+        cd docs/
+        ```
+    
+    * Generate HTML documentation
+        ```
+        make html
+        ```
+    
+        * **Note**: if on Windows (and using Powershell), be sure to include the extension (`.\make.bat html`)
+    
+    * Navigate to the output folder
+        ```
+        cd _build/html
+        ```
+    
+    * Open the main page at `index.html`.
 
-* Generate HTML documentation
-    ```
-    make html
-    ```
-
-    * **Note**: if on Windows (and using Powershell), be sure to include the extension (`.\make.bat html`)
-
-* Navigate to the output folder
-    ```
-    cd _build/html
-    ```
-
-* Open the main page at `index.html`.
+* In Docker
+    * To build documentation as well as the main Inventory Manager, use the `docs` profile on the `compose` command:
+        ```
+        docker compose --profile docs up --build
+        ```
+    
+    * Navigate to `127.0.0.1:8010`
