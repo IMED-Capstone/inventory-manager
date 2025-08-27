@@ -63,9 +63,10 @@ Django application for managing inventory in the UIC IR department.
         * To optionally build container with Sphinx documentation, refer to the [Documentation](#documentation) section below.
     
 * Navigate in browser to `127.0.0.1:8000`
+    * For the rest of this documentation, `<base-url>` will be used. If running locally, this will be the same as `127.0.0.1` or `localhost`, but serves to be more clear for other environments where this may be different.
 
 ### Adding Data from Excel File
-* Navigate to the admin panel at ```127.0.0.1:8000/admin```
+* Navigate to the admin panel at ```<base-url>:8000/admin```
 * Log in with admin credentials set at the ```createsuperuser``` step
 * Click on `Core/Orders`, then click the `Import Data` button in the top right
 * Follow the prompt to upload the file, then navigating to the `Core/Orders` page should show populated data
@@ -77,20 +78,15 @@ Django application for managing inventory in the UIC IR department.
     - Information stored in a DB, where each transaction is logged as a separate record (row).
     - unique ID in the DB is for the specific transaction
     - views for items/orders and graphs
-        - basic list view available at `<base-url>/orders/`
-        - graph views available at `<base-url>/orders_advanced/`
-        - list view of item transactions available at `<base-url>/item-transactions/`
+        - basic list view available at `<base-url>:8000/orders/`
+        - graph views available at `<base-url>:8000/orders_advanced/`
+        - list view of item transactions available at `<base-url>:8000/item-transactions/`
     - inventory for a specific item can be updated at
-        - `<base-url>/manage_inventory/`
+        - `<base-url>:8000/manage_inventory/`
     - various settings and information are available at
-        - `<base-url>/settings/` (general application and deployment settings)
-        - `<base-url>/profile/` (will support updating profile settings)
-        - `<base-url>/about/` (information about the application)
-## Project Roadmap
-- maintains par levels for each unique item inventory should be maintained for
-- provide alerts for when levels are approaching par level or fall under par level
-- unique ID would be for the item number rather than the transaction
-- view for inventory levels over time (and graphs for utilization)
+        - `<base-url>:8000/settings/` (general application and deployment settings)
+        - `<base-url>:8000/profile/` (will support updating profile settings)
+        - `<base-url>:8000/about/` (information about the application)
 
 ## Documentation
 Sphinx documentation has been set up for Inventory Manager. To generate:
@@ -120,4 +116,10 @@ Sphinx documentation has been set up for Inventory Manager. To generate:
         docker compose --profile docs up --build
         ```
     
-    * Navigate to `127.0.0.1:8010`
+    * Navigate to `<base-url>:8010`
+
+## Project Roadmap
+- maintains par levels for each unique item inventory should be maintained for
+- provide alerts for when levels are approaching par level or fall under par level
+- unique ID would be for the item number rather than the transaction
+- view for inventory levels over time (and graphs for utilization)
