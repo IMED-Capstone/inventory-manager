@@ -79,10 +79,10 @@ Django application for managing inventory in the UIC IR department.
     - unique ID in the DB is for the specific transaction
     - views for items/orders and graphs
         - basic list view available at `<base-url>:8000/orders/`
-        - graph views available at `<base-url>:8000/orders_advanced/`
+        - graph views available at `<base-url>:8000/orders-advanced/`
         - list view of item transactions available at `<base-url>:8000/item-transactions/`
     - inventory for a specific item can be updated at
-        - `<base-url>:8000/manage_inventory/`
+        - `<base-url>:8000/manage-inventory/`
     - various settings and information are available at
         - `<base-url>:8000/settings/` (general application and deployment settings)
         - `<base-url>:8000/profile/` (will support updating profile settings)

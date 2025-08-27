@@ -63,7 +63,7 @@
             </li>
             <div class="d-flex ms-auto gap-2">
                 <li class="nav-item">
-                    <a class="nav-link btn btn-primary {% if request.resolver_match.url_name == 'manage_inventory' or request.resolver_match.url_name == 'add_remove_itms_by_barcode' %}active{% endif %}" href="{% url 'manage_inventory' %}">Manage Inventory</a>
+                    <a class="nav-link btn btn-primary {% if request.resolver_match.url_name == 'manage-inventory' or request.resolver_match.url_name == 'add_remove_itms_by_barcode' %}active{% endif %}" href="{% url 'manage-inventory' %}">Manage Inventory</a>
                 </li>
                 <div class="dropdown nav-item">
                     <a class="nav-link btn btn-primary dropdown-toggle {% if request.resolver_match.url_name == 'admin' %}active{% endif %}" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">

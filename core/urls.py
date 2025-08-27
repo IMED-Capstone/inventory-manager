@@ -7,9 +7,9 @@ The following URL patterns are defined:
 * **orders/**: Displays details for :class:`Orders <core.models.Order>` (order-details).
 * **item-transactions/**: Handles :class:`~core.models.ItemTransaction` details (itemtransaction-details).
 * **orders/export**: Exports :class:`~core.models.Order` data to Excel (export-orders).
-* **orders_advanced/**: Advanced :class:`~core.models.Order` details view (order-details-advanced).
-* **manage_inventory/**: Manages inventory (manage_inventory).
-* **manage_inventory/add_remove/**: Adds or removes :class:`Items <core.models.Item>` by barcode (add_remove_items_by_barcode).
+* **orders-advanced/**: Advanced :class:`~core.models.Order` details view (order-details-advanced).
+* **manage-inventory/**: Manages inventory (manage-inventory).
+* **manage-inventory/add-remove/**: Adds or removes :class:`Items <core.models.Item>` by barcode (add_remove_items_by_barcode).
 * **settings**: User settings page (settings).
 * **about**: About page (about).
 * **profile**: User profile page (profile).
@@ -27,9 +27,9 @@ urlpatterns = [
     path("orders/", views.OrderDetailsView.as_view(), name="order-details"),
     path("item-transactions/", views.ItemTransactionView.as_view(), name="itemtransaction-details"),
     path("orders/export", views.export_to_excel, name="export-orders"),
-    path("orders_advanced/", views.OrderDetailsAdvancedView.as_view(), name="order-details-advanced"),
-    path("manage_inventory/", views.ManageInventoryView.as_view(), name="manage_inventory"),
-    path("manage_inventory/add_remove/", views.AddRemoveItemsByBarcodeView.as_view(), name="add_remove_items_by_barcode"),
+    path("orders-advanced/", views.OrderDetailsAdvancedView.as_view(), name="order-details-advanced"),
+    path("manage-inventory/", views.ManageInventoryView.as_view(), name="manage-inventory"),
+    path("manage-inventory/add-remove/", views.AddRemoveItemsByBarcodeView.as_view(), name="add_remove_items_by_barcode"),
     path("settings", views.SettingsView.as_view(), name="settings"),
     path("about", views.AboutView.as_view(), name="about"),
     path("profile", views.ProfileView.as_view(), name="profile"),
