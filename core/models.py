@@ -5,7 +5,7 @@ from djmoney.models.fields import MoneyField
 
 
 class Item(models.Model):
-    """Defines an Item model representing an individual item in inventory."""
+    """Defines an :class:`~core.models.Item` model representing an individual item in inventory."""
 
     item = models.CharField("ITEM", max_length=200)
     item_no = models.CharField("ITEM_NO", max_length=200)
@@ -21,24 +21,24 @@ class Item(models.Model):
     @property
     def quantity(self):
         """
-        Dynamically calculates the quantity of a given item based on its transaction history.
+        Dynamically calculates the quantity of a given :class:`~core.models.Item` based on its transaction history.
 
         Returns:
-            int: the number of Items in inventory, as calculated from its transaction history.
+            int: the number of :class:`Items <core.models.Item>` in inventory, as calculated from its transaction history.
         """
         return self.transactions.aggregate(total=models.Sum("change"))["total"] or 0
 
     def __str__(self):
         """
-        Defines the string representation of the Item (useful in the Admin view, but also other places where the string representation should be meaningful).
-        In this case, is defined as the item field, which represents an item number.
+        Defines the string representation of the :class:`~core.models.Item` (useful in the Admin view, but also other places where the string representation should be meaningful).
+        In this case, is defined as the `item` field, which represents an :class:`~core.models.Item` number.
         """
         return self.item
 
 
 class Order(models.Model):
     """
-    Defines an Order model representing an order for an item in inventory.
+    Defines an :class:`~core.models.Order` model representing an order for an :class:`~core.models.Item` in inventory.
     """
 
     item = models.ForeignKey(Item, on_delete=models.PROTECT)
@@ -68,15 +68,15 @@ class Order(models.Model):
 
     def __str__(self):
         """
-        Defines the string representation of the Order (useful in the Admin view, but also other places where the string representation should be meaningful).
-        In this case, is defined as the item description field.
+        Defines the string representation of the :class:`~core.models.Order` (useful in the Admin view, but also other places where the string representation should be meaningful).
+        In this case, is defined as the :class:`~core.models.Item` description field.
         """
         return self.item.descr
 
 
 class ItemTransaction(models.Model):
     """
-    Defines an ItemTransaction model representing an update to the quantity of an Item's inventory count.
+    Defines an :class:`~core.models.ItemTransaction` model representing an update to the quantity of an :class:`Item's <core.models.Item>` inventory count.
     TODO: support recording the user submitting the transaction
     """
 
@@ -98,21 +98,21 @@ class ItemTransaction(models.Model):
         Gets the type of transaction
 
         Returns:
-            TransactionType: The TransactionType corresponding to the string representation stored in transaction_type.
+            :class:`~core.models.ItemTransaction.TransactionType`: The :class:`~core.models.ItemTransaction` corresponding to the string representation stored in `transaction_type`.
         """
         return self.TransactionType(self.transaction_type)
 
     def __str__(self):
         """
-        Defines the string representation of the Order (useful in the Admin view, but also other places where the string representation should be meaningful).
-        In this case, is defined as the a string in the following format: {<transaction date> - <item name> (<quantity change>)}.
+        Defines the string representation of the :class:`~core.models.ItemTransaction` (useful in the Admin view, but also other places where the string representation should be meaningful).
+        In this case, is defined as the a string in the following format: {<transaction date> - <:class:`~core.models.Item` name> (<quantity change>)}.
         """
         return f"{self.timestamp.date()} - {self.item.name} ({self.change})"
 
 
 class ParLevelTransaction(models.Model):
     """
-    Defines a ParLevelTransaction model used for updating the par level of an Item.
+    Defines a :class:`~core.models.ParLevelTransaction` model used for updating the par level of an :class:`~core.models.Item`.
     TODO: implement this in the backend
     """
 
