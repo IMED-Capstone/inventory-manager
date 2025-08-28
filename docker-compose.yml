@@ -15,3 +15,15 @@ services:
       - ./data:/data
     env_file:
       - .env
+
+  docs-server:
+    build: .
+    container_name: docs-server
+    entrypoint: /bin/sh
+    command: -c "cd /app/docs/_build/html && test -f index.html && exec python -m http.server 8010 || { echo 'index.html not found'; exit 1; }"
+    ports:
+      - "8010:8010"
+    env_file:
+      - .env
+    profiles:
+      - docs

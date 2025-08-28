@@ -1,27 +1,33 @@
+"""Provides various utility functions used across the `Core` app."""
+
 import datetime
 import os
 import sqlite3
+
+import openpyxl
+import pandas as pd
 from django.conf import settings
 from django.core.cache import cache
-from django.db import connection, OperationalError
-from django.db.models import CharField, TextField, ForeignKey, IntegerField, AutoField
-import pandas as pd
-from core.models import Item
-import openpyxl
-from openpyxl.styles import Alignment, Border, Font, NamedStyle, PatternFill, Side
+from django.db import OperationalError, connection
+from django.db.models import AutoField, CharField, ForeignKey, IntegerField, TextField
 from djmoney.models.fields import MoneyFieldProxy
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+
+from core.models import Item
+
 
 # Adapted from https://stackoverflow.com/a/48457168
-def trunc_datetime(date:datetime.datetime):
-    """Zeroes out the hour, minute, second, and microsecond elements of a datetime object for ease of comparison of dates alone.
+def trunc_datetime(date: datetime.datetime):
+    """Zeroes out the hour, minute, second, and microsecond elements of a :class:`~datetime.datetime` object for ease of comparison of dates alone.
 
     Args:
-        date (datetime.datetime): The datetime to truncate.
+        date (:class:`~datetime.datetime`): The :mod:`datetime` object to truncate.
 
     Returns:
-        datetime.datetime: The truncated datetime.
+        :class:`~datetime.datetime`: The truncated :class:`~datetime.datetime` object.
     """
     return date.replace(hour=0, minute=0, second=0, microsecond=0)
+
 
 def dict_from_excel_row(row: pd.Series) -> dict:
     """Creates a dictionary from an Excel row, corresponding to the predefined models used in this Django project.
@@ -59,7 +65,9 @@ def dict_from_excel_row(row: pd.Series) -> dict:
             "external_url": "https://accessgudid.nlm.nih.gov/resources/developers/v3/device_lookup_api",
         }
 
-        item_instance, _ = Item.objects.get_or_create(item_no=item_identifier, defaults=item_defaults)
+        item_instance, _ = Item.objects.get_or_create(
+            item_no=item_identifier, defaults=item_defaults
+        )
         data["item"] = item_instance
 
         if "VENDOR" in row:
@@ -79,7 +87,9 @@ def dict_from_excel_row(row: pd.Series) -> dict:
         if "PO_NO" in row:
             data["po_no"] = row["PO_NO"]
         if "PO_DATE" in row:
-            data["po_date"] = row["PO_DATE"].tz_localize(tz="America/Chicago").tz_convert("UTC")
+            data["po_date"] = (
+                row["PO_DATE"].tz_localize(tz="America/Chicago").tz_convert("UTC")
+            )
         if "VEND_CODE" in row:
             data["vend_code"] = row["VEND_CODE"]
         if "dbo_VEND.NAME" in row:
@@ -102,54 +112,84 @@ def dict_from_excel_row(row: pd.Series) -> dict:
         raise KeyError('Key either "ACCT_NO" or "Expr1017" required.')
 
     if "RCV_DATE" in row:
-        data["rcv_date"] = row["RCV_DATE"].tz_localize(tz="America/Chicago").tz_convert("UTC")
+        data["rcv_date"] = (
+            row["RCV_DATE"].tz_localize(tz="America/Chicago").tz_convert("UTC")
+        )
 
     return data
+
 
 def style_excel_sheet(sheet, type, field, i, currency_style):
     """Styles the exported Excel sheet to match the original style received to use for importing.
 
     Args:
-        sheet (_type_): The openpyxl active sheet
+        sheet (_type_): The active :class:`~openpyxl.worksheet.worksheet.Worksheet` to style.
         type (_type_): The model type by which to check field names against
         field (_type_): The current field to format the corresponding Excel column for.
-        i (_type_): The current column index of the sheet
-        currency_style (_type_): The openpyxl named style to use for formatting currency.
+        i (_type_): The current column index of the :class:`~openpyxl.worksheet.worksheet.Worksheet`.
+        currency_style (_type_): The :mod:`openpyxl` :class:`~openpyxl.styles.named_styles.NamedStyle` to use for formatting currency.
     """
     col_letter = openpyxl.utils.get_column_letter(i)
     if isinstance(getattr(type, field.name), MoneyFieldProxy):
-        for row in range(2, sheet.max_row + 1):  # Start from the second row (skip header)
-            sheet[f'{col_letter}{row}'].style = currency_style  # Apply the style to the entire column
-    
+        for row in range(
+            2, sheet.max_row + 1
+        ):  # Start from the second row (skip header)
+            sheet[
+                f"{col_letter}{row}"
+            ].style = currency_style  # Apply the style to the entire column
+
     # apply header formatting
     cell_to_format = sheet.cell(row=1, column=i)
-    cell_to_format.fill = PatternFill(start_color="C0C0C0", end_color="C0C0C0", fill_type="solid")
+    cell_to_format.fill = PatternFill(
+        start_color="C0C0C0", end_color="C0C0C0", fill_type="solid"
+    )
     cell_to_format.font = Font(bold=True, color="000000")
     cell_to_format.alignment = Alignment(horizontal="center", vertical="center")
     thin_border = Border(
         left=Side(style="thin", color="000000"),
         right=Side(style="thin", color="000000"),
         top=Side(style="thin", color="000000"),
-        bottom=Side(style="thin", color="000000")
+        bottom=Side(style="thin", color="000000"),
     )
     cell_to_format.border = thin_border
 
-
     max_length = 0
-    for cell in list(sheet.columns)[i-1]:
+    for cell in list(sheet.columns)[i - 1]:
         if len(str(cell.value)) > max_length:
             max_length = len(str(cell.value))
-    
-    sheet.column_dimensions[col_letter].width = (max_length + 2)
 
-def absolute_add_remove_quantity(item_quantity: int, add_remove_mode: str):
+    sheet.column_dimensions[col_letter].width = max_length + 2
+
+
+def absolute_add_remove_quantity(item_quantity: int, add_remove_mode: str) -> int:
+    """
+    Return the integer quantity (positive or negative) from a given quantity and transaction mode.
+
+    Args:
+        item_quantity (int): The integer quantity of the :class:`~core.models.Item`
+        add_remove_mode (str): Representation of the transaction type (whether adding/removing).
+
+    Returns:
+        int: The integer quantity of the :class:`~core.models.Item` being updated in inventory (positive for adding and negative for removing).
+    """
     quantity = abs(item_quantity)
     if add_remove_mode.lower() == "out":
         quantity = quantity * -1
-    
+
     return quantity
 
-def get_searchable_fields(model):
+
+def get_searchable_fields(model) -> list:
+    """
+    Returns a list of searchable fields for a given model.
+    Includes text fields, numerical fields, and text fields that are foreign keys.
+
+    Args:
+        model (_type_): The Django model to consider.
+
+    Returns:
+        list: The list of names of fields that are searchable for the model.
+    """
     fields = []
     for f in model._meta.get_fields():
         # Direct text fields
@@ -166,17 +206,24 @@ def get_searchable_fields(model):
             for rf in related_model._meta.get_fields():
                 if isinstance(rf, (CharField, TextField)) and not rf.is_relation:
                     fields.append(f"{f.name}__{rf.name}")
-    
+
     return fields
 
-def get_database_status():
-    status = cache.get('database_status')
+
+def get_database_status() -> str:
+    """
+    Gets the database status as a string.
+
+    Returns:
+        str: String representation of the database status
+    """
+    status = cache.get("database_status")
     if status is None:
         try:
             with connection.cursor() as cursor:
-                cursor.execute('SELECT 1')
+                cursor.execute("SELECT 1")
                 cursor.fetchone()
-            db_file = settings.DATABASES['default']['NAME']
+            db_file = settings.DATABASES["default"]["NAME"]
             if not os.path.exists(db_file):
                 status = "Disconnected: Database file not found"
             elif not os.access(db_file, os.R_OK | os.W_OK):
@@ -184,12 +231,16 @@ def get_database_status():
             else:
                 with sqlite3.connect(db_file) as conn:
                     cursor = conn.cursor()
-                    cursor.execute('PRAGMA integrity_check')
+                    cursor.execute("PRAGMA integrity_check")
                     result = cursor.fetchone()
-                    status = "Connected" if result[0] == 'ok' else f"Disconnected: Database integrity check failed ({result[0]})"
+                    status = (
+                        "Connected"
+                        if result[0] == "ok"
+                        else f"Disconnected: Database integrity check failed ({result[0]})"
+                    )
         except OperationalError as e:
             status = f"Disconnected: Database error ({str(e)})"
         except Exception as e:
             status = f"Disconnected: Unexpected error ({str(e)})"
-        cache.set('database_status', status, timeout=60)  # Cache for 60 seconds
+        cache.set("database_status", status, timeout=60)  # Cache for 60 seconds
     return status

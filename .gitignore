@@ -128,3 +128,8 @@ Control.ca-list
 Control.ca-bundle 
 Control.system-ca-bundle 
 GitHub.sublime-settings 
+
+data/*
+*.7z
+core/static/*
+docs/_build/*

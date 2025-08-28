@@ -30,7 +30,7 @@ class OrderAdmin(admin.ModelAdmin):
             ),
         ]
         return custom_urls + urls
-    
+
     def import_excel(self, request):
         """Defines form for uploading an Excel document containing transaction ledger data."""
         if request.method == "POST":
@@ -44,19 +44,20 @@ class OrderAdmin(admin.ModelAdmin):
                 return HttpResponseRedirect("../")
         else:
             form = ExcelUploadForm()
-        
+
         return render(
             request, "admin/import_excel.html", {"form": form, "title": "Import Excel"}
         )
-    
+
     # Select fields to display on the admin panel
-    list_display = ['item_no', 'descr', 'po_date', 'rcv_date']
+    list_display = ["item_no", "descr", "po_date", "rcv_date"]
 
     def descr(self, obj):
         return obj.item.descr
-    
+
     def item_no(self, obj):
         return obj.item.item_no
+
 
 class ItemAdmin(admin.ModelAdmin):
     def changelist_view(self, request, extra_context=None):
