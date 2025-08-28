@@ -65,12 +65,21 @@
 
 .d-flex.gap-2 {
     gap: 0.75rem !important;
+    flex-wrap: nowrap;
 }
 
 .btn {
-    padding: 0.5rem 1.5rem;
+    padding: 0.5rem 1rem;
     font-weight: 500;
     transition: all 0.3s ease;
+    min-width: 120px;
+    white-space: nowrap;
+    text-align: center;
+}
+
+#filter-button, #reset-button, #download-graphs-button, #export-to-excel-button {
+    max-width: 12%;
+    min-width: 200px;
 }
 
 .btn-primary:hover {
@@ -86,6 +95,10 @@
 .btn-danger:hover {
     background-color: #c82333;
     border-color: #bd2130;
+}
+
+.form-container .d-flex.gap-2 .btn {
+    flex: 1 0 auto;
 }
 
 #ChartContainer {
@@ -226,9 +239,9 @@
             </div>
         </div>
         <div class="row mb-3 mt-3">
-            <div class="col-md-4 d-flex gap-2">
+            <div class="col-md-9 d-flex gap-2">
                 <button type="submit" class="btn btn-primary w-50" id="filter-button">Filter</button>
-                <a href="{% url 'export-orders' %}?start_date={{ start_date }}&end_date={{ end_date }}" class="btn btn-success w-50">Export to Excel</a>
+                <a href="{% url 'export-orders' %}?start_date={{ start_date }}&end_date={{ end_date }}" class="btn btn-success w-50" id="export-to-excel-button">Export to Excel</a>
                 <a href="/orders_advanced" class="btn btn-danger w-50" id="reset-button">Reset Dates</a>
                 <button type="button" class="btn btn-info w-50" id="download-graphs-button" onclick="saveGraphs()">Save Graphs</button>
             </div>
