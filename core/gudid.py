@@ -31,7 +31,10 @@ def call_api(udi=None, headers=None):
 def create_item_from_id(udi):
     if udi == None:
         return None
+    
     response = call_api(udi,)
+    if response is None:
+        return None
     response_string = json.dumps(response)
     gudid_parsed = GudidResponse.model_validate_json(response_string)
     #TODO: check if item exists before adding it
