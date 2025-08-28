@@ -1,3 +1,5 @@
+"""Configures models for display and define forms used in the Admin view of the `Core` app."""
+
 import pandas as pd
 from django.contrib import admin
 from django.http import HttpResponseRedirect
@@ -5,7 +7,7 @@ from django.shortcuts import render
 from django.urls import path, reverse
 
 from .forms import ExcelUploadForm, UDI_Form
-from .models import Order, Item
+from .models import Item, Order
 from .utils import dict_from_excel_row
 from .gudid import create_item_from_id
 
@@ -21,7 +23,11 @@ class OrderAdmin(admin.ModelAdmin):
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
-            path("import-excel/", self.admin_site.admin_view(self.import_excel), name="import_excel"),
+            path(
+                "import-excel/",
+                self.admin_site.admin_view(self.import_excel),
+                name="import_excel",
+            ),
         ]
         return custom_urls + urls
     
@@ -39,8 +45,9 @@ class OrderAdmin(admin.ModelAdmin):
         else:
             form = ExcelUploadForm()
         
-
-        return render(request, "admin/import_excel.html", {"form": form, "title": "Import Excel"})
+        return render(
+            request, "admin/import_excel.html", {"form": form, "title": "Import Excel"}
+        )
     
     # Select fields to display on the admin panel
     list_display = ['item_no', 'descr', 'po_date', 'rcv_date']
@@ -78,7 +85,9 @@ class ItemAdmin(admin.ModelAdmin):
         else:
             form = UDI_Form()
 
-        return render(request, "admin/import_udi.html", {"form": form, "title": "Import UDI"})
+        return render(
+            request, "admin/import_udi.html", {"form": form, "title": "Import UDI"}
+        )
 
 # Register your models here.
 admin.site.register(Order, OrderAdmin)
