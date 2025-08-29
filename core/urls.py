@@ -23,6 +23,7 @@ from django.urls import include, path
 from . import views
 
 urlpatterns = [
+    path("devices/", views.DeviceDetailsView.as_view(), name="device-details"),
     path("items/", views.ItemDetailsView.as_view(), name="item-details"),
     path("orders/", views.OrderDetailsView.as_view(), name="order-details"),
     path("item-transactions/", views.ItemTransactionView.as_view(), name="itemtransaction-details"),

@@ -158,7 +158,20 @@ class ProductCodeEntry(NullToEmptyStrModel):
     deviceName: Optional[str] = ""
     medicalSpecialty: Optional[str] = ""
 
+class Udi(NullToEmptyStrModel):
+    udi: Optional[str] = ""
+    issuingAgency: Optional[str] = ""
+    di: Optional[str] = ""
+    manufacturingDateOriginal: Optional[str] = ""
+    manufacturingDateOriginalFormat: Optional[str] = ""
+    manufacturingDate: Optional[str] = ""
+    expirationDateOriginal: Optional[str] = ""
+    expirationDateOriginalFormat: Optional[str] = ""
+    expirationDate: Optional[str] = ""
+    lotNumber: Optional[str] = ""
+
 
 class GudidResponse(NullToEmptyStrModel):
     gudid: GudidDevice
     productCodes: Optional[List[ProductCodeEntry]]
+    udi: Udi

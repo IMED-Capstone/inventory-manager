@@ -9,7 +9,7 @@ from django.urls import path, reverse
 from .forms import ExcelUploadForm, UDI_Form
 from .models import Item, Order
 from .utils import dict_from_excel_row
-from .gudid import create_item_from_id
+from .gudid import add_item_from_udi
 
 
 class OrderAdmin(admin.ModelAdmin):
@@ -79,9 +79,7 @@ class ItemAdmin(admin.ModelAdmin):
             form = UDI_Form(request.POST)
             if form.is_valid():
                 udi_input = form.cleaned_data["udi_input"]
-                if (udi_input[0] == "\\" and udi_input[-1] == "\\"):
-                    udi_input = udi_input[1:-1]
-                create_item_from_id(udi_input)
+                add_item_from_udi(udi_input, 1)
                 return HttpResponseRedirect("../")
         else:
             form = UDI_Form()

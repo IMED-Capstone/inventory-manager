@@ -4,6 +4,25 @@ from django.db import models
 from djmoney.models.fields import MoneyField
 
 
+class Device(models.Model):
+    device_identifier = models.CharField("DI", max_length=200)
+    # current_count = models.IntegerField("CURR COUNT", default=0)
+
+    # def modify_count(self, number_change):
+    #     self.current_count = self.current_count + number_change
+    #     return self.current_count
+
+    @property
+    def quantity(self):
+        return self.items.aggregate(total=models.Sum("current_count"))["total"] or 0
+    
+    def __str__(self):
+        """
+        Defines the string representation of the :class:`~core.models.Device`
+        In this case, is defined as the `device_indentifier` field, which represents an :class:`~core.models.Device` number.
+        """
+        return self.device_identifier
+
 class Item(models.Model):
     """Defines an :class:`~core.models.Item` model representing an individual item in inventory."""
 
@@ -13,11 +32,21 @@ class Item(models.Model):
     mfr_cat = models.CharField("MFR CAT", max_length=200)
     descr = models.CharField("DESCR", max_length=200)
     par_level = models.PositiveIntegerField(blank=True, default=1)
+    device = models.ForeignKey(Device, on_delete=models.PROTECT, related_name="items", null=True)
+    current_count = models.IntegerField("CURR COUNT", default=0)
     external_url = models.URLField(
         max_length=200,
         default="https://accessgudid.nlm.nih.gov/resources/developers/v3/device_lookup_api",
     )
 
+    def increase_count(self, number_change):
+        self.current_count = self.current_count + number_change
+        return self.current_count
+    
+    def decrease_count(self, number_change):
+        self.current_count = self.current_count - number_change
+        return self.current_count
+    
     @property
     def quantity(self):
         """
@@ -26,7 +55,8 @@ class Item(models.Model):
         Returns:
             int: the number of :class:`Items <core.models.Item>` in inventory, as calculated from its transaction history.
         """
-        return self.transactions.aggregate(total=models.Sum("change"))["total"] or 0
+        return self.current_count
+        #self.transactions.aggregate(total=models.Sum("change"))["total"] or 0
 
     def __str__(self):
         """

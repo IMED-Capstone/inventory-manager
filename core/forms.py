@@ -20,7 +20,7 @@ class AddRemoveItemsByBarcodeForm(forms.Form):
     The minimum quantity of an :class:`~core.models.Item` for any given transaction is 1 (therefore assumes whole items are registered per-transaction for any transaction type).
     """
 
-    barcode = forms.CharField(widget=forms.TextInput(attrs={"disabled": "disabled"}))
+    barcode = forms.CharField()
     add_remove = forms.ChoiceField(
         choices=[("in", "Add Items"), ("out", "Remove Items")],
         widget=forms.RadioSelect(attrs={"class": "btn-check", "autocomplete": "off"}),

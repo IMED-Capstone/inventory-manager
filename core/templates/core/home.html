@@ -22,6 +22,8 @@
                                     <img class="card-img-top mb-3" src="{% static 'core/cart.svg' %}"/>
                                 {% elif model_name|lower == "itemtransaction" %}
                                     <img class="card-img-top mb-3" src="{% static 'core/arrow-down-up.svg' %}"/>
+                                {% elif model_name|lower == "device" %}
+                                    <img class="card-img-top mb-3" src="{% static 'core/device-icon.svg' %}"/>
                                 {% endif %}
                                 <h6 class="card-title">{{ model_name|camel_to_words|add:"s" }}</h6>
                                 <p class="card-text">{{ model_name|camel_to_words }} Count: {{ model_count }}</p>
