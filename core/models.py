@@ -5,12 +5,18 @@ from djmoney.models.fields import MoneyField
 
 
 class Device(models.Model):
+    manufacturer = models.CharField("MANUFACTURER", max_length=200, null=True)
+    device_name = models.CharField("NAME", max_length=200,null=True)
     device_identifier = models.CharField("DI", max_length=200)
-    # current_count = models.IntegerField("CURR COUNT", default=0)
-
-    # def modify_count(self, number_change):
-    #     self.current_count = self.current_count + number_change
-    #     return self.current_count
+    current_count = models.IntegerField("CURR COUNT", default=0)
+    
+    def increase_count(self, number_change):
+        self.current_count = self.current_count + number_change
+        return self.current_count
+    
+    def decrease_count(self, number_change):
+        self.current_count = self.current_count - number_change
+        return self.current_count
 
     @property
     def quantity(self):
@@ -34,6 +40,7 @@ class Item(models.Model):
     par_level = models.PositiveIntegerField(blank=True, default=1)
     device = models.ForeignKey(Device, on_delete=models.PROTECT, related_name="items", null=True)
     current_count = models.IntegerField("CURR COUNT", default=0)
+    exp_date = models.DateField("EXP DATE", null=True)
     external_url = models.URLField(
         max_length=200,
         default="https://accessgudid.nlm.nih.gov/resources/developers/v3/device_lookup_api",

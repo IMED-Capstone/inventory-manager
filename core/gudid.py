@@ -3,6 +3,7 @@ import json
 import pydantic
 from .response import GudidResponse
 from .models import Device, Item
+import datetime
 
 def call_api(udi=None, headers=None):
     """
@@ -41,6 +42,8 @@ def add_item_from_udi(udi, quantity):
     gudid_parsed = GudidResponse.model_validate_json(response_string)
     #Check if device exists, if not, create a new device with the corresponding DI, otherwise store the existing device into a variable to be used for item creation
     device_info = {
+            "manufacturer": gudid_parsed.gudid.device.companyName,
+            "device_name": gudid_parsed.gudid.device.brandName,
             "device_identifier": gudid_parsed.udi.di
     }
     parsed_di = gudid_parsed.udi.di
@@ -55,13 +58,17 @@ def add_item_from_udi(udi, quantity):
             "descr": gudid_parsed.gudid.device.deviceDescription,
             "par_level": 1,
             "device": device_instance,
-            "current_count": 1,
+            "current_count": 0,
+            "exp_date": datetime.datetime.strptime(gudid_parsed.udi.expirationDate, "%Y-%m-%d"),
             "external_url": "https://accessgudid.nlm.nih.gov/api/v3/devices/lookup.json?udi=" + udi,
         }
     
-    item_instance, item_flag = Item.objects.get_or_create(item_no=item_info["item"], defaults=item_info)
-    #If an item already existed, add to the device current count
+    item_instance, item_flag = Item.objects.get_or_create(item_no=item_info["item_no"], defaults=item_info)
+    #Add to the device and item current count
+    device_instance.increase_count(quantity)
     item_instance.increase_count(quantity)
+    device_instance.save()
+    item_instance.save()
     return item_instance
 
 #Remove an item object from an UDI ID
@@ -72,5 +79,9 @@ def remove_item_from_udi(udi, quantity):
     if (udi_input[0] == "\\" and udi_input[-1] == "\\"):
                     udi_input = udi_input[1:-1]
     item_instance = Item.objects.filter(item=udi_input)[0]
+    device_instance = item_instance.device
+    device_instance.decrease_count(quantity)
     item_instance.decrease_count(quantity)
+    device_instance.save()
+    item_instance.save()
     return item_instance

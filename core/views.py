@@ -101,6 +101,11 @@ class DeviceDetailsView(ListView):
         """Populates data for the template."""
         context = super().get_context_data(**kwargs)
 
+        #TODO: Fix this
+        all_fields = [field.name for field in Device._meta.fields]
+        context["fields"] = all_fields + [
+            "quantity"
+        ]  # add quantity explicitly if you want
         return context
 
 
