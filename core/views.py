@@ -583,45 +583,48 @@ class OrderDetailsView(ListView):
         """Populates data for the template."""
         context = super().get_context_data(**kwargs)
 
-        lower_date_bound = (
-            Order.objects.order_by("po_date").first().po_date.strftime("%Y-%m-%d")
-        )
-        upper_date_bound = timezone.localtime(timezone.now()).strftime("%Y-%m-%d")
+        if not context["orders"]:
+            context["message"] = "No orders available yet."
+        else:
+            lower_date_bound = (
+                Order.objects.order_by("po_date").first().po_date.strftime("%Y-%m-%d")
+            )
+            upper_date_bound = timezone.localtime(timezone.now()).strftime("%Y-%m-%d")
 
-        all_fields = [field.name for field in Order._meta.fields]
-        excluded_fields = [
-            "id",
-            "price_currency",
-            "total_cost_currency",
-            "item_no",
-            "dbo_vend_name",
-            "expr1010",
-        ]
-        included_fields = [f for f in all_fields if f not in excluded_fields]
+            all_fields = [field.name for field in Order._meta.fields]
+            excluded_fields = [
+                "id",
+                "price_currency",
+                "total_cost_currency",
+                "item_no",
+                "dbo_vend_name",
+                "expr1010",
+            ]
+            included_fields = [f for f in all_fields if f not in excluded_fields]
 
-        params = self.request.GET.copy()
-        params.pop("page", None)
-        params.pop("sort", None)
-        context["query_string"] = params.urlencode()
+            params = self.request.GET.copy()
+            params.pop("page", None)
+            params.pop("sort", None)
+            context["query_string"] = params.urlencode()
 
-        context.update(
-            {
-                "start_date": self.start_date.strftime("%Y-%m-%d"),
-                "end_date": self.end_date.strftime("%Y-%m-%d"),
-                "lower_date_bound": lower_date_bound,
-                "upper_date_bound": upper_date_bound,
-                "fields": included_fields,
-                "per_page": self.request.GET.get("per_page", self.paginate_by),
-                "per_page_options": [25, 50, 100, "All"],
-                "search_field": self.request.GET.get("search_field", ""),
-                "orders_count": context["paginator"].count
-                if "paginator" in context
-                else 0,
-                "sort": self.request.GET.get("sort", "-po_date"),
-            }
-        )
+            context.update(
+                {
+                    "start_date": self.start_date.strftime("%Y-%m-%d"),
+                    "end_date": self.end_date.strftime("%Y-%m-%d"),
+                    "lower_date_bound": lower_date_bound,
+                    "upper_date_bound": upper_date_bound,
+                    "fields": included_fields,
+                    "per_page": self.request.GET.get("per_page", self.paginate_by),
+                    "per_page_options": [25, 50, 100, "All"],
+                    "search_field": self.request.GET.get("search_field", ""),
+                    "orders_count": context["paginator"].count
+                    if "paginator" in context
+                    else 0,
+                    "sort": self.request.GET.get("sort", "-po_date"),
+                }
+            )
 
-        context["search_term"] = self.request.GET.get("search_term", "")
+            context["search_term"] = self.request.GET.get("search_term", "")
 
         return context
 
