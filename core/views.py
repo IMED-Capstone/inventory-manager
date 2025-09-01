@@ -160,7 +160,9 @@ class ItemDetailsView(ListView):
         ).order_by("-po_date")
         item_ids = filtered_orders.values_list("item", flat=True).distinct()
 
-        items_qs = Item.objects.filter(id__in=item_ids)
+        # items_qs = Item.objects.filter(id__in=item_ids)
+        # Bypassing order date filtering
+        items_qs = Item.objects.all()
 
         search_field = self.request.GET.get("search_field")
         search_term = self.request.GET.get("search_term")
@@ -192,9 +194,7 @@ class ItemDetailsView(ListView):
 
         self.items_count = items_qs.count()
 
-        #return items_qs
-        #TODO: readd filter, returning all items for now for testing purposes
-        return Item.objects.all()
+        return items_qs
 
     def get_context_data(self, **kwargs):
         """Populates data for the template."""
@@ -1158,20 +1158,23 @@ class ManageInventoryView(LoginRequiredMixin, TemplateView):
         if self.request.method == "GET":
             if self.request.GET.get("lookup_by_id") is not None:
                 item_id = self.request.GET.get("lookup_by_id")
-                if Item.objects.filter(item_no=item_id).exists():
-                    context["lookup_by_id"] = item_id
-                    initial_data["barcode"] = item_id
-                else:
-                    base_url = reverse_lazy("admin:core_item_add")
-                    query_string = urlencode({"item": item_id, "item_no": item_id})
-                    add_item_url = f"{base_url}?{query_string}"
-                    context["lookup_by_id"] = ""
-                    messages.error(
-                        self.request,
-                        mark_safe(
-                            f'Item with ID "{item_id}" does not exist. Click <a href="{add_item_url}">here</a> to create.'
-                        ),
-                    )
+                context["lookup_by_id"] = item_id
+                initial_data["barcode"] = item_id
+                # No need to check if item exists anymore, handled by other methods
+                # if Item.objects.filter(item_no=item_id).exists():
+                #     context["lookup_by_id"] = item_id
+                #     initial_data["barcode"] = item_id
+                # else:
+                #     base_url = reverse_lazy("admin:core_item_add")
+                #     query_string = urlencode({"item": item_id, "item_no": item_id})
+                #     add_item_url = f"{base_url}?{query_string}"
+                #     context["lookup_by_id"] = ""
+                #     messages.error(
+                #         self.request,
+                #         mark_safe(
+                #             f'Item with ID "{item_id}" does not exist. Click <a href="{add_item_url}">here</a> to create.'
+                #         ),
+                #     )
 
         form = AddRemoveItemsByBarcodeForm(initial=initial_data)
         context["add_remove_items_by_barcode_form"] = form
@@ -1208,9 +1211,6 @@ class AddRemoveItemsByBarcodeView(LoginRequiredMixin, View):
     def post(self, request):
         """Updates the backend with the new :class:`~core.models.Item` quantity."""
         form = AddRemoveItemsByBarcodeForm(request.POST)
-        for field in form:
-            print(field.data)
-            print("Field Error:", field.name,  field.errors)
         if form.is_valid():
             barcode = form.cleaned_data["barcode"]
             add_remove = form.cleaned_data["add_remove"]
@@ -1220,23 +1220,50 @@ class AddRemoveItemsByBarcodeView(LoginRequiredMixin, View):
                 f"Action: {add_remove}, Barcode: {barcode}, Quantity: {item_quantity}"
             )
 
-            #item = Item.objects.filter(item=barcode)[0]
             #If user is trying to add an item, if it doesn't exist it creates the item from ID, if it already exists add to the count
             if add_remove == "in":
                 item = add_item_from_udi(barcode, item_quantity)
-                ItemTransaction.objects.create(
-                    item=item,
-                    transaction_type=add_remove,
-                    change=absolute_add_remove_quantity(item_quantity, add_remove),
-                )
+                if item:
+                    ItemTransaction.objects.create(
+                        item=item,
+                        transaction_type=add_remove,
+                        change=absolute_add_remove_quantity(item_quantity, add_remove),
+                    )
+                    messages.success(
+                        self.request,
+                        mark_safe(
+                            f'Successfully added {item_quantity} of {barcode} ({item.item})'
+                        ),
+                    )
+                else:
+                    messages.error(
+                        self.request,
+                        mark_safe(
+                            f'There was an error adding this item, please check that {barcode} is a valid UDI'
+                        ),
+                    )
             #If user is trying to remove items, if it doesn't exist nothing happens, if it does then subtract from the count
             if add_remove == "out":
-                remove_item_from_udi(barcode, item_quantity)
-                ItemTransaction.objects.create(
-                    item=item,
-                    transaction_type=add_remove,
-                    change=absolute_add_remove_quantity(item_quantity, add_remove),
-                )
+                item = remove_item_from_udi(barcode, item_quantity)
+                if item:
+                    ItemTransaction.objects.create(
+                        item=item,
+                        transaction_type=add_remove,
+                        change=absolute_add_remove_quantity(item_quantity, add_remove),
+                    )
+                    messages.success(
+                        self.request,
+                        mark_safe(
+                            f'Successfully removed {item_quantity} of {barcode}({item.item})'
+                        ),
+                    )
+                else:
+                    messages.error(
+                        self.request,
+                        mark_safe(
+                            f'There was an error removing this item, please check that {barcode} is a valid UDI'
+                        ),
+                    )
 
             query_string = urlencode(
                 {

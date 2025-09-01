@@ -50,6 +50,7 @@ def add_item_from_udi(udi, quantity):
     device_instance, device_flag = Device.objects.get_or_create(device_identifier=parsed_di, defaults=device_info)
 
     #Create a new item for the UDI that was scanned in
+    #TODO: add customer contact info
     item_info = {
             "item": gudid_parsed.productCodes[0].deviceName,
             "item_no": gudid_parsed.udi.udi,
@@ -60,7 +61,7 @@ def add_item_from_udi(udi, quantity):
             "device": device_instance,
             "current_count": 0,
             "exp_date": datetime.datetime.strptime(gudid_parsed.udi.expirationDate, "%Y-%m-%d"),
-            "external_url": "https://accessgudid.nlm.nih.gov/api/v3/devices/lookup.json?udi=" + udi,
+            "external_url": "https://accessgudid.nlm.nih.gov/api/v3/devices/lookup.json?udi=" + gudid_parsed.udi.udi,
         }
     
     item_instance, item_flag = Item.objects.get_or_create(item_no=item_info["item_no"], defaults=item_info)
@@ -78,7 +79,11 @@ def remove_item_from_udi(udi, quantity):
     udi_input = udi
     if (udi_input[0] == "\\" and udi_input[-1] == "\\"):
                     udi_input = udi_input[1:-1]
-    item_instance = Item.objects.filter(item=udi_input)[0]
+    #TODO: check if item exists, otherwise return None
+    item_instances = Item.objects.filter(item_no=udi_input)
+    if not item_instances:
+          return None
+    item_instance = item_instances[0]
     device_instance = item_instance.device
     device_instance.decrease_count(quantity)
     item_instance.decrease_count(quantity)
