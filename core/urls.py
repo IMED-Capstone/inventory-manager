@@ -35,6 +35,7 @@ urlpatterns = [
     path("about", views.AboutView.as_view(), name="about"),
     path("profile", views.ProfileView.as_view(), name="profile"),
     path("pagination", views.PaginationView.as_view(), name="pagination"),
+    path("future-orders/", views.FutureOrdersView.as_view(), name="future-orders"),
     path("", views.HomePageView.as_view(), name="home"),
     path("data-browser/", include("data_browser.urls")),
 ]

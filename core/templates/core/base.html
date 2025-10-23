@@ -65,6 +65,9 @@
             <li class="nav-item">
                 <a class="nav-link {% if request.resolver_match.url_name == 'itemtransaction-details' %}active{% endif %}" href="{% url 'itemtransaction-details' %}">Item Transactions</a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'future-orders' %}active{% endif %}" href="{% url 'future-orders' %}">Future Orders</a>
+            </li>
             <div class="d-flex ms-auto gap-2">
                 <li class="nav-item">
                     <a class="nav-link btn btn-primary {% if request.resolver_match.url_name == 'manage-inventory' or request.resolver_match.url_name == 'add_remove_itms_by_barcode' %}active{% endif %}" href="{% url 'manage-inventory' %}">Manage Inventory</a>

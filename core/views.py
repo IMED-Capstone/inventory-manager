@@ -1148,6 +1148,69 @@ class OrderDetailsAdvancedView(TemplateView):
         return super().dispatch(request, *args, **kwargs)
 
 
+class FutureOrdersView(TemplateView):
+    """Provides graphs/visualizations of :class:`Orders <core.models.Order>`, selectable by date range."""
+
+    template_name = "core/future_orders.html"
+
+    def get_context_data(self, **kwargs):
+        """Populates data for the template."""
+        context = super().get_context_data(**kwargs)
+        return context
+
+    def dispatch(self, request, *args, **kwargs):
+        """Ensures that URL start date and end date parameters match the selected quarter."""
+        if request.method == "GET":
+            quarter_str = self.request.GET.get("quarter")
+            if quarter_str:
+                start_date = timezone.make_aware(
+                    datetime.datetime.combine(
+                        datetime.datetime.strptime(quarter_str, "%B %Y"),
+                        datetime.time(0, 0, 0, 0),
+                    )
+                )
+                end_date = self.get_end_date_for_quarter(start_date)
+
+                start_date_str = self.request.GET.get("start_date")
+                end_date_str = self.request.GET.get("end_date")
+
+                start_date_from_request = (
+                    timezone.make_aware(
+                        datetime.datetime.combine(
+                            parse_date(start_date_str), datetime.time(0, 0, 0, 0)
+                        )
+                    )
+                    if start_date_str
+                    else None
+                )
+                end_date_from_request = (
+                    timezone.make_aware(
+                        datetime.datetime.combine(
+                            parse_date(end_date_str), datetime.time(23, 59, 59, 999999)
+                        )
+                    )
+                    if end_date_str
+                    else None
+                )
+
+                if (
+                    trunc_datetime(start_date)
+                    != trunc_datetime(start_date_from_request)
+                ) and (
+                    trunc_datetime(end_date) != trunc_datetime(end_date_from_request)
+                ):
+                    new_params = {
+                        "start_date": start_date.strftime("%Y-%m-%d"),
+                        "quarter": quarter_str,
+                        "end_date": end_date.strftime("%Y-%m-%d"),
+                    }
+
+                    new_url = f"{request.path}?{urlencode(new_params)}"
+                    return redirect(new_url)
+
+        return super().dispatch(request, *args, **kwargs)
+
+
 class ManageInventoryView(LoginRequiredMixin, TemplateView):
     """
     Defines the view for the Manage Inventory View.
