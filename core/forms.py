@@ -9,6 +9,9 @@ class ExcelUploadForm(forms.Form):
 
     excel_file = forms.FileField(label="Upload Excel File")
 
+class UDI_Form(forms.Form):
+    """Used in the admin panel for uploading an UDI containing item data using a barcode."""
+    udi_input = forms.CharField(max_length = 200, label="Scan UDI barcode or manually enter a UDI")
 
 class AddRemoveItemsByBarcodeForm(forms.Form):
     """
@@ -17,7 +20,7 @@ class AddRemoveItemsByBarcodeForm(forms.Form):
     The minimum quantity of an :class:`~core.models.Item` for any given transaction is 1 (therefore assumes whole items are registered per-transaction for any transaction type).
     """
 
-    barcode = forms.CharField(widget=forms.TextInput(attrs={"disabled": "disabled"}))
+    barcode = forms.CharField()
     add_remove = forms.ChoiceField(
         choices=[("in", "Add Items"), ("out", "Remove Items")],
         widget=forms.RadioSelect(attrs={"class": "btn-check", "autocomplete": "off"}),

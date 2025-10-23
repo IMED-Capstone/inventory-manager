@@ -2,7 +2,7 @@
 
 {% load django_bootstrap5 %}
 {% load bootstrap_icons %}
-{% load item_details_extras %}
+{%load device_details_extras %}
 
 {% block content %}
 
@@ -161,7 +161,8 @@
     }
 }
 
-.no-items {
+
+.no-devices {
     text-align: center;
     font-size: 1rem;
     color: #6c757d;
@@ -171,6 +172,7 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     margin-top: 1rem;
 }
+
 </style>
 
 <div id="DateHeader">
@@ -192,13 +194,13 @@
                 <small id="endHelp" class="form-text text-muted">Select end date for the range.</small>
             </div>
             <div class="col-md-4">
-                <label for="per_page" class="form-label">Items per page:</label>
+                <label for="per_page" class="form-label">Devices per page:</label>
                 <select class="form-select" name="per_page" id="per_page" onchange="this.form.submit()" aria-describedby="paginatorHelp">
                     {% for option in per_page_options %}
                         <option value="{{ option }}" {% if per_page|stringformat:"s" == option|stringformat:"s" %}selected{% endif %}>{{ option }}</option>
                     {% endfor %}
                 </select>
-                <small id="paginatorHelp" class="form-text text-muted">Items to display per page.</small>
+                <small id="paginatorHelp" class="form-text text-muted">Devices to display per page.</small>
             </div>
         </div>
 
@@ -229,13 +231,13 @@
                 <a href="{% url 'export-orders' %}?start_date={{ start_date }}&end_date={{ end_date }}" class="btn btn-success w-50">
                     Export to Excel
                 </a>
-                <a href="/items" class="btn btn-danger w-50" id="reset-button">Reset Dates</a>
+                <a href="/devices" class="btn btn-danger w-50" id="reset-button">Reset Dates</a>
             </div>
         </div>
     </form>
 </div>
 
-{% if items %}
+{% if devices %}
 
     {% if is_paginated %}
     <nav aria-label="Pagination">
@@ -264,7 +266,7 @@
                 {% endif %}
             </ul>
             <div class="text-muted small">
-                Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ items_count }} total items
+                Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ device_count }} total devices
             </div>
         </div>
     </nav>
@@ -287,10 +289,10 @@
             </tr>
         </thead>
         <tbody>
-            {% for item in items %}
+            {% for device in devices %}
                 <tr>
                     {% for field in fields %}
-                        {% with value=item|get_field_value:field %}
+                        {% with value=device|get_field_value:field %}
                             {% if field == "external_url" %}
                                 {% if value %}
                                     <td>
@@ -309,7 +311,7 @@
             {% empty %}
                 <tr>
                     <td colspan="{{ fields|length }}" class="text-center text-muted py-4">
-                        No items found. Try adjusting the date range or filters.
+                        No devices found. Try adjusting the date range or filters.
                     </td>
                 </tr>
             {% endfor %}
@@ -343,14 +345,14 @@
                 {% endif %}
             </ul>
             <div class="text-muted small">
-                Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ items_count }} total items
+                Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ device_count }} total devices
             </div>
         </div>
     </nav>
     {% endif %}
 
 {% else %}
-    <p class="no-items">{{ message|default:"No items found." }}</p>
+    <p class="no-devices">{{ message|default:"No devices found." }}</p>
 {% endif %}
 
 {% endblock %}

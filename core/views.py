@@ -41,7 +41,7 @@ from djmoney.money import Money
 from openpyxl.styles import NamedStyle
 
 from .forms import AddRemoveItemsByBarcodeForm
-from .models import Item, ItemTransaction, Order
+from .models import Device, Item, ItemTransaction, Order
 from .utils import (
     absolute_add_remove_quantity,
     get_database_status,
@@ -49,6 +49,7 @@ from .utils import (
     style_excel_sheet,
     trunc_datetime,
 )
+from .gudid import add_item_from_udi, remove_item_from_udi
 
 
 class HomePageView(TemplateView):
@@ -85,6 +86,30 @@ class PaginationView(TemplateView):
             # If page is out of range (e.g. 9999), deliver last page of results.
             show_lines = paginator.page(paginator.num_pages)
         context["lines"] = show_lines
+        return context
+
+class DeviceDetailsView(ListView):
+    """Defines the view for the :class:`~core.models.Device` Details View"""
+    model = Device
+    template_name = "core/device_details.html"
+    context_object_name = "devices"
+
+    def get_queryset(self):
+        return Device.objects.all()
+
+    def get_context_data(self, **kwargs):
+        """Populates data for the template."""
+        context = super().get_context_data(**kwargs)
+
+        #TODO: Fix this
+        all_fields = [field.name for field in Device._meta.fields]
+        context["fields"] = all_fields + [
+            "quantity"
+        ]  # add quantity explicitly if you want
+
+        if not context["devices"]:
+            context["message"] = "No devices available yet."
+
         return context
 
 
@@ -139,7 +164,9 @@ class ItemDetailsView(ListView):
         ).order_by("-po_date")
         item_ids = filtered_orders.values_list("item", flat=True).distinct()
 
-        items_qs = Item.objects.filter(id__in=item_ids)
+        # items_qs = Item.objects.filter(id__in=item_ids)
+        # Bypassing order date filtering
+        items_qs = Item.objects.all()
 
         search_field = self.request.GET.get("search_field")
         search_term = self.request.GET.get("search_term")
@@ -197,9 +224,12 @@ class ItemDetailsView(ListView):
         context["items_count"] = getattr(self, "items_count", 0)
 
         all_fields = [field.name for field in Item._meta.fields]
-        context["fields"] = all_fields + [
-            "quantity"
-        ]  # add quantity explicitly if you want
+
+        context["fields"] = all_fields
+        #Quantity has been depracated with new infrastructure
+        # context["fields"] = all_fields + [
+        #     "quantity"
+        # ]  # add quantity explicitly if you want
 
         context["request"] = self.request
 
@@ -1135,20 +1165,23 @@ class ManageInventoryView(LoginRequiredMixin, TemplateView):
         if self.request.method == "GET":
             if self.request.GET.get("lookup_by_id") is not None:
                 item_id = self.request.GET.get("lookup_by_id")
-                if Item.objects.filter(item=item_id).exists():
-                    context["lookup_by_id"] = item_id
-                    initial_data["barcode"] = item_id
-                else:
-                    base_url = reverse_lazy("admin:core_item_add")
-                    query_string = urlencode({"item": item_id, "item_no": item_id})
-                    add_item_url = f"{base_url}?{query_string}"
-                    context["lookup_by_id"] = ""
-                    messages.error(
-                        self.request,
-                        mark_safe(
-                            f'Item with ID "{item_id}" does not exist. Click <a href="{add_item_url}">here</a> to create.'
-                        ),
-                    )
+                context["lookup_by_id"] = item_id
+                initial_data["barcode"] = item_id
+                # No need to check if item exists anymore, handled by other methods
+                # if Item.objects.filter(item_no=item_id).exists():
+                #     context["lookup_by_id"] = item_id
+                #     initial_data["barcode"] = item_id
+                # else:
+                #     base_url = reverse_lazy("admin:core_item_add")
+                #     query_string = urlencode({"item": item_id, "item_no": item_id})
+                #     add_item_url = f"{base_url}?{query_string}"
+                #     context["lookup_by_id"] = ""
+                #     messages.error(
+                #         self.request,
+                #         mark_safe(
+                #             f'Item with ID "{item_id}" does not exist. Click <a href="{add_item_url}">here</a> to create.'
+                #         ),
+                #     )
 
         form = AddRemoveItemsByBarcodeForm(initial=initial_data)
         context["add_remove_items_by_barcode_form"] = form
@@ -1194,14 +1227,50 @@ class AddRemoveItemsByBarcodeView(LoginRequiredMixin, View):
                 f"Action: {add_remove}, Barcode: {barcode}, Quantity: {item_quantity}"
             )
 
-            # TODO:
-            # item field here (item=barcode) needs to be replaced with UDI/DI equivalent once implemented rather than item ID (which might be more UIC specific)
-            item = Item.objects.filter(item=barcode)[0]
-            ItemTransaction.objects.create(
-                item=item,
-                transaction_type=add_remove,
-                change=absolute_add_remove_quantity(item_quantity, add_remove),
-            )
+            #If user is trying to add an item, if it doesn't exist it creates the item from ID, if it already exists add to the count
+            if add_remove == "in":
+                item = add_item_from_udi(barcode, item_quantity)
+                if item:
+                    ItemTransaction.objects.create(
+                        item=item,
+                        transaction_type=add_remove,
+                        change=absolute_add_remove_quantity(item_quantity, add_remove),
+                    )
+                    messages.success(
+                        self.request,
+                        mark_safe(
+                            f'Successfully added {item_quantity} of {barcode} ({item.item})'
+                        ),
+                    )
+                else:
+                    messages.error(
+                        self.request,
+                        mark_safe(
+                            f'There was an error adding this item, please check that {barcode} is a valid UDI'
+                        ),
+                    )
+            #If user is trying to remove items, if it doesn't exist nothing happens, if it does then subtract from the count
+            if add_remove == "out":
+                item = remove_item_from_udi(barcode, item_quantity)
+                if item:
+                    ItemTransaction.objects.create(
+                        item=item,
+                        transaction_type=add_remove,
+                        change=absolute_add_remove_quantity(item_quantity, add_remove),
+                    )
+                    messages.success(
+                        self.request,
+                        mark_safe(
+                            f'Successfully removed {item_quantity} of {barcode}({item.item})'
+                        ),
+                    )
+                else:
+                    messages.error(
+                        self.request,
+                        mark_safe(
+                            f'There was an error removing this item, please check that {barcode} is a valid UDI'
+                        ),
+                    )
 
             query_string = urlencode(
                 {

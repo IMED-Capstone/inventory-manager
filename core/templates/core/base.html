@@ -51,6 +51,9 @@
                 <a class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}" href="{% url 'home' %}">Home</a>
             </li>
             <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'device-details' %}active{% endif %}" href="{% url 'device-details' %}">Device Details</a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link {% if request.resolver_match.url_name == 'item-details' %}active{% endif %}" href="{% url 'item-details' %}">Item Details</a>
             </li>
             <li class="nav-item">
