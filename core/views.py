@@ -106,6 +106,10 @@ class DeviceDetailsView(ListView):
         context["fields"] = all_fields + [
             "quantity"
         ]  # add quantity explicitly if you want
+
+        if not context["devices"]:
+            context["message"] = "No devices available yet."
+
         return context
 
 
