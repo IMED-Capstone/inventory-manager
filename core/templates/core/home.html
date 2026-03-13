@@ -12,7 +12,7 @@
             <h4 class="mb-2">Models</h4>
             {% for model_name, model_count in models.items %}
                 {% if model_name|lower != "parleveltransaction" %}
-                <div class="col-xl-3 col-md-4" id="ModelContainer">
+                <div class="col-12 col-sm-6 col-md-4 col-xl-3" id="ModelContainer">
                     <a href="{% url model_name|lower|add:'-details' %}" class="model-card">
                         <div class="card shadow-sm">
                             <div class="card-body">
@@ -38,7 +38,8 @@
     <div class="container" id="ReportsTable">
         <div class="row outer-wrapper">
             <h4 class="mb-2">Data</h4>
-            <div class="col-xl-3 col-md-4" id="DataContainer">
+            
+            <div class="col-12 col-md-6" id="DataContainer">
                 <a href="{% url 'order-details-advanced' %}" class="data-card">
                     <div class="card shadow-sm">
                         <div class="card-body">
@@ -48,7 +49,8 @@
                     </div>
                 </a>
             </div>
-            <div class="col-xl-3 col-md-4" id="DataContainer">
+            
+            <div class="col-12 col-md-6" id="DataContainer">
                 <a href="/data-browser/" class="model-card">
                     <div class="card shadow-sm">
                         <div class="card-body">
@@ -65,7 +67,6 @@
 <style>
     #SummaryTable, #ReportsTable{
         margin: auto;
-        /* border-bottom: 0.1em solid #000000; */
     }
 
     .outer-wrapper{
@@ -98,6 +99,41 @@
         max-height: 10em;
 
     }
+
+@media (max-width: 575.98px) {
+    #ModelContainer {
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+        width: 100% !important;
+        padding-bottom: 1rem !important;
+        margin-bottom: 0.75rem !important;
+    }
+
+    #DataContainer {
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+        width: 100% !important;
+        padding-bottom: 1rem !important;
+        margin-bottom: 0.75rem !important;
+    }
+
+    .outer-wrapper {
+        --bs-gutter-y: 0.75rem !important;
+    }
+
+    .card {
+        margin-bottom: 0 !important;
+    }
+
+    .card-body {
+        padding: 1rem 1rem 0.75rem !important;
+    }
+
+    .card-img-top {
+        margin-bottom: 0.75rem !important;
+        max-height: 7em;
+    }
+}
 
 </style>
 {% endblock %}
