@@ -479,43 +479,43 @@ class ItemTransactionView(ListView):
         """Populates data for the template."""
         context = super().get_context_data(**kwargs)
 
+        lower_date_bound = (
+            ItemTransaction.objects.order_by("timestamp")
+            .first()
+            .timestamp.strftime("%Y-%m-%d")
+        )
+        upper_date_bound = timezone.localtime(timezone.now()).strftime("%Y-%m-%d")
+        all_fields = [field.name for field in ItemTransaction._meta.fields]
+        excluded_fields = []
+        included_fields = [f for f in all_fields if f not in excluded_fields]
+
+        qset = Order.objects.all().order_by("item__descr")
+        all_items = {
+            item: descr
+            for item, descr in qset.values_list("item__item", "item__descr")
+        }
+
+        query_dict = self.request.GET.copy()
+        query_dict.pop("page", None)
+        if "sort" in query_dict:
+            query_dict.pop("sort")
+        context["query_string"] = urlencode(query_dict)
+
+        context["sort"] = getattr(self, "sort_param", "id")
+        context["start_date"] = self.start_date.strftime("%Y-%m-%d")
+        context["end_date"] = self.end_date.strftime("%Y-%m-%d")
+        context["lower_date_bound"] = lower_date_bound
+        context["upper_date_bound"] = upper_date_bound
+        context["search_field"] = self.request.GET.get("search_field", "")
+        context["search_term"] = self.request.GET.get("search_term", "")
+        context["per_page"] = self.request.GET.get("per_page", self.paginate_by)
+        context["per_page_options"] = [25, 50, 100, 200, "All"]
+        context["items_count"] = getattr(self, "items_count", 0)
+        context["fields"] = included_fields
+        context["all_items"] = all_items
+
         if not context["item_transactions"]:
             context["message"] = "No item transactions available yet."
-        else:
-            lower_date_bound = (
-                ItemTransaction.objects.order_by("timestamp")
-                .first()
-                .timestamp.strftime("%Y-%m-%d")
-            )
-            upper_date_bound = timezone.localtime(timezone.now()).strftime("%Y-%m-%d")
-            all_fields = [field.name for field in ItemTransaction._meta.fields]
-            excluded_fields = []
-            included_fields = [f for f in all_fields if f not in excluded_fields]
-
-            qset = Order.objects.all().order_by("item__descr")
-            all_items = {
-                item: descr
-                for item, descr in qset.values_list("item__item", "item__descr")
-            }
-
-            query_dict = self.request.GET.copy()
-            query_dict.pop("page", None)
-            if "sort" in query_dict:
-                query_dict.pop("sort")
-            context["query_string"] = urlencode(query_dict)
-
-            context["sort"] = getattr(self, "sort_param", "id")
-            context["start_date"] = self.start_date.strftime("%Y-%m-%d")
-            context["end_date"] = self.end_date.strftime("%Y-%m-%d")
-            context["lower_date_bound"] = lower_date_bound
-            context["upper_date_bound"] = upper_date_bound
-            context["search_field"] = self.request.GET.get("search_field", "")
-            context["search_term"] = self.request.GET.get("search_term", "")
-            context["per_page"] = self.request.GET.get("per_page", self.paginate_by)
-            context["per_page_options"] = [25, 50, 100, 200, "All"]
-            context["items_count"] = getattr(self, "items_count", 0)
-            context["fields"] = included_fields
-            context["all_items"] = all_items
 
         return context
 
@@ -613,48 +613,48 @@ class OrderDetailsView(ListView):
         """Populates data for the template."""
         context = super().get_context_data(**kwargs)
 
+        lower_date_bound = (
+            Order.objects.order_by("po_date").first().po_date.strftime("%Y-%m-%d")
+        )
+        upper_date_bound = timezone.localtime(timezone.now()).strftime("%Y-%m-%d")
+
+        all_fields = [field.name for field in Order._meta.fields]
+        excluded_fields = [
+            "id",
+            "price_currency",
+            "total_cost_currency",
+            "item_no",
+            "dbo_vend_name",
+            "expr1010",
+        ]
+        included_fields = [f for f in all_fields if f not in excluded_fields]
+
+        params = self.request.GET.copy()
+        params.pop("page", None)
+        params.pop("sort", None)
+        context["query_string"] = params.urlencode()
+
+        context.update(
+            {
+                "start_date": self.start_date.strftime("%Y-%m-%d"),
+                "end_date": self.end_date.strftime("%Y-%m-%d"),
+                "lower_date_bound": lower_date_bound,
+                "upper_date_bound": upper_date_bound,
+                "fields": included_fields,
+                "per_page": self.request.GET.get("per_page", self.paginate_by),
+                "per_page_options": [25, 50, 100, "All"],
+                "search_field": self.request.GET.get("search_field", ""),
+                "orders_count": context["paginator"].count
+                if "paginator" in context
+                else 0,
+                "sort": self.request.GET.get("sort", "-po_date"),
+            }
+        )
+
         if not context["orders"]:
             context["message"] = "No orders available yet."
-        else:
-            lower_date_bound = (
-                Order.objects.order_by("po_date").first().po_date.strftime("%Y-%m-%d")
-            )
-            upper_date_bound = timezone.localtime(timezone.now()).strftime("%Y-%m-%d")
 
-            all_fields = [field.name for field in Order._meta.fields]
-            excluded_fields = [
-                "id",
-                "price_currency",
-                "total_cost_currency",
-                "item_no",
-                "dbo_vend_name",
-                "expr1010",
-            ]
-            included_fields = [f for f in all_fields if f not in excluded_fields]
-
-            params = self.request.GET.copy()
-            params.pop("page", None)
-            params.pop("sort", None)
-            context["query_string"] = params.urlencode()
-
-            context.update(
-                {
-                    "start_date": self.start_date.strftime("%Y-%m-%d"),
-                    "end_date": self.end_date.strftime("%Y-%m-%d"),
-                    "lower_date_bound": lower_date_bound,
-                    "upper_date_bound": upper_date_bound,
-                    "fields": included_fields,
-                    "per_page": self.request.GET.get("per_page", self.paginate_by),
-                    "per_page_options": [25, 50, 100, "All"],
-                    "search_field": self.request.GET.get("search_field", ""),
-                    "orders_count": context["paginator"].count
-                    if "paginator" in context
-                    else 0,
-                    "sort": self.request.GET.get("sort", "-po_date"),
-                }
-            )
-
-            context["search_term"] = self.request.GET.get("search_term", "")
+        context["search_term"] = self.request.GET.get("search_term", "")
 
         return context
 
