@@ -37,3 +37,4 @@ class AddRemoveItemsByBarcodeForm(forms.Form):
         initial=1,
         required=True,
     )
+    is_waste = forms.BooleanField(required=False)

@@ -1,6 +1,7 @@
 {% extends 'core/base.html' %}
 {% load django_bootstrap5 %}
 {% load django_bootstrap5 widget_tweaks %}
+{% bootstrap_javascript %}
 
 {% block title %}Inventory Manager{% endblock %}
 
@@ -14,7 +15,7 @@
                 <div class="row g-2 align-items-end">
                     <div class="col-md-8 col-lg-6">
                         <label for="lookup_by_id" class="form-label fw-bold">Scan Barcode</label>
-                        <input id="lookup_by_id" type="text" name="lookup_by_id" value="{{ item_id }}" 
+                        <input id="lookup_by_id" type="text" name="lookup_by_id" value="{{ item_id }}"
                                class="form-control" placeholder="Enter barcode">
                     </div>
                     <div class="col-md-4 col-lg-3">
@@ -35,7 +36,6 @@
                         <input type="radio" class="btn-check" name="add_remove" id="btnradio-add" value="in"
                                autocomplete="off" {% if add_remove_items_by_barcode_form.add_remove.value == "in" %}checked{% endif %}>
                         <label class="btn btn-outline-primary" for="btnradio-add">Add Items</label>
-
                         <input type="radio" class="btn-check" name="add_remove" id="btnradio-remove" value="out"
                                autocomplete="off" {% if add_remove_items_by_barcode_form.add_remove.value == "out" %}checked{% endif %}>
                         <label class="btn btn-outline-primary" for="btnradio-remove">Remove Items</label>
@@ -54,19 +54,41 @@
                     {% endif %}
                 </div>
 
-                <div class="mb-3">
-                    <label for="{{ add_remove_items_by_barcode_form.item_quantity.id_for_label }}" class="form-label fw-bold">
-                        {{ add_remove_items_by_barcode_form.item_quantity.label }}
-                    </label>
-                    <div class="input-group" style="max-width: 200px;">
-                        {{ add_remove_items_by_barcode_form.item_quantity|add_class:"form-control"|attr:"type:number"|attr:"step:1"|attr:"min:1"|attr:'oninput:this.value=this.value.replace(/[^0-9]/g,"")'|attr:'onkeydown:return !["e","E",".","-","+"].includes(event.key)' }}
-                        <span class="input-group-text">units</span>
-                    </div>
-                    {% if add_remove_items_by_barcode_form.item_quantity.errors %}
-                        <div class="invalid-feedback d-block">
-                            {{ add_remove_items_by_barcode_form.item_quantity.errors }}
+                <div class="row g-1 mb-4">
+                    <div class="col-md-4">
+                        <label for="{{ add_remove_items_by_barcode_form.item_quantity.id_for_label }}" class="form-label fw-bold">
+                            {{ add_remove_items_by_barcode_form.item_quantity.label }}
+                        </label>
+                        <div class="input-group" style="max-width: 220px;">
+                            {{ add_remove_items_by_barcode_form.item_quantity|add_class:"form-control"|attr:"type:number"|attr:"step:1"|attr:"min:1"|attr:'oninput:this.value=this.value.replace(/[^0-9]/g,"")'|attr:'onkeydown:return !["e","E",".","-","+"].includes(event.key)' }}
+                            <span class="input-group-text">units</span>
                         </div>
-                    {% endif %}
+                        {% if add_remove_items_by_barcode_form.item_quantity.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ add_remove_items_by_barcode_form.item_quantity.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-1">
+                        <label class="form-label fw-bold d-block mt-3 mt-md-0">
+                            Waste?
+                        </label>
+                        <div class="form-check pt-1"
+                            data-bs-toggle="tooltip"
+                            data-bs-title="Select if item is being discarded"
+                            data-bs-placement="right">
+                            {{ add_remove_items_by_barcode_form.is_waste|add_class:"form-check-input" }}
+                            <label class="form-check-label" for="{{ add_remove_items_by_barcode_form.is_waste.id_for_label }}">
+                                Waste
+                            </label>
+                        </div>
+                        {% if add_remove_items_by_barcode_form.is_waste.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ add_remove_items_by_barcode_form.is_waste.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
                 </div>
 
                 <div class="text-end">
@@ -79,6 +101,15 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+        tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+            new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+</script>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 {% endblock %}
