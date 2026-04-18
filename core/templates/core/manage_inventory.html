@@ -109,6 +109,33 @@
             new bootstrap.Tooltip(tooltipTriggerEl);
         });
     });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const addRadio = document.getElementById('btnradio-add');
+        const removeRadio = document.getElementById('btnradio-remove');
+        const wasteCheckbox = document.getElementById('id_is_waste');
+        const wasteLabel = wasteCheckbox.closest('.form-check');
+
+        if (!addRadio || !removeRadio || !wasteCheckbox) return;
+
+        function updateWasteCheckbox() {
+            const isRemove = removeRadio.checked;
+            
+            wasteCheckbox.disabled = !isRemove;
+            
+            if (!isRemove) {
+                wasteCheckbox.checked = false;
+                if (wasteLabel) wasteLabel.style.opacity = "0.6";
+            } else {
+                if (wasteLabel) wasteLabel.style.opacity = "1";
+            }
+        }
+
+        addRadio.addEventListener('change', updateWasteCheckbox);
+        removeRadio.addEventListener('change', updateWasteCheckbox);
+        
+        updateWasteCheckbox();
+    });
 </script>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
