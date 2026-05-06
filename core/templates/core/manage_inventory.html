@@ -102,6 +102,22 @@
     </div>
 </div>
 
+<div class="container mt-4">
+    <button type="button" id="start-scan-btn" class="btn btn-primary" 
+            style="padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">
+        📷 Open UDI Barcode Scanner
+    </button>
+
+    <div id="scanner-wrapper" style="display: none; margin-top: 20px; border: 2px solid #333; padding: 10px; border-radius: 8px; background-color: #f8f9fa;">
+        <div id="reader" style="width: 100%;"></div>
+        
+        <button type="button" id="stop-scan-btn" 
+                style="margin-top: 15px; width: 100%; padding: 10px; background-color: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer;">
+            Cancel Scanning
+        </button>
+    </div>
+</div>
+
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
@@ -137,6 +153,62 @@
         updateWasteCheckbox();
     });
 </script>
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script>
+    let html5QrcodeScanner = null;
 
+    function onScanSuccess(decodedText, decodedResult) {
+        console.log(`Scan result: ${decodedText}`);
+        const inputField = document.getElementById('lookup_by_id');
+        inputField.value = decodedText;
+        stopScanner();
+    }
+
+    /**
+     * Start Function: Shows UI and initializes camera
+     */
+    function startScanner() {
+        // Show the container
+        document.getElementById('scanner-wrapper').style.display = "block";
+        document.getElementById('start-scan-btn').style.display = "none";
+
+        // Initialize the scanner
+        if (html5QrcodeScanner === null) {
+            html5QrcodeScanner = new Html5QrcodeScanner(
+                "reader", 
+                { 
+                    fps: 10, 
+                    qrbox: { width: 250, height: 250 },
+                    aspectRatio: 1.0,
+                    // Prefer the back camera on mobile devices
+                    rememberLastUsedCamera: true,
+                    supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
+                }
+            );
+        }
+        
+        html5QrcodeScanner.render(onScanSuccess);
+    }
+
+    /**
+     * Stop Function: Shuts down camera and hides UI
+     */
+    function stopScanner() {
+        if (html5QrcodeScanner) {
+            html5QrcodeScanner.clear().then(() => {
+                document.getElementById('scanner-wrapper').style.display = "none";
+                document.getElementById('start-scan-btn').style.display = "block";
+                console.log("Scanner cleared and camera released.");
+            }).catch(err => {
+                console.error("Error stopping scanner: ", err);
+            });
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        document.getElementById('start-scan-btn').addEventListener('click', startScanner);
+        document.getElementById('stop-scan-btn').addEventListener('click', stopScanner);
+    });
+</script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 {% endblock %}
