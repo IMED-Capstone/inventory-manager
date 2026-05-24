@@ -119,7 +119,7 @@ USE_I18N = True
 USE_TZ = True
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://192.168.1.193",
+    "https://192.168.1.193:8444",
 ]
 
 
