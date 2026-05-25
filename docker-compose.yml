@@ -1,9 +1,19 @@
 services:
+
+  caddy:
+    image: caddy
+    ports:
+      - "8444:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./caddy_data:/data
+      - ./caddy_config:/config
+
   django-web:
     image: ghcr.io/imed-capstone/inventory-manager:main
     container_name: django-docker
-    ports:
-      - "8999:8000"
+    #ports:
+    #  - "8999:8000"
     environment:
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
       DEBUG: ${DEBUG}
@@ -15,6 +25,8 @@ services:
       - ./data:/data
     env_file:
       - .env
+    networks:
+      - default
 
   docs-server:
     image: ghcr.io/imed-capstone/inventory-manager:main
@@ -22,7 +34,7 @@ services:
     entrypoint: /bin/sh
     command: -c "cd /app/docs/_build/html && test -f index.html && exec python -m http.server 8010 || { echo 'index.html not found'; exit 1; }"
     ports:
-      - "8998:8010"
+     - "8998:8010"
     env_file:
       - .env
     profiles:
