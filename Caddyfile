@@ -1,0 +1,12 @@
+{
+	debug
+}
+https://
+{
+	
+	reverse_proxy django-web:8000
+	tls internal {
+		on_demand
+	}
+}
+
