@@ -15,6 +15,7 @@ import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+DATA_DIR = os.environ.get("DATA_LOCATION", default=Path.joinpath(BASE_DIR, "data"))
 
 
 # Quick-start development settings - unsuitable for production
@@ -83,7 +84,7 @@ DATABASES = {
     "default": {
         "ENGINE": os.environ.get("DATABASE_ENGINE", default="django.db.backends.sqlite3"),
         # "NAME": BASE_DIR / os.environ.get("DATABASE_NAME", default="db.sqlite3"),
-        "NAME": Path.joinpath(BASE_DIR, "data", os.environ.get("DATABASE_NAME", default="db.sqlite3")),
+        "NAME": Path.joinpath(DATA_DIR, os.environ.get("DATABASE_NAME", default="db.sqlite3")),
     }
 }
 
@@ -126,7 +127,7 @@ CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in csrf_env.split(",") if orig
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = "static/"
-STATIC_ROOT = Path.joinpath(BASE_DIR, "data", "staticfiles")
+STATIC_ROOT = Path.joinpath(DATA_DIR, "staticfiles")
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # Bootstrap Icons settings
