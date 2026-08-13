@@ -15,7 +15,7 @@ import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-DATA_DIR = os.environ.get("DATA_LOCATION", default=Path.joinpath(BASE_DIR, "data"))
+DATA_DIR = Path(os.environ.get("DATA_LOCATION", default=Path.joinpath(BASE_DIR, "data")))
 
 
 # Quick-start development settings - unsuitable for production
