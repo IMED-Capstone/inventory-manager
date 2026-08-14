@@ -366,7 +366,7 @@
                                                     <p><strong>Manufacturer:</strong> {{ order.item.mfr }}</p>
                                                     <p><strong>MFR Catalog:</strong> {{ order.item.mfr_cat }}</p>
                                                     <p><strong>Description:</strong> {{ order.item.descr }}</p>
-                                                    <p><strong>Par Level:</strong> {{ order.item.par_level }}</p>
+                                                    <p><strong>Low-stock Threshold:</strong> {{ order.item.device.low_stock_threshold }}</p>
                                                     <p><strong>External URL:</strong> 
                                                         {% if order.item.external_url %}
                                                             <a class="icon-link icon-link-hover" href="{{ order.item.external_url }}" target="_blank">Link {% bs_icon 'box-arrow-up-right' %}</a>

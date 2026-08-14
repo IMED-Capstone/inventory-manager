@@ -6,7 +6,13 @@ from django.db import transaction
 from django.db.models import F
 from django.utils import timezone
 
-from .models import Device, Item, ItemTransaction, WasteReversalRequest
+from .models import (
+    Device,
+    DeviceThresholdTransaction,
+    Item,
+    ItemTransaction,
+    WasteReversalRequest,
+)
 
 
 class InventoryError(Exception):
@@ -25,11 +31,19 @@ class ItemUnavailableError(InventoryError):
     pass
 
 
+class ItemAlreadyWastedError(InventoryError):
+    pass
+
+
 class InventoryStateError(InventoryError):
     pass
 
 
 class ReversalError(InventoryError):
+    pass
+
+
+class ThresholdError(InventoryError):
     pass
 
 
@@ -40,16 +54,40 @@ def normalize_udi(udi: str) -> str:
     return value
 
 
-def _change_device_count(device_id: int | None, change: int) -> None:
+def _change_device_count(device_id: int | None, change: int):
     if device_id is None:
-        return
+        return None
 
-    queryset = Device.objects.filter(pk=device_id)
-    if change < 0:
-        queryset = queryset.filter(current_count__gte=abs(change))
+    try:
+        device = Device.objects.select_for_update().get(pk=device_id)
+    except Device.DoesNotExist as exc:
+        raise InventoryStateError("The item's device does not exist.") from exc
 
-    if queryset.update(current_count=F("current_count") + change) != 1:
+    previous_count = device.current_count
+    new_count = previous_count + change
+    if new_count < 0:
         raise InventoryStateError("The device inventory count is inconsistent.")
+
+    Device.objects.filter(pk=device_id).update(current_count=F("current_count") + change)
+    device.current_count = new_count
+    return device, previous_count, new_count
+
+
+def _schedule_stock_notification(
+    *, device, previous_count: int, new_count: int, event_key: str, actor
+) -> None:
+    from .notification_services import notify_low_stock_state_change
+
+    transaction.on_commit(
+        lambda: notify_low_stock_state_change(
+            device_id=device.pk,
+            was_low=previous_count <= device.low_stock_threshold,
+            is_low=new_count <= device.low_stock_threshold,
+            event_key=event_key,
+            actor_id=getattr(actor, "pk", None),
+        ),
+        robust=True,
+    )
 
 
 @transaction.atomic
@@ -60,9 +98,9 @@ def record_stock_in(*, item: Item, actor, occurred_at=None) -> ItemTransaction:
 
     locked_item.is_available = True
     locked_item.save(update_fields=["is_available"])
-    _change_device_count(locked_item.device_id, 1)
+    count_change = _change_device_count(locked_item.device_id, 1)
 
-    return ItemTransaction.objects.create(
+    inventory_transaction = ItemTransaction.objects.create(
         item=locked_item,
         transaction_type=ItemTransaction.TransactionType.STOCK_IN,
         event_type=ItemTransaction.EventType.STOCK_IN,
@@ -70,6 +108,16 @@ def record_stock_in(*, item: Item, actor, occurred_at=None) -> ItemTransaction:
         occurred_at=occurred_at or timezone.now(),
         created_by=actor,
     )
+    if count_change:
+        device, previous_count, new_count = count_change
+        _schedule_stock_notification(
+            device=device,
+            previous_count=previous_count,
+            new_count=new_count,
+            event_key=f"low-stock:inventory-transaction:{inventory_transaction.pk}",
+            actor=actor,
+        )
+    return inventory_transaction
 
 
 @transaction.atomic
@@ -92,14 +140,21 @@ def record_item_removal(
     except Item.DoesNotExist as exc:
         raise ItemNotFoundError("No item exists for this UDI.") from exc
 
+    if is_waste and ItemTransaction.objects.filter(
+        item=item,
+        event_type=ItemTransaction.EventType.WASTE,
+        reversal__isnull=True,
+    ).exists():
+        raise ItemAlreadyWastedError("This item is already recorded as waste.")
+
     if not item.is_available:
         raise ItemUnavailableError("This item is not currently available in inventory.")
 
     item.is_available = False
     item.save(update_fields=["is_available"])
-    _change_device_count(item.device_id, -1)
+    count_change = _change_device_count(item.device_id, -1)
 
-    return ItemTransaction.objects.create(
+    inventory_transaction = ItemTransaction.objects.create(
         item=item,
         transaction_type=ItemTransaction.TransactionType.STOCK_OUT,
         event_type=(
@@ -113,6 +168,22 @@ def record_item_removal(
         estimated_cost=estimated_cost if is_waste else None,
         created_by=actor,
     )
+    if count_change:
+        device, previous_count, new_count = count_change
+        _schedule_stock_notification(
+            device=device,
+            previous_count=previous_count,
+            new_count=new_count,
+            event_key=f"low-stock:inventory-transaction:{inventory_transaction.pk}",
+            actor=actor,
+        )
+    from .notification_services import resolve_item_expiration_notifications
+
+    transaction.on_commit(
+        lambda: resolve_item_expiration_notifications(item.pk),
+        robust=True,
+    )
+    return inventory_transaction
 
 
 @transaction.atomic
@@ -134,11 +205,18 @@ def request_waste_reversal(
     ).exists():
         raise ReversalError("A reversal request is already pending.")
 
-    return WasteReversalRequest.objects.create(
+    reversal_request = WasteReversalRequest.objects.create(
         waste_transaction=waste_transaction,
         requested_by=requested_by,
         reason=reason,
     )
+    from .notification_services import notify_waste_reversal_requested
+
+    transaction.on_commit(
+        lambda: notify_waste_reversal_requested(reversal_request.pk),
+        robust=True,
+    )
+    return reversal_request
 
 
 @transaction.atomic
@@ -169,6 +247,12 @@ def review_waste_reversal(*, request_id: int, reviewer, approve: bool):
         reversal_request.save(
             update_fields=["status", "reviewed_by", "reviewed_at"]
         )
+        from .notification_services import notify_waste_reversal_reviewed
+
+        transaction.on_commit(
+            lambda: notify_waste_reversal_reviewed(reversal_request.pk),
+            robust=True,
+        )
         return None
 
     waste_transaction = reversal_request.waste_transaction
@@ -183,7 +267,7 @@ def review_waste_reversal(*, request_id: int, reviewer, approve: bool):
 
     item.is_available = True
     item.save(update_fields=["is_available"])
-    _change_device_count(item.device_id, 1)
+    count_change = _change_device_count(item.device_id, 1)
 
     reversal = ItemTransaction.objects.create(
         item=item,
@@ -197,4 +281,71 @@ def review_waste_reversal(*, request_id: int, reviewer, approve: bool):
     )
     reversal_request.status = WasteReversalRequest.Status.APPROVED
     reversal_request.save(update_fields=["status", "reviewed_by", "reviewed_at"])
+    if count_change:
+        device, previous_count, new_count = count_change
+        _schedule_stock_notification(
+            device=device,
+            previous_count=previous_count,
+            new_count=new_count,
+            event_key=f"low-stock:inventory-transaction:{reversal.pk}",
+            actor=reviewer,
+        )
+    from .notification_services import notify_waste_reversal_reviewed
+
+    transaction.on_commit(
+        lambda: notify_waste_reversal_reviewed(reversal_request.pk),
+        robust=True,
+    )
     return reversal
+
+
+@transaction.atomic
+def update_device_threshold(
+    *,
+    device_id: int,
+    threshold: int,
+    actor,
+    source=DeviceThresholdTransaction.Source.MANUAL,
+    reason: str = "",
+):
+    """Update a device threshold and append an audit-history record."""
+    if source == DeviceThresholdTransaction.Source.MANUAL and not actor.is_staff:
+        raise ThresholdError("Only staff users may change device thresholds.")
+    if threshold < 0:
+        raise ThresholdError("The low-stock threshold cannot be negative.")
+
+    try:
+        device = Device.objects.select_for_update().get(pk=device_id)
+    except Device.DoesNotExist as exc:
+        raise ThresholdError("The selected device does not exist.") from exc
+
+    previous_threshold = device.low_stock_threshold
+    if previous_threshold == threshold:
+        return None
+
+    was_low = device.current_count <= previous_threshold
+    is_low = device.current_count <= threshold
+    device.low_stock_threshold = threshold
+    device.save(update_fields=["low_stock_threshold"])
+    threshold_change = DeviceThresholdTransaction.objects.create(
+        device=device,
+        previous_threshold=previous_threshold,
+        new_threshold=threshold,
+        source=source,
+        reason=reason,
+        changed_by=actor,
+    )
+
+    from .notification_services import notify_low_stock_state_change
+
+    transaction.on_commit(
+        lambda: notify_low_stock_state_change(
+            device_id=device.pk,
+            was_low=was_low,
+            is_low=is_low,
+            event_key=f"low-stock:threshold-change:{threshold_change.pk}",
+            actor_id=getattr(actor, "pk", None),
+        ),
+        robust=True,
+    )
+    return threshold_change

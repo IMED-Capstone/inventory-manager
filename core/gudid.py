@@ -72,7 +72,6 @@ def get_or_create_item_from_udi(udi):
             "mfr": gudid_parsed.gudid.device.companyName,
             "mfr_cat": gudid_parsed.gudid.device.versionModelNumber,
             "descr": gudid_parsed.gudid.device.deviceDescription,
-            "par_level": 1,
             "device": device_instance,
             "is_available": False,
             "exp_date": expiration_date,

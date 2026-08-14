@@ -83,10 +83,26 @@ Django application for managing inventory in the UIC IR department.
         - list view of item transactions available at `<base-url>:8000/item-transactions/`
     - inventory for a specific item can be updated at
         - `<base-url>:8000/manage-inventory/`
+    - in-app notification history is available at
+        - `<base-url>:8000/notifications/`
+    - device low-stock thresholds can be updated by staff from
+        - `<base-url>:8000/devices/`
     - various settings and information are available at
         - `<base-url>:8000/settings/` (general application and deployment settings)
         - `<base-url>:8000/profile/` (will support updating profile settings)
         - `<base-url>:8000/about/` (information about the application)
+
+### Generating expiration notifications
+
+Run the following command once per day to generate the 30-, 14-, 7-, 1-, and
+0-day expiration alerts. The command is idempotent and can safely be retried:
+
+```
+python manage.py generate_notifications
+```
+
+Production deployments should invoke this command daily using the host's task
+scheduler (for example, Windows Task Scheduler or cron).
 
 ## Documentation
 Sphinx documentation has been set up for Inventory Manager. To generate:

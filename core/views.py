@@ -12,7 +12,6 @@ from urllib.parse import urlencode
 import openpyxl
 import simplejson
 from dateutil.relativedelta import relativedelta
-from django.apps import apps
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -40,8 +39,19 @@ from django.views.generic.base import TemplateView
 from djmoney.money import Money
 from openpyxl.styles import NamedStyle
 
-from .forms import AddRemoveItemsByBarcodeForm, WasteReversalRequestForm
-from .models import Device, Item, ItemTransaction, Order, WasteReversalRequest
+from .forms import (
+    AddRemoveItemsByBarcodeForm,
+    DeviceThresholdForm,
+    WasteReversalRequestForm,
+)
+from .models import (
+    Device,
+    Item,
+    ItemTransaction,
+    Notification,
+    Order,
+    WasteReversalRequest,
+)
 from .utils import (
     get_database_status,
     get_searchable_fields,
@@ -55,6 +65,8 @@ from .services import (
     record_stock_in,
     request_waste_reversal,
     review_waste_reversal,
+    ThresholdError,
+    update_device_threshold,
 )
 
 
@@ -65,9 +77,15 @@ class HomePageView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        core_models = apps.get_app_config("core").get_models()
+        displayed_models = (
+            Device,
+            Item,
+            Order,
+            ItemTransaction,
+            WasteReversalRequest,
+        )
         core_model_counts = {}
-        for model in core_models:
+        for model in displayed_models:
             core_model_counts[model.__name__] = model.objects.count()
         context["models"] = core_model_counts
         return context
@@ -109,9 +127,7 @@ class DeviceDetailsView(ListView):
 
         #TODO: Fix this
         all_fields = [field.name for field in Device._meta.fields]
-        context["fields"] = all_fields + [
-            "quantity"
-        ]  # add quantity explicitly if you want
+        context["fields"] = all_fields + ["quantity", "actions"]
 
         if not context["devices"]:
             context["message"] = "No devices available yet."
@@ -746,7 +762,6 @@ def export_to_excel(request: WSGIRequest) -> HttpResponse:
         "ID",
         "price_currency",
         "total_cost_currency",
-        "par_level",
         "external_url",
         "item",
     }
@@ -1418,6 +1433,88 @@ class ReviewWasteReversalView(LoginRequiredMixin, View):
         else:
             messages.success(request, f"Reversal request {action}d.")
         return redirect("waste-log")
+
+
+class UpdateDeviceThresholdView(LoginRequiredMixin, View):
+    login_url = reverse_lazy("admin:login")
+
+    def post(self, request, device_id):
+        if not request.user.is_staff:
+            raise PermissionDenied("Only staff users may change device thresholds.")
+
+        form = DeviceThresholdForm(request.POST)
+        if not form.is_valid():
+            messages.error(request, "Enter a valid non-negative threshold.")
+            return redirect("device-details")
+
+        try:
+            threshold_change = update_device_threshold(
+                device_id=device_id,
+                threshold=form.cleaned_data["threshold"],
+                actor=request.user,
+                reason=form.cleaned_data["reason"],
+            )
+        except ThresholdError as exc:
+            messages.error(request, str(exc))
+        else:
+            if threshold_change is None:
+                messages.info(request, "The device threshold was already set to that value.")
+            else:
+                messages.success(request, "The device threshold was updated.")
+        return redirect("device-details")
+
+
+class NotificationListView(LoginRequiredMixin, ListView):
+    model = Notification
+    template_name = "core/notifications.html"
+    context_object_name = "notifications"
+    paginate_by = 25
+    login_url = reverse_lazy("admin:login")
+
+    def get_queryset(self):
+        return Notification.objects.filter(
+            recipient=self.request.user,
+            dismissed_at__isnull=True,
+        ).select_related("device", "item", "actor")
+
+
+class MarkNotificationReadView(LoginRequiredMixin, View):
+    login_url = reverse_lazy("admin:login")
+
+    def post(self, request, notification_id):
+        Notification.objects.filter(
+            pk=notification_id,
+            recipient=request.user,
+            dismissed_at__isnull=True,
+            read_at__isnull=True,
+        ).update(read_at=timezone.now())
+        return redirect("notifications")
+
+
+class DismissNotificationView(LoginRequiredMixin, View):
+    login_url = reverse_lazy("admin:login")
+
+    def post(self, request, notification_id):
+        now = timezone.now()
+        Notification.objects.filter(
+            pk=notification_id,
+            recipient=request.user,
+            dismissed_at__isnull=True,
+        ).update(read_at=now, dismissed_at=now)
+        return redirect("notifications")
+
+
+class ClearNotificationsView(LoginRequiredMixin, View):
+    login_url = reverse_lazy("admin:login")
+
+    def post(self, request):
+        now = timezone.now()
+        Notification.objects.filter(
+            recipient=request.user,
+            dismissed_at__isnull=True,
+        ).update(read_at=now, dismissed_at=now)
+        messages.success(request, "All notifications were cleared.")
+        return redirect("notifications")
 
 
 class SettingsView(TemplateView):

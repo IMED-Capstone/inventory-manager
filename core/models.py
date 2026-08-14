@@ -12,6 +12,7 @@ class Device(models.Model):
     device_name = models.CharField("NAME", max_length=200,null=True)
     device_identifier = models.CharField("DI", max_length=200, unique=True)
     current_count = models.IntegerField("CURR COUNT", default=0)
+    low_stock_threshold = models.PositiveIntegerField(default=1)
     
     def increase_count(self, number_change):
         self.current_count = self.current_count + number_change
@@ -40,7 +41,6 @@ class Item(models.Model):
     mfr = models.CharField("MFR", max_length=200)
     mfr_cat = models.CharField("MFR CAT", max_length=200)
     descr = models.CharField("DESCR", max_length=200)
-    par_level = models.PositiveIntegerField(blank=True, default=1)
     device = models.ForeignKey(Device, on_delete=models.PROTECT, related_name="items", null=True)
     is_available = models.BooleanField(default=False, db_index=True)
     exp_date = models.DateField("EXP DATE", null=True)
@@ -166,21 +166,36 @@ class ItemTransaction(models.Model):
         return f"{self.occurred_at.date()} - {self.item.item} ({self.change})"
 
 
-class ParLevelTransaction(models.Model):
-    """
-    Defines a :class:`~core.models.ParLevelTransaction` model used for updating the par level of an :class:`~core.models.Item`.
-    TODO: implement this in the backend
-    """
+class DeviceThresholdTransaction(models.Model):
+    """Append-only history for manual and predicted device threshold changes."""
 
-    item = models.ForeignKey(Item, on_delete=models.PROTECT, related_name="par_changes")
+    class Source(models.TextChoices):
+        MANUAL = "manual", "Manual"
+        PREDICTED = "predicted", "Predicted"
+
+    device = models.ForeignKey(
+        Device, on_delete=models.PROTECT, related_name="threshold_changes"
+    )
     timestamp = models.DateTimeField(auto_now_add=True)
-    previous_par = models.PositiveIntegerField()
-    new_par = models.PositiveIntegerField()
+    previous_threshold = models.PositiveIntegerField()
+    new_threshold = models.PositiveIntegerField()
+    source = models.CharField(
+        max_length=10, choices=Source.choices, default=Source.MANUAL
+    )
     reason = models.CharField(max_length=255, blank=True)
+    changed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="device_threshold_changes",
+    )
 
-    # changed_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)        # update to include the corresponding User to submitted the transaction (should probably make custom User model first)
     def __str__(self):
-        return f"{self.timestamp.date()} - {self.item.item} par level changed from {self.previous_par} to {self.new_par}"
+        return (
+            f"{self.timestamp.date()} - {self.device.device_identifier} threshold "
+            f"changed from {self.previous_threshold} to {self.new_threshold}"
+        )
 
 
 class WasteReversalRequest(models.Model):
@@ -232,3 +247,103 @@ class WasteReversalRequest(models.Model):
 
     def __str__(self):
         return f"Reversal request for transaction {self.waste_transaction_id} ({self.status})"
+
+
+class NotificationEvent(models.Model):
+    """Global idempotency marker recording when a notification event occurred."""
+
+    event_key = models.CharField(max_length=255, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.event_key
+
+
+class Notification(models.Model):
+    """A persistent in-app notification delivered to one user."""
+
+    class Kind(models.TextChoices):
+        LOW_STOCK = "low_stock", "Low Stock"
+        EXPIRING_ITEM = "expiring_item", "Expiring Item"
+        EXPIRED_ITEM = "expired_item", "Expired Item"
+        WASTE_REVERSAL_REQUESTED = (
+            "waste_reversal_requested",
+            "Waste Reversal Requested",
+        )
+        WASTE_REVERSAL_APPROVED = (
+            "waste_reversal_approved",
+            "Waste Reversal Approved",
+        )
+        WASTE_REVERSAL_REJECTED = (
+            "waste_reversal_rejected",
+            "Waste Reversal Rejected",
+        )
+
+    class Severity(models.TextChoices):
+        INFO = "info", "Info"
+        WARNING = "warning", "Warning"
+        CRITICAL = "critical", "Critical"
+
+    recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="notifications",
+    )
+    kind = models.CharField(max_length=40, choices=Kind.choices, db_index=True)
+    severity = models.CharField(
+        max_length=10, choices=Severity.choices, default=Severity.INFO
+    )
+    title = models.CharField(max_length=200)
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    read_at = models.DateTimeField(null=True, blank=True)
+    dismissed_at = models.DateTimeField(null=True, blank=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="triggered_notifications",
+    )
+    device = models.ForeignKey(
+        Device,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="notifications",
+    )
+    item = models.ForeignKey(
+        Item,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="notifications",
+    )
+    waste_reversal_request = models.ForeignKey(
+        WasteReversalRequest,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="notifications",
+    )
+    target_url = models.CharField(max_length=500, blank=True)
+    event_key = models.CharField(max_length=255, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["recipient", "event_key"],
+                name="one_notification_per_user_event",
+            )
+        ]
+        indexes = [
+            models.Index(
+                fields=["recipient", "dismissed_at", "read_at"],
+                name="notification_inbox_idx",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.recipient}: {self.title}"

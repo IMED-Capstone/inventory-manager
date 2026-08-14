@@ -74,3 +74,14 @@ class WasteReversalRequestForm(forms.Form):
         label="Correction reason",
         widget=forms.Textarea(attrs={"rows": 2, "class": "form-control"}),
     )
+
+
+class DeviceThresholdForm(forms.Form):
+    threshold = forms.IntegerField(
+        min_value=0,
+        label="Low-stock threshold",
+        widget=forms.NumberInput(
+            attrs={"min": 0, "step": 1, "class": "form-control form-control-sm"}
+        ),
+    )
+    reason = forms.CharField(required=False, max_length=255)

@@ -25,24 +25,34 @@
                         Hello!
                     {% endif %}
                 </div>
-                <div class="dropdown me-2 notification-dropdown">
-                    <a class="nav-link position-relative" href="#" role="button" id="notificationBell" data-bs-toggle="dropdown" aria-expanded="false">
-                        {% bs_icon 'bell' extra_classes='me-2' size='1.5em' %}
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                            3
-                            <span class="visually-hidden">unread notifications</span>
-                        </span>
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationBell">
-                        <li class="dropdown-item-text fw-bold">Notifications</li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="#">New item added to inventory</a></li>
-                        <li><a class="dropdown-item" href="#">Order #1234 status updated</a></li>
-                        <li><a class="dropdown-item" href="#">Low stock alert for Item XYZ</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item text-muted" href="#">View all notifications</a></li>
-                    </ul>
-                </div>
+                {% if user.is_authenticated %}
+                    <div class="dropdown me-2 notification-dropdown">
+                        <a class="nav-link position-relative" href="#" role="button" id="notificationBell" data-bs-toggle="dropdown" aria-expanded="false">
+                            {% bs_icon 'bell' extra_classes='me-2' size='1.5em' %}
+                            {% if unread_notification_count %}
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                    {{ unread_notification_count }}
+                                    <span class="visually-hidden">unread notifications</span>
+                                </span>
+                            {% endif %}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationBell">
+                            <li class="dropdown-item-text fw-bold">Notifications</li>
+                            <li><hr class="dropdown-divider"></li>
+                            {% for notification in recent_notifications %}
+                                <li>
+                                    <a class="dropdown-item{% if not notification.read_at %} fw-semibold{% endif %}" href="{% url 'notifications' %}">
+                                        {{ notification.title }}
+                                    </a>
+                                </li>
+                            {% empty %}
+                                <li><span class="dropdown-item-text text-muted">No notifications</span></li>
+                            {% endfor %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-muted" href="{% url 'notifications' %}">View all notifications</a></li>
+                        </ul>
+                    </div>
+                {% endif %}
             </div>
         </div>
 

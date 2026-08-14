@@ -24,6 +24,11 @@ from . import views
 
 urlpatterns = [
     path("devices/", views.DeviceDetailsView.as_view(), name="device-details"),
+    path(
+        "devices/<int:device_id>/threshold/",
+        views.UpdateDeviceThresholdView.as_view(),
+        name="update-device-threshold",
+    ),
     path("items/", views.ItemDetailsView.as_view(), name="item-details"),
     path("orders/", views.OrderDetailsView.as_view(), name="order-details"),
     path("item-transactions/", views.ItemTransactionView.as_view(), name="itemtransaction-details"),
@@ -32,6 +37,22 @@ urlpatterns = [
     path("manage-inventory/", views.ManageInventoryView.as_view(), name="manage-inventory"),
     path("manage-inventory/add-remove/", views.AddRemoveItemsByBarcodeView.as_view(), name="add_remove_items_by_barcode"),
     path("waste-log/", views.WasteLogView.as_view(), name="waste-log"),
+    path("notifications/", views.NotificationListView.as_view(), name="notifications"),
+    path(
+        "notifications/<int:notification_id>/read/",
+        views.MarkNotificationReadView.as_view(),
+        name="mark-notification-read",
+    ),
+    path(
+        "notifications/<int:notification_id>/dismiss/",
+        views.DismissNotificationView.as_view(),
+        name="dismiss-notification",
+    ),
+    path(
+        "notifications/clear/",
+        views.ClearNotificationsView.as_view(),
+        name="clear-notifications",
+    ),
     path(
         "waste-log/<int:transaction_id>/request-reversal/",
         views.RequestWasteReversalView.as_view(),

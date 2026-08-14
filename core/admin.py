@@ -7,7 +7,15 @@ from django.shortcuts import render
 from django.urls import path, reverse
 
 from .forms import ExcelUploadForm, UDI_Form
-from .models import Item, ItemTransaction, Order, WasteReversalRequest
+from .models import (
+    DeviceThresholdTransaction,
+    Item,
+    ItemTransaction,
+    Notification,
+    NotificationEvent,
+    Order,
+    WasteReversalRequest,
+)
 from .utils import dict_from_excel_row
 from .gudid import get_or_create_item_from_udi
 from .services import InventoryError, record_stock_in
@@ -141,6 +149,69 @@ class WasteReversalRequestAdmin(admin.ModelAdmin):
         "reviewed_by",
     ]
     list_filter = ["status", "requested_at"]
+
+    def get_readonly_fields(self, request, obj=None):
+        return [field.name for field in self.model._meta.fields]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(DeviceThresholdTransaction)
+class DeviceThresholdTransactionAdmin(admin.ModelAdmin):
+    list_display = [
+        "id",
+        "device",
+        "previous_threshold",
+        "new_threshold",
+        "source",
+        "changed_by",
+        "timestamp",
+    ]
+    list_filter = ["source", "timestamp"]
+
+    def get_readonly_fields(self, request, obj=None):
+        return [field.name for field in self.model._meta.fields]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = [
+        "id",
+        "recipient",
+        "kind",
+        "severity",
+        "created_at",
+        "read_at",
+        "dismissed_at",
+        "resolved_at",
+    ]
+    list_filter = ["kind", "severity", "created_at", "resolved_at"]
+    search_fields = ["recipient__username", "title", "message", "event_key"]
+
+    def get_readonly_fields(self, request, obj=None):
+        return [field.name for field in self.model._meta.fields]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(NotificationEvent)
+class NotificationEventAdmin(admin.ModelAdmin):
+    list_display = ["id", "event_key", "created_at"]
+    search_fields = ["event_key"]
 
     def get_readonly_fields(self, request, obj=None):
         return [field.name for field in self.model._meta.fields]

@@ -61,7 +61,6 @@ def dict_from_excel_row(row: pd.Series) -> dict:
             "mfr": row.get("MFR", ""),
             "mfr_cat": row.get("MFR CAT", ""),
             "descr": row.get("DESCR", ""),
-            "par_level": 1,
             "external_url": "https://accessgudid.nlm.nih.gov/resources/developers/v3/device_lookup_api",
         }
 

@@ -277,7 +277,9 @@
             <tr>
                 {% for field in fields %}
                     <th>
-                        {% if request.GET.sort == field %}
+                        {% if field == "actions" %}
+                            Actions
+                        {% elif request.GET.sort == field %}
                             <a href="?{{ query_string }}&sort=-{{ field }}">{{ field|capfirst }} ▲</a>
                         {% elif request.GET.sort == '-'|add:field %}
                             <a href="?{{ query_string }}&sort={{ field }}">{{ field|capfirst }} ▼</a>
@@ -293,7 +295,31 @@
                 <tr>
                     {% for field in fields %}
                         {% with value=device|get_field_value:field %}
-                            {% if field == "external_url" %}
+                            {% if field == "actions" %}
+                                <td>
+                                    {% if user.is_staff %}
+                                        <form method="post" action="{% url 'update-device-threshold' device.pk %}" class="d-flex gap-2 align-items-center">
+                                            {% csrf_token %}
+                                            <label class="visually-hidden" for="threshold-{{ device.pk }}">Low-stock threshold</label>
+                                            <input
+                                                id="threshold-{{ device.pk }}"
+                                                type="number"
+                                                name="threshold"
+                                                min="0"
+                                                step="1"
+                                                value="{{ device.low_stock_threshold }}"
+                                                class="form-control form-control-sm"
+                                                style="max-width: 6rem;"
+                                                required
+                                            >
+                                            <input type="hidden" name="reason" value="Manual update from Device Details">
+                                            <button type="submit" class="btn btn-sm btn-outline-primary">Update</button>
+                                        </form>
+                                    {% else %}
+                                        <span class="text-muted">Staff only</span>
+                                    {% endif %}
+                                </td>
+                            {% elif field == "external_url" %}
                                 {% if value %}
                                     <td>
                                         <a class="icon-link icon-link-hover" href="{{ value }}" target="_blank">Link {% bs_icon 'box-arrow-up-right' %}

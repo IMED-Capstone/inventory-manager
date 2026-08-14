@@ -1,0 +1,71 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h2 class="display-6 fw-bold mb-1">Notifications</h2>
+        <p class="text-muted mb-0">Your in-app inventory alerts and notification history.</p>
+    </div>
+    {% if notifications %}
+        <form method="post" action="{% url 'clear-notifications' %}" onsubmit="return confirm('Clear all notifications? They will be hidden from your notification history.');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-danger">Clear all</button>
+        </form>
+    {% endif %}
+</div>
+
+{% if notifications %}
+    <div class="list-group shadow-sm mb-4">
+        {% for notification in notifications %}
+            <article class="list-group-item list-group-item-action py-3{% if not notification.read_at %} border-start border-primary border-4{% endif %}">
+                <div class="d-flex justify-content-between gap-3 flex-wrap">
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <h5 class="mb-0">{{ notification.title }}</h5>
+                            {% if not notification.read_at %}<span class="badge bg-primary">Unread</span>{% endif %}
+                            {% if notification.resolved_at %}<span class="badge bg-success">Resolved</span>{% endif %}
+                            {% if notification.severity == 'critical' %}
+                                <span class="badge bg-danger">Critical</span>
+                            {% elif notification.severity == 'warning' %}
+                                <span class="badge bg-warning text-dark">Warning</span>
+                            {% endif %}
+                        </div>
+                        <p class="mb-1 mt-2">{{ notification.message }}</p>
+                        <small class="text-muted">{{ notification.created_at|date:"M j, Y g:i A" }}</small>
+                    </div>
+                    <div class="d-flex gap-2 align-items-start flex-wrap">
+                        {% if notification.target_url %}
+                            <a href="{{ notification.target_url }}" class="btn btn-sm btn-outline-secondary">View</a>
+                        {% endif %}
+                        {% if not notification.read_at %}
+                            <form method="post" action="{% url 'mark-notification-read' notification.pk %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-primary">Mark read</button>
+                            </form>
+                        {% endif %}
+                        <form method="post" action="{% url 'dismiss-notification' notification.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Dismiss</button>
+                        </form>
+                    </div>
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+
+    {% if is_paginated %}
+        <nav aria-label="Notification pages">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
+                {% endif %}
+                <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+                {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+{% else %}
+    <div class="alert alert-light border">You have no notifications.</div>
+{% endif %}
+{% endblock %}
