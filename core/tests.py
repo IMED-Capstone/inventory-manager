@@ -369,6 +369,10 @@ class InventoryBrowserTests(InventoryTestCase):
         self.assertEqual(response.status_code, 403)
 
         self.client.force_login(self.staff_user)
+        device_page = self.client.get(reverse("device-details"))
+        self.assertContains(device_page, "Update Threshold Count")
+        self.assertContains(device_page, "Update Threshold")
+
         response = self.client.post(
             reverse("update-device-threshold", args=[self.device.pk]),
             {"threshold": 4, "reason": "Testing"},

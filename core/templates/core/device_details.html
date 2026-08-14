@@ -278,7 +278,7 @@
                 {% for field in fields %}
                     <th>
                         {% if field == "actions" %}
-                            Actions
+                            Update Threshold Count
                         {% elif request.GET.sort == field %}
                             <a href="?{{ query_string }}&sort=-{{ field }}">{{ field|capfirst }} ▲</a>
                         {% elif request.GET.sort == '-'|add:field %}
@@ -300,7 +300,7 @@
                                     {% if user.is_staff %}
                                         <form method="post" action="{% url 'update-device-threshold' device.pk %}" class="d-flex gap-2 align-items-center">
                                             {% csrf_token %}
-                                            <label class="visually-hidden" for="threshold-{{ device.pk }}">Low-stock threshold</label>
+                                            <label class="visually-hidden" for="threshold-{{ device.pk }}">New low-stock threshold count</label>
                                             <input
                                                 id="threshold-{{ device.pk }}"
                                                 type="number"
@@ -313,7 +313,7 @@
                                                 required
                                             >
                                             <input type="hidden" name="reason" value="Manual update from Device Details">
-                                            <button type="submit" class="btn btn-sm btn-outline-primary">Update</button>
+                                            <button type="submit" class="btn btn-sm btn-outline-primary">Update Threshold</button>
                                         </form>
                                     {% else %}
                                         <span class="text-muted">Staff only</span>
