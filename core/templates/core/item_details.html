@@ -175,7 +175,16 @@
 
 <div id="DateHeader">
     <h4>Current range:</h4>
+    {% if selected_device %}
+        <p class="mb-3">
+            Showing items for <strong>{{ selected_device.device_name|default:selected_device.device_identifier }}</strong>
+            (DI: {{ selected_device.device_identifier }}).
+        </p>
+    {% endif %}
     <form method="get" class="form-container">
+        {% if selected_device %}
+            <input type="hidden" name="device" value="{{ selected_device.pk }}">
+        {% endif %}
         <div class="row mb-3">
             <div class="col-md-4">
                 <label for="start" class="form-label">Start Date:</label>
@@ -243,10 +252,10 @@
             <ul class="pagination justify-content-center mb-1">
                 {% if page_obj.has_previous %}
                     <li class="page-item">
-                        <a class="page-link" href="?page=1&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}&sort={{ request.GET.sort }}" aria-label="First page">First</a>
+                        <a class="page-link" href="?{{ query_string }}&page=1&sort={{ sort }}" aria-label="First page">First</a>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}&sort={{ request.GET.sort }}" aria-label="Previous page">Previous</a>
+                        <a class="page-link" href="?{{ query_string }}&page={{ page_obj.previous_page_number }}&sort={{ sort }}" aria-label="Previous page">Previous</a>
                     </li>
                 {% endif %}
 
@@ -256,10 +265,10 @@
 
                 {% if page_obj.has_next %}
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.next_page_number }}&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}&sort={{ request.GET.sort }}" aria-label="Next page">Next</a>
+                        <a class="page-link" href="?{{ query_string }}&page={{ page_obj.next_page_number }}&sort={{ sort }}" aria-label="Next page">Next</a>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}&sort={{ request.GET.sort }}" aria-label="Last page">Last</a>
+                        <a class="page-link" href="?{{ query_string }}&page={{ page_obj.paginator.num_pages }}&sort={{ sort }}" aria-label="Last page">Last</a>
                     </li>
                 {% endif %}
             </ul>
@@ -322,10 +331,10 @@
             <ul class="pagination justify-content-center mb-1">
                 {% if page_obj.has_previous %}
                     <li class="page-item">
-                        <a class="page-link" href="?page=1&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}&sort={{ request.GET.sort }}" aria-label="First page">First</a>
+                        <a class="page-link" href="?{{ query_string }}&page=1&sort={{ sort }}" aria-label="First page">First</a>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}&sort={{ request.GET.sort }}" aria-label="Previous page">Previous</a>
+                        <a class="page-link" href="?{{ query_string }}&page={{ page_obj.previous_page_number }}&sort={{ sort }}" aria-label="Previous page">Previous</a>
                     </li>
                 {% endif %}
 
@@ -335,10 +344,10 @@
 
                 {% if page_obj.has_next %}
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.next_page_number }}&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}&sort={{ request.GET.sort }}" aria-label="Next page">Next</a>
+                        <a class="page-link" href="?{{ query_string }}&page={{ page_obj.next_page_number }}&sort={{ sort }}" aria-label="Next page">Next</a>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&start_date={{ start_date }}&end_date={{ end_date }}&per_page={{ per_page }}&sort={{ request.GET.sort }}" aria-label="Last page">Last</a>
+                        <a class="page-link" href="?{{ query_string }}&page={{ page_obj.paginator.num_pages }}&sort={{ sort }}" aria-label="Last page">Last</a>
                     </li>
                 {% endif %}
             </ul>

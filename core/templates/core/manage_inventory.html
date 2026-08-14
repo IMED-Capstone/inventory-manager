@@ -10,7 +10,7 @@
     <div class="card shadow-sm">
         <div class="card-body">
             <h2 class="card-title mb-4 text-center">Manage Inventory</h2>
-            
+
             <form method="get" class="mb-4" action="{% url 'manage-inventory' %}">
                 <div class="row g-2 align-items-end">
                     <div class="col-md-8 col-lg-6">
@@ -54,40 +54,67 @@
                     {% endif %}
                 </div>
 
-                <div class="row g-1 mb-4">
-                    <div class="col-md-4">
-                        <label for="{{ add_remove_items_by_barcode_form.item_quantity.id_for_label }}" class="form-label fw-bold">
-                            {{ add_remove_items_by_barcode_form.item_quantity.label }}
-                        </label>
-                        <div class="input-group" style="max-width: 220px;">
-                            {{ add_remove_items_by_barcode_form.item_quantity|add_class:"form-control"|attr:"type:number"|attr:"step:1"|attr:"min:1"|attr:'oninput:this.value=this.value.replace(/[^0-9]/g,"")'|attr:'onkeydown:return !["e","E",".","-","+"].includes(event.key)' }}
-                            <span class="input-group-text">units</span>
-                        </div>
-                        {% if add_remove_items_by_barcode_form.item_quantity.errors %}
-                            <div class="invalid-feedback d-block">
-                                {{ add_remove_items_by_barcode_form.item_quantity.errors }}
-                            </div>
-                        {% endif %}
+                {% if add_remove_items_by_barcode_form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {{ add_remove_items_by_barcode_form.non_field_errors }}
                     </div>
-                    
-                    <div class="col-md-1">
-                        <label class="form-label fw-bold d-block mt-3 mt-md-0">
-                            Waste?
+                {% endif %}
+
+                <div class="mb-4">
+                    <label class="form-label fw-bold d-block">Removal reason</label>
+                    <div class="form-check"
+                        data-bs-toggle="tooltip"
+                        data-bs-title="Select if this individual item is being discarded"
+                        data-bs-placement="right">
+                        {{ add_remove_items_by_barcode_form.is_waste|add_class:"form-check-input" }}
+                        <label class="form-check-label" for="{{ add_remove_items_by_barcode_form.is_waste.id_for_label }}">
+                            Record this item as waste
                         </label>
-                        <div class="form-check pt-1"
-                            data-bs-toggle="tooltip"
-                            data-bs-title="Select if item is being discarded"
-                            data-bs-placement="right">
-                            {{ add_remove_items_by_barcode_form.is_waste|add_class:"form-check-input" }}
-                            <label class="form-check-label" for="{{ add_remove_items_by_barcode_form.is_waste.id_for_label }}">
-                                Waste
-                            </label>
+                    </div>
+                    {% if add_remove_items_by_barcode_form.is_waste.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ add_remove_items_by_barcode_form.is_waste.errors }}
                         </div>
-                        {% if add_remove_items_by_barcode_form.is_waste.errors %}
+                    {% endif %}
+                </div>
+
+                <div id="waste-details" class="border rounded p-3 mb-4 bg-light">
+                    <h5>Waste details</h5>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="{{ add_remove_items_by_barcode_form.occurred_at.id_for_label }}" class="form-label fw-bold">
+                                Occurred at
+                            </label>
+                            {{ add_remove_items_by_barcode_form.occurred_at }}
+                            <div class="form-text">Leave blank to use the current time.</div>
+                            {% if add_remove_items_by_barcode_form.occurred_at.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ add_remove_items_by_barcode_form.occurred_at.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ add_remove_items_by_barcode_form.estimated_cost.id_for_label }}" class="form-label fw-bold">
+                                Estimated cost (USD)
+                            </label>
+                            {{ add_remove_items_by_barcode_form.estimated_cost }}
+                            {% if add_remove_items_by_barcode_form.estimated_cost.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ add_remove_items_by_barcode_form.estimated_cost.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-12">
+                            <label for="{{ add_remove_items_by_barcode_form.notes.id_for_label }}" class="form-label fw-bold">
+                                Notes
+                            </label>
+                            {{ add_remove_items_by_barcode_form.notes }}
+                            {% if add_remove_items_by_barcode_form.notes.errors %}
                             <div class="invalid-feedback d-block">
-                                {{ add_remove_items_by_barcode_form.is_waste.errors }}
+                                {{ add_remove_items_by_barcode_form.notes.errors }}
                             </div>
-                        {% endif %}
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
 
@@ -130,26 +157,30 @@
         const addRadio = document.getElementById('btnradio-add');
         const removeRadio = document.getElementById('btnradio-remove');
         const wasteCheckbox = document.getElementById('id_is_waste');
-        const wasteLabel = wasteCheckbox.closest('.form-check');
+        const wasteDetails = document.getElementById('waste-details');
 
         if (!addRadio || !removeRadio || !wasteCheckbox) return;
+        const wasteLabel = wasteCheckbox.closest('.form-check');
 
         function updateWasteCheckbox() {
             const isRemove = removeRadio.checked;
-            
             wasteCheckbox.disabled = !isRemove;
-            
+
             if (!isRemove) {
                 wasteCheckbox.checked = false;
                 if (wasteLabel) wasteLabel.style.opacity = "0.6";
             } else {
                 if (wasteLabel) wasteLabel.style.opacity = "1";
             }
+            if (wasteDetails) {
+                wasteDetails.style.display = isRemove && wasteCheckbox.checked ? "block" : "none";
+            }
         }
 
         addRadio.addEventListener('change', updateWasteCheckbox);
         removeRadio.addEventListener('change', updateWasteCheckbox);
-        
+        wasteCheckbox.addEventListener('change', updateWasteCheckbox);
+
         updateWasteCheckbox();
     });
 </script>
@@ -160,6 +191,7 @@
     function onScanSuccess(decodedText, decodedResult) {
         console.log(`Scan result: ${decodedText}`);
         const inputField = document.getElementById('lookup_by_id');
+        //parsedText = decodedText.slice(1);
         inputField.value = decodedText;
         stopScanner();
     }

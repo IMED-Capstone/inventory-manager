@@ -13,7 +13,11 @@
             {% for model_name, model_count in models.items %}
                 {% if model_name|lower != "parleveltransaction" %}
                 <div class="col-12 col-sm-6 col-md-4 col-xl-3" id="ModelContainer">
-                    <a href="{% url model_name|lower|add:'-details' %}" class="model-card">
+                    {% if model_name|lower == "wastereversalrequest" %}
+                        <a href="{% url 'waste-log' %}" class="model-card">
+                    {% else %}
+                        <a href="{% url model_name|lower|add:'-details' %}" class="model-card">
+                    {% endif %}
                         <div class="card shadow-sm">
                             <div class="card-body">
                                 {% if model_name|lower == "item" %}
@@ -24,8 +28,16 @@
                                     <img class="card-img-top mb-3" src="{% static 'core/arrow-down-up.svg' %}"/>
                                 {% elif model_name|lower == "device" %}
                                     <img class="card-img-top mb-3" src="{% static 'core/device-icon.svg' %}"/>
+                                {% elif model_name|lower == "wastereversalrequest" %}
+                                    <img class="card-img-top mb-3" src="{% static 'core/clipboard-data.svg' %}"/>
                                 {% endif %}
-                                <h6 class="card-title">{{ model_name|camel_to_words|add:"s" }}</h6>
+                                <h6 class="card-title">
+                                    {% if model_name|lower == "wastereversalrequest" %}
+                                        Waste Log
+                                    {% else %}
+                                        {{ model_name|camel_to_words|add:"s" }}
+                                    {% endif %}
+                                </h6>
                                 <p class="card-text">{{ model_name|camel_to_words }} Count: {{ model_count }}</p>
                             </div>
                         </div>

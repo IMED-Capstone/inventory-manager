@@ -1,9 +1,11 @@
-import requests
-import json
-import pydantic
-from .response import GudidResponse
-from .models import Device, Item
 import datetime
+import json
+
+import requests
+
+from .models import Device, Item
+from .response import GudidResponse
+from .services import normalize_udi
 
 def call_api(udi=None, headers=None):
     """
@@ -22,19 +24,22 @@ def call_api(udi=None, headers=None):
     if udi == None:
         return None
     try:
-        response = requests.get(url, params=params, headers=headers)
+        response = requests.get(url, params=params, headers=headers, timeout=10)
         response.raise_for_status()  # Raise an error for bad status codes
         return response.json()
     except requests.RequestException as e:
         return None
 
-#Add an item object from an UDI ID
-def add_item_from_udi(udi, quantity):
-    if udi == None:
+def get_or_create_item_from_udi(udi):
+    """Resolve a UDI to one physical item without changing inventory state."""
+    if udi is None:
         return None
-    udi_input = udi
-    if (udi_input[0] == "\\" and udi_input[-1] == "\\"):
-                    udi_input = udi_input[1:-1]
+
+    udi_input = normalize_udi(udi)
+    existing_item = Item.objects.filter(item_no=udi_input).first()
+    if existing_item is not None:
+        return existing_item
+
     response = call_api(udi_input,)
     if response is None:
         return None
@@ -51,42 +56,30 @@ def add_item_from_udi(udi, quantity):
 
     #Create a new item for the UDI that was scanned in
     #TODO: add customer contact info
+    expiration_date = None
+    if gudid_parsed.udi.expirationDate:
+        expiration_date = datetime.datetime.strptime(
+            gudid_parsed.udi.expirationDate, "%Y-%m-%d"
+        ).date()
+    product_name = (
+        gudid_parsed.productCodes[0].deviceName
+        if gudid_parsed.productCodes
+        else gudid_parsed.gudid.device.brandName
+    )
     item_info = {
-            "item": gudid_parsed.productCodes[0].deviceName,
+            "item": product_name,
             "item_no": gudid_parsed.udi.udi,
             "mfr": gudid_parsed.gudid.device.companyName,
             "mfr_cat": gudid_parsed.gudid.device.versionModelNumber,
             "descr": gudid_parsed.gudid.device.deviceDescription,
             "par_level": 1,
             "device": device_instance,
-            "current_count": 0,
-            "exp_date": datetime.datetime.strptime(gudid_parsed.udi.expirationDate, "%Y-%m-%d"),
+            "is_available": False,
+            "exp_date": expiration_date,
             "external_url": "https://accessgudid.nlm.nih.gov/api/v3/devices/lookup.json?udi=" + gudid_parsed.udi.udi,
         }
     
-    item_instance, item_flag = Item.objects.get_or_create(item_no=item_info["item_no"], defaults=item_info)
-    #Add to the device and item current count
-    device_instance.increase_count(quantity)
-    item_instance.increase_count(quantity)
-    device_instance.save()
-    item_instance.save()
-    return item_instance
-
-#Remove an item object from an UDI ID
-def remove_item_from_udi(udi, quantity):
-    if udi == None:
-        return None
-    udi_input = udi
-    if (udi_input[0] == "\\" and udi_input[-1] == "\\"):
-                    udi_input = udi_input[1:-1]
-    #TODO: check if item exists, otherwise return None
-    item_instances = Item.objects.filter(item_no=udi_input)
-    if not item_instances:
-          return None
-    item_instance = item_instances[0]
-    device_instance = item_instance.device
-    device_instance.decrease_count(quantity)
-    item_instance.decrease_count(quantity)
-    device_instance.save()
-    item_instance.save()
+    item_instance, item_flag = Item.objects.get_or_create(
+        item_no=item_info["item_no"], defaults=item_info
+    )
     return item_instance

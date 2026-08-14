@@ -1,0 +1,135 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Waste Log{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="mb-1">Waste Log</h2>
+            <p class="text-muted mb-0">Historical waste events for individual UDI items.</p>
+        </div>
+    </div>
+
+    <form method="get" class="card card-body mb-3">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-5">
+                <label for="search" class="form-label">UDI, DI, item, or notes</label>
+                <input class="form-control" id="search" name="search" value="{{ search }}">
+            </div>
+            <div class="col-md-2">
+                <label for="start-date" class="form-label">From</label>
+                <input class="form-control" id="start-date" type="date" name="start_date" value="{{ start_date }}">
+            </div>
+            <div class="col-md-2">
+                <label for="end-date" class="form-label">Through</label>
+                <input class="form-control" id="end-date" type="date" name="end_date" value="{{ end_date }}">
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button class="btn btn-primary" type="submit">Filter</button>
+                <a class="btn btn-outline-secondary" href="{% url 'waste-log' %}">Reset</a>
+            </div>
+        </div>
+    </form>
+
+    <div class="table-responsive">
+        <table class="table table-striped table-bordered align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Occurred</th>
+                    <th>UDI</th>
+                    <th>Device</th>
+                    <th>Notes</th>
+                    <th>Estimated cost</th>
+                    <th>Recorded by</th>
+                    <th>Recorded</th>
+                    <th>Status / correction</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in waste_rows %}
+                    {% with waste=row.transaction %}
+                    <tr>
+                        <td>{{ waste.occurred_at }}</td>
+                        <td>{{ waste.item.item_no }}</td>
+                        <td>
+                            {% if waste.item.device %}
+                                {{ waste.item.device.device_name|default:waste.item.item }}<br>
+                                <small class="text-muted">DI {{ waste.item.device.device_identifier }}</small>
+                            {% else %}
+                                {{ waste.item.item }}
+                            {% endif %}
+                        </td>
+                        <td>{{ waste.reason|default:"—" }}</td>
+                        <td>
+                            {% if waste.estimated_cost is not None %}
+                                ${{ waste.estimated_cost }}
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+                        <td>{{ waste.created_by|default:"Historical record" }}</td>
+                        <td>{{ waste.timestamp }}</td>
+                        <td style="min-width: 260px;">
+                            {% if row.reversal %}
+                                <span class="badge bg-success">Reversed</span>
+                                <div class="small mt-1">Transaction #{{ row.reversal.id }}</div>
+                            {% elif row.pending_request %}
+                                <span class="badge bg-warning text-dark">Pending approval</span>
+                                <div class="small mt-1">
+                                    Requested by {{ row.pending_request.requested_by }}
+                                </div>
+                                {% if user.is_staff and user.id != row.pending_request.requested_by_id %}
+                                    <div class="d-flex gap-2 mt-2">
+                                        <form method="post" action="{% url 'review-waste-reversal' row.pending_request.id 'approve' %}">
+                                            {% csrf_token %}
+                                            <button class="btn btn-sm btn-success" type="submit">Approve</button>
+                                        </form>
+                                        <form method="post" action="{% url 'review-waste-reversal' row.pending_request.id 'reject' %}">
+                                            {% csrf_token %}
+                                            <button class="btn btn-sm btn-outline-danger" type="submit">Reject</button>
+                                        </form>
+                                    </div>
+                                {% elif user.id == row.pending_request.requested_by_id %}
+                                    <div class="small text-muted mt-1">A different staff user must review this request.</div>
+                                {% endif %}
+                            {% else %}
+                                {% if row.latest_request.status == 'rejected' %}
+                                    <span class="badge bg-secondary mb-2">Previous request rejected</span>
+                                {% else %}
+                                    <span class="badge bg-danger mb-2">Wasted</span>
+                                {% endif %}
+                                <form method="post" action="{% url 'request-waste-reversal' waste.id %}">
+                                    {% csrf_token %}
+                                    <label class="form-label small" for="reason-{{ waste.id }}">Correction reason</label>
+                                    <textarea class="form-control form-control-sm mb-2" id="reason-{{ waste.id }}" name="reason" rows="2"></textarea>
+                                    <button class="btn btn-sm btn-outline-primary" type="submit">Request reversal</button>
+                                </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endwith %}
+                {% empty %}
+                    <tr>
+                        <td class="text-center text-muted py-4" colspan="8">No waste records match the selected filters.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if is_paginated %}
+        <nav aria-label="Waste log pagination">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&search={{ search|urlencode }}&start_date={{ start_date }}&end_date={{ end_date }}">Previous</a></li>
+                {% endif %}
+                <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+                {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&search={{ search|urlencode }}&start_date={{ start_date }}&end_date={{ end_date }}">Next</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+</div>
+{% endblock %}

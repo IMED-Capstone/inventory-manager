@@ -31,6 +31,17 @@ urlpatterns = [
     path("orders-advanced/", views.OrderDetailsAdvancedView.as_view(), name="order-details-advanced"),
     path("manage-inventory/", views.ManageInventoryView.as_view(), name="manage-inventory"),
     path("manage-inventory/add-remove/", views.AddRemoveItemsByBarcodeView.as_view(), name="add_remove_items_by_barcode"),
+    path("waste-log/", views.WasteLogView.as_view(), name="waste-log"),
+    path(
+        "waste-log/<int:transaction_id>/request-reversal/",
+        views.RequestWasteReversalView.as_view(),
+        name="request-waste-reversal",
+    ),
+    path(
+        "waste-reversal-requests/<int:request_id>/<str:action>/",
+        views.ReviewWasteReversalView.as_view(),
+        name="review-waste-reversal",
+    ),
     path("settings", views.SettingsView.as_view(), name="settings"),
     path("about", views.AboutView.as_view(), name="about"),
     path("profile", views.ProfileView.as_view(), name="profile"),

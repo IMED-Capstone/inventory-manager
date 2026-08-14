@@ -16,6 +16,7 @@ from django.apps import apps
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import PermissionDenied
 from django.core.handlers.wsgi import WSGIRequest
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import (
@@ -33,23 +34,28 @@ from django.shortcuts import redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.dateparse import parse_date
-from django.utils.safestring import mark_safe
 from django.views import View
 from django.views.generic import ListView
 from django.views.generic.base import TemplateView
 from djmoney.money import Money
 from openpyxl.styles import NamedStyle
 
-from .forms import AddRemoveItemsByBarcodeForm
-from .models import Device, Item, ItemTransaction, Order
+from .forms import AddRemoveItemsByBarcodeForm, WasteReversalRequestForm
+from .models import Device, Item, ItemTransaction, Order, WasteReversalRequest
 from .utils import (
-    absolute_add_remove_quantity,
     get_database_status,
     get_searchable_fields,
     style_excel_sheet,
     trunc_datetime,
 )
-from .gudid import add_item_from_udi, remove_item_from_udi
+from .gudid import get_or_create_item_from_udi
+from .services import (
+    InventoryError,
+    record_item_removal,
+    record_stock_in,
+    request_waste_reversal,
+    review_waste_reversal,
+)
 
 
 class HomePageView(TemplateView):
@@ -168,6 +174,20 @@ class ItemDetailsView(ListView):
         # Bypassing order date filtering
         items_qs = Item.objects.all()
 
+        device_id = self.request.GET.get("device")
+        self.selected_device = None
+        if device_id:
+            try:
+                device_pk = int(device_id)
+            except (TypeError, ValueError):
+                items_qs = items_qs.none()
+            else:
+                self.selected_device = Device.objects.filter(pk=device_pk).first()
+                if self.selected_device is None:
+                    items_qs = items_qs.none()
+                else:
+                    items_qs = items_qs.filter(device=self.selected_device)
+
         search_field = self.request.GET.get("search_field")
         search_term = self.request.GET.get("search_term")
         valid_fields = [field.name for field in Item._meta.fields]
@@ -222,6 +242,7 @@ class ItemDetailsView(ListView):
         context["per_page"] = self.request.GET.get("per_page", self.paginate_by)
         context["per_page_options"] = [25, 50, 100, 200, "All"]
         context["items_count"] = getattr(self, "items_count", 0)
+        context["selected_device"] = getattr(self, "selected_device", None)
 
         all_fields = [field.name for field in Item._meta.fields]
 
@@ -272,12 +293,13 @@ class ItemTransactionView(ListView):
         Returns:
             list[str]: The list of quarters, with each quarter in the format <'Month YYYY'>.
         """
-        newest_item_transaction_date = (
-            ItemTransaction.objects.order_by("-timestamp").first().timestamp
-        )
-        oldest_item_transaction_date = (
-            ItemTransaction.objects.order_by("timestamp").first().timestamp
-        )
+        newest_item_transaction = ItemTransaction.objects.order_by("-timestamp").first()
+        oldest_item_transaction = ItemTransaction.objects.order_by("timestamp").first()
+        if newest_item_transaction is None or oldest_item_transaction is None:
+            return []
+
+        newest_item_transaction_date = newest_item_transaction.timestamp
+        oldest_item_transaction_date = oldest_item_transaction.timestamp
 
         quarter_month = ((oldest_item_transaction_date.month - 1) // 3) * 3 + 1
         aligned_start = oldest_item_transaction_date.replace(month=quarter_month, day=1)
@@ -479,10 +501,11 @@ class ItemTransactionView(ListView):
         """Populates data for the template."""
         context = super().get_context_data(**kwargs)
 
+        oldest_item_transaction = ItemTransaction.objects.order_by("timestamp").first()
         lower_date_bound = (
-            ItemTransaction.objects.order_by("timestamp")
-            .first()
-            .timestamp.strftime("%Y-%m-%d")
+            oldest_item_transaction.timestamp.strftime("%Y-%m-%d")
+            if oldest_item_transaction is not None
+            else self.start_date.strftime("%Y-%m-%d")
         )
         upper_date_bound = timezone.localtime(timezone.now()).strftime("%Y-%m-%d")
         all_fields = [field.name for field in ItemTransaction._meta.fields]
@@ -613,8 +636,11 @@ class OrderDetailsView(ListView):
         """Populates data for the template."""
         context = super().get_context_data(**kwargs)
 
+        oldest_order = Order.objects.order_by("po_date").first()
         lower_date_bound = (
-            Order.objects.order_by("po_date").first().po_date.strftime("%Y-%m-%d")
+            oldest_order.po_date.strftime("%Y-%m-%d")
+            if oldest_order is not None
+            else self.start_date.strftime("%Y-%m-%d")
         )
         upper_date_bound = timezone.localtime(timezone.now()).strftime("%Y-%m-%d")
 
@@ -815,8 +841,13 @@ class OrderDetailsAdvancedView(TemplateView):
         Returns:
             list[str]: The list of quarters, with each quarter in the format <'Month YYYY'>.
         """
-        newest_order_date = Order.objects.all().order_by("-po_date").first().po_date
-        oldest_order_date = Order.objects.all().order_by("po_date").first().po_date
+        newest_order = Order.objects.order_by("-po_date").first()
+        oldest_order = Order.objects.order_by("po_date").first()
+        if newest_order is None or oldest_order is None:
+            return []
+
+        newest_order_date = newest_order.po_date
+        oldest_order_date = oldest_order.po_date
 
         quarter_month = ((oldest_order_date.month - 1) // 3) * 3 + 1
         aligned_start = oldest_order_date.replace(month=quarter_month, day=1)
@@ -1210,7 +1241,6 @@ class AddRemoveItemsByBarcodeView(LoginRequiredMixin, View):
             "add_remove_items_by_barcode_form": form,
             "add_remove": cleaned_data.get("add_remove"),
             "barcode": cleaned_data.get("barcode"),
-            "item_quantity": cleaned_data.get("item_quantity"),
         }
 
         return render(request, self.template_name, context)
@@ -1221,62 +1251,44 @@ class AddRemoveItemsByBarcodeView(LoginRequiredMixin, View):
         if form.is_valid():
             barcode = form.cleaned_data["barcode"]
             add_remove = form.cleaned_data["add_remove"]
-            item_quantity = form.cleaned_data["item_quantity"]
+            is_waste = form.cleaned_data["is_waste"]
 
-            print(
-                f"Action: {add_remove}, Barcode: {barcode}, Quantity: {item_quantity}"
-            )
-
-            #If user is trying to add an item, if it doesn't exist it creates the item from ID, if it already exists add to the count
-            if add_remove == "in":
-                item = add_item_from_udi(barcode, item_quantity)
-                if item:
-                    ItemTransaction.objects.create(
+            try:
+                if add_remove == "in":
+                    item = get_or_create_item_from_udi(barcode)
+                    if item is None:
+                        raise InventoryError(
+                            "The item could not be resolved. Check that the UDI is valid."
+                        )
+                    inventory_transaction = record_stock_in(
                         item=item,
-                        transaction_type=add_remove,
-                        change=absolute_add_remove_quantity(item_quantity, add_remove),
-                    )
-                    messages.success(
-                        self.request,
-                        mark_safe(
-                            f'Successfully added {item_quantity} of {barcode} ({item.item})'
-                        ),
+                        actor=request.user,
                     )
                 else:
-                    messages.error(
-                        self.request,
-                        mark_safe(
-                            f'There was an error adding this item, please check that {barcode} is a valid UDI'
-                        ),
+                    inventory_transaction = record_item_removal(
+                        udi=barcode,
+                        actor=request.user,
+                        is_waste=is_waste,
+                        occurred_at=form.cleaned_data.get("occurred_at"),
+                        notes=form.cleaned_data.get("notes", ""),
+                        estimated_cost=form.cleaned_data.get("estimated_cost"),
                     )
-            #If user is trying to remove items, if it doesn't exist nothing happens, if it does then subtract from the count
-            if add_remove == "out":
-                item = remove_item_from_udi(barcode, item_quantity)
-                if item:
-                    ItemTransaction.objects.create(
-                        item=item,
-                        transaction_type=add_remove,
-                        change=absolute_add_remove_quantity(item_quantity, add_remove),
-                    )
-                    messages.success(
-                        self.request,
-                        mark_safe(
-                            f'Successfully removed {item_quantity} of {barcode}({item.item})'
-                        ),
-                    )
-                else:
-                    messages.error(
-                        self.request,
-                        mark_safe(
-                            f'There was an error removing this item, please check that {barcode} is a valid UDI'
-                        ),
-                    )
+            except InventoryError as exc:
+                messages.error(request, str(exc))
+            else:
+                action = "recorded as waste" if is_waste else (
+                    "added" if add_remove == "in" else "removed"
+                )
+                messages.success(
+                    request,
+                    f"Successfully {action} UDI {barcode} "
+                    f"({inventory_transaction.item.item}).",
+                )
 
             query_string = urlencode(
                 {
                     "add_remove": add_remove,
                     "barcode": barcode,
-                    "item_quantity": item_quantity,
                 }
             )
             return redirect(f"{reverse('add_remove_items_by_barcode')}?{query_string}")
@@ -1288,9 +1300,124 @@ class AddRemoveItemsByBarcodeView(LoginRequiredMixin, View):
                 "add_remove_items_by_barcode_form": form,
                 "add_remove": request.POST.get("add_remove"),
                 "barcode": request.POST.get("barcode"),
-                "item_quantity": request.POST.get("item_quantity"),
             },
         )
+
+
+class WasteLogView(LoginRequiredMixin, ListView):
+    """Displays the historical, instance-level waste ledger."""
+
+    model = ItemTransaction
+    template_name = "core/waste_log.html"
+    context_object_name = "waste_transactions"
+    paginate_by = 25
+    login_url = reverse_lazy("admin:login")
+
+    def get_queryset(self):
+        queryset = (
+            ItemTransaction.objects.filter(event_type=ItemTransaction.EventType.WASTE)
+            .select_related("item__device", "created_by", "reversal")
+            .prefetch_related(
+                "reversal_requests__requested_by",
+                "reversal_requests__reviewed_by",
+            )
+        )
+
+        search_term = self.request.GET.get("search", "").strip()
+        start_date = parse_date(self.request.GET.get("start_date", ""))
+        end_date = parse_date(self.request.GET.get("end_date", ""))
+
+        if search_term:
+            queryset = queryset.filter(
+                Q(item__item_no__icontains=search_term)
+                | Q(item__device__device_identifier__icontains=search_term)
+                | Q(item__item__icontains=search_term)
+                | Q(reason__icontains=search_term)
+            )
+        if start_date:
+            queryset = queryset.filter(occurred_at__date__gte=start_date)
+        if end_date:
+            queryset = queryset.filter(occurred_at__date__lte=end_date)
+
+        return queryset.order_by("-occurred_at", "-id")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        rows = []
+        for waste_transaction in context["waste_transactions"]:
+            reversal_requests = list(waste_transaction.reversal_requests.all())
+            rows.append(
+                {
+                    "transaction": waste_transaction,
+                    "reversal": getattr(waste_transaction, "reversal", None),
+                    "pending_request": next(
+                        (
+                            request
+                            for request in reversal_requests
+                            if request.status == WasteReversalRequest.Status.PENDING
+                        ),
+                        None,
+                    ),
+                    "latest_request": reversal_requests[-1]
+                    if reversal_requests
+                    else None,
+                }
+            )
+
+        context.update(
+            {
+                "waste_rows": rows,
+                "search": self.request.GET.get("search", ""),
+                "start_date": self.request.GET.get("start_date", ""),
+                "end_date": self.request.GET.get("end_date", ""),
+                "reversal_form": WasteReversalRequestForm(),
+            }
+        )
+        return context
+
+
+class RequestWasteReversalView(LoginRequiredMixin, View):
+    login_url = reverse_lazy("admin:login")
+
+    def post(self, request, transaction_id):
+        form = WasteReversalRequestForm(request.POST)
+        if form.is_valid():
+            try:
+                request_waste_reversal(
+                    transaction_id=transaction_id,
+                    requested_by=request.user,
+                    reason=form.cleaned_data["reason"],
+                )
+            except InventoryError as exc:
+                messages.error(request, str(exc))
+            else:
+                messages.success(request, "Waste reversal request submitted.")
+        else:
+            messages.error(request, "The reversal request could not be submitted.")
+        return redirect("waste-log")
+
+
+class ReviewWasteReversalView(LoginRequiredMixin, View):
+    login_url = reverse_lazy("admin:login")
+
+    def post(self, request, request_id, action):
+        if not request.user.is_staff:
+            raise PermissionDenied("Only staff users may review reversal requests.")
+        if action not in {"approve", "reject"}:
+            messages.error(request, "Unknown reversal review action.")
+            return redirect("waste-log")
+
+        try:
+            review_waste_reversal(
+                request_id=request_id,
+                reviewer=request.user,
+                approve=action == "approve",
+            )
+        except InventoryError as exc:
+            messages.error(request, str(exc))
+        else:
+            messages.success(request, f"Reversal request {action}d.")
+        return redirect("waste-log")
 
 
 class SettingsView(TemplateView):

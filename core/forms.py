@@ -1,7 +1,7 @@
 """Defines forms used across the `Core` app."""
 
 from django import forms
-from django.core.validators import MinValueValidator
+from django.utils import timezone
 
 
 class ExcelUploadForm(forms.Form):
@@ -17,7 +17,7 @@ class AddRemoveItemsByBarcodeForm(forms.Form):
     """
     A form used to add or remove :class:`Items <core.models.Item>` by a barcode-provided unique ID.
     Supports add and remove mode options, as defined by `add_remove`.
-    The minimum quantity of an :class:`~core.models.Item` for any given transaction is 1 (therefore assumes whole items are registered per-transaction for any transaction type).
+    Each UDI identifies one physical item, so every submission changes exactly one item.
     """
 
     barcode = forms.CharField()
@@ -26,15 +26,51 @@ class AddRemoveItemsByBarcodeForm(forms.Form):
         widget=forms.RadioSelect(attrs={"class": "btn-check", "autocomplete": "off"}),
         initial="in",
     )
-    item_quantity = forms.IntegerField(
-        validators=[MinValueValidator(1)],
-        widget=forms.NumberInput(
-            attrs={
-                "min": 1,
-                "class": "form-control",
-            }
-        ),
-        initial=1,
-        required=True,
-    )
     is_waste = forms.BooleanField(required=False)
+    occurred_at = forms.DateTimeField(
+        required=False,
+        widget=forms.DateTimeInput(
+            attrs={"type": "datetime-local", "class": "form-control"},
+            format="%Y-%m-%dT%H:%M",
+        ),
+        input_formats=["%Y-%m-%dT%H:%M"],
+    )
+    notes = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 3, "class": "form-control"}),
+    )
+    estimated_cost = forms.DecimalField(
+        required=False,
+        min_value=0,
+        max_digits=14,
+        decimal_places=2,
+        widget=forms.NumberInput(
+            attrs={"min": 0, "step": "0.01", "class": "form-control"}
+        ),
+        help_text="Optional estimated cost in USD.",
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        is_waste = cleaned_data.get("is_waste", False)
+        add_remove = cleaned_data.get("add_remove")
+
+        if is_waste and add_remove != "out":
+            self.add_error("is_waste", "Only removed items can be recorded as waste.")
+
+        if is_waste and cleaned_data.get("occurred_at") is None:
+            cleaned_data["occurred_at"] = timezone.now()
+
+        if not is_waste:
+            cleaned_data["notes"] = ""
+            cleaned_data["estimated_cost"] = None
+
+        return cleaned_data
+
+
+class WasteReversalRequestForm(forms.Form):
+    reason = forms.CharField(
+        required=False,
+        label="Correction reason",
+        widget=forms.Textarea(attrs={"rows": 2, "class": "form-control"}),
+    )

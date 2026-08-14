@@ -161,24 +161,6 @@ def style_excel_sheet(sheet, type, field, i, currency_style):
     sheet.column_dimensions[col_letter].width = max_length + 2
 
 
-def absolute_add_remove_quantity(item_quantity: int, add_remove_mode: str) -> int:
-    """
-    Return the integer quantity (positive or negative) from a given quantity and transaction mode.
-
-    Args:
-        item_quantity (int): The integer quantity of the :class:`~core.models.Item`
-        add_remove_mode (str): Representation of the transaction type (whether adding/removing).
-
-    Returns:
-        int: The integer quantity of the :class:`~core.models.Item` being updated in inventory (positive for adding and negative for removing).
-    """
-    quantity = abs(item_quantity)
-    if add_remove_mode.lower() == "out":
-        quantity = quantity * -1
-
-    return quantity
-
-
 def get_searchable_fields(model) -> list:
     """
     Returns a list of searchable fields for a given model.

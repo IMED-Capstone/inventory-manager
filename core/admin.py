@@ -1,15 +1,16 @@
 """Configures models for display and define forms used in the Admin view of the `Core` app."""
 
 import pandas as pd
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import path, reverse
 
 from .forms import ExcelUploadForm, UDI_Form
-from .models import Item, Order
+from .models import Item, ItemTransaction, Order, WasteReversalRequest
 from .utils import dict_from_excel_row
-from .gudid import add_item_from_udi
+from .gudid import get_or_create_item_from_udi
+from .services import InventoryError, record_stock_in
 
 
 class OrderAdmin(admin.ModelAdmin):
@@ -60,6 +61,8 @@ class OrderAdmin(admin.ModelAdmin):
 
 
 class ItemAdmin(admin.ModelAdmin):
+    readonly_fields = ["is_available"]
+
     def changelist_view(self, request, extra_context=None):
         if extra_context is None:
             extra_context = {}
@@ -79,7 +82,18 @@ class ItemAdmin(admin.ModelAdmin):
             form = UDI_Form(request.POST)
             if form.is_valid():
                 udi_input = form.cleaned_data["udi_input"]
-                add_item_from_udi(udi_input, 1)
+                item = get_or_create_item_from_udi(udi_input)
+                if item is None:
+                    self.message_user(
+                        request,
+                        "The item could not be resolved. Check that the UDI is valid.",
+                        level=messages.ERROR,
+                    )
+                else:
+                    try:
+                        record_stock_in(item=item, actor=request.user)
+                    except InventoryError as exc:
+                        self.message_user(request, str(exc), level=messages.ERROR)
                 return HttpResponseRedirect("../")
         else:
             form = UDI_Form()
@@ -91,3 +105,48 @@ class ItemAdmin(admin.ModelAdmin):
 # Register your models here.
 admin.site.register(Order, OrderAdmin)
 admin.site.register(Item, ItemAdmin)
+
+
+@admin.register(ItemTransaction)
+class ItemTransactionAdmin(admin.ModelAdmin):
+    list_display = [
+        "id",
+        "item",
+        "event_type",
+        "change",
+        "occurred_at",
+        "created_by",
+    ]
+    list_filter = ["event_type", "transaction_type", "occurred_at"]
+    search_fields = ["item__item_no", "item__device__device_identifier", "reason"]
+
+    def get_readonly_fields(self, request, obj=None):
+        return [field.name for field in self.model._meta.fields]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(WasteReversalRequest)
+class WasteReversalRequestAdmin(admin.ModelAdmin):
+    list_display = [
+        "id",
+        "waste_transaction",
+        "requested_by",
+        "status",
+        "requested_at",
+        "reviewed_by",
+    ]
+    list_filter = ["status", "requested_at"]
+
+    def get_readonly_fields(self, request, obj=None):
+        return [field.name for field in self.model._meta.fields]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False

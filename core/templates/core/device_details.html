@@ -302,6 +302,12 @@
                                 {% else %}
                                     <td></td>
                                 {% endif %}
+                            {% elif field == "device_name" or field == "device_identifier" %}
+                                <td>
+                                    <a href="{% url 'item-details' %}?device={{ device.pk }}" title="View all items for this device">
+                                        {{ value }}
+                                    </a>
+                                </td>
                             {% else %}
                                 <td>{{ value }}</td>
                             {% endif %}
