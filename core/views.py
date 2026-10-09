@@ -15,6 +15,7 @@ from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.views import LogoutView
 from django.core.exceptions import PermissionDenied
 from django.core.handlers.wsgi import WSGIRequest
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
@@ -1580,3 +1581,11 @@ class ProfileView(TemplateView):
         """Populates data for the template."""
         context = super().get_context_data(**kwargs)
         return context
+
+class CustomLogoutView(LogoutView):
+    next_page = reverse_lazy("home")
+
+    def dispatch(self, request, *args, **kwargs):
+        response = super().dispatch(request, *args, **kwargs)
+        messages.success(request, "You have been successfully logged out.")
+        return response

@@ -69,4 +69,5 @@ urlpatterns = [
     path("pagination", views.PaginationView.as_view(), name="pagination"),
     path("", views.HomePageView.as_view(), name="home"),
     path("data-browser/", include("data_browser.urls")),
+    path("accounts/logout", views.CustomLogoutView.as_view(), name="custom_logout"),
 ]

@@ -104,7 +104,7 @@
                             </a>
                             {% if user.is_authenticated %}
                                 <hr class="dropdown-divider">
-                                <form action="{% url 'logout' %}" method="post">
+                                <form action="{% url 'custom_logout' %}" method="post">
                                     {% csrf_token %}
                                     <button type="submit" class="dropdown-item btn btn-link" id="logoutBtn">
                                         {% bs_icon 'box-arrow-left' extra_classes='me-2' size='1.5em' %} Log Out
