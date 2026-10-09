@@ -102,6 +102,15 @@
                             <a class="dropdown-item" href="{% url 'about' %}" role="button">
                                 {% bs_icon 'info-circle' extra_classes='me-2' size='1.5em' %} About
                             </a>
+                            {% if user.is_authenticated %}
+                                <hr class="dropdown-divider">
+                                <form action="{% url 'logout' %}" method="post">
+                                    {% csrf_token %}
+                                    <button type="submit" class="dropdown-item btn btn-link" id="logoutBtn">
+                                        {% bs_icon 'box-arrow-left' extra_classes='me-2' size='1.5em' %} Log Out
+                                    </button>
+                                </form>
+                            {% endif %}
                         </li>
                     </ul>
                 </div>
@@ -282,6 +291,12 @@ a, .nav-link, .btn {
 
 .notification-dropdown {
     padding-left: 0.5rem;
+}
+
+#logoutBtn {
+    color: black;
+    padding-left: 1rem;
+    padding-right: 1rem;
 }
 </style>
 {% endblock %}

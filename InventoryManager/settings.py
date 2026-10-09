@@ -141,3 +141,5 @@ BS_ICONS_CACHE = os.path.join(STATIC_ROOT, 'icon_cache')
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 100000
+
+LOGOUT_REDIRECT_URL = "home"
